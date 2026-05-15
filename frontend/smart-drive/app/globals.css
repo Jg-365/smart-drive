@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+/* SmartDrive design tokens — dark theme (default) */
+:root {
+  --background: #0A0A0F;
+  --foreground: #F2F2F6;
+
+  --sd-bg: #0A0A0F;
+  --sd-bg-grad: radial-gradient(ellipse at top, #14141E 0%, #0A0A0F 60%);
+  --sd-surface: #14141C;
+  --sd-surface2: #1C1C26;
+  --sd-surface3: #23232F;
+  --sd-border: #2A2A38;
+  --sd-border-hi: #3A3A4A;
+  --sd-border-bright: #4A4A5E;
+  --sd-text: #F2F2F6;
+  --sd-text-dim: #8A8A99;
+  --sd-text-mute: #5A5A6A;
+  --sd-primary: #00E5FF;
+  --sd-primary-deep: #4D5BFF;
+  --sd-danger: #FF3344;
+  --sd-danger-soft: rgba(255, 51, 68, 0.12);
+  --sd-success: #2FE0A2;
+  --sd-success-soft: rgba(47, 224, 162, 0.12);
+  --sd-warning: #FFB020;
+  --sd-warning-soft: rgba(255, 176, 32, 0.12);
+  --sd-font-display: "Archivo", "Space Grotesk", system-ui, sans-serif;
+  --sd-font-body: "Space Grotesk", system-ui, sans-serif;
+  --sd-font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* SmartDrive design tokens — light theme */
+[data-theme="light"] {
+  --sd-bg: #F8F8FA;
+  --sd-bg-grad: radial-gradient(ellipse at top, #EFEFF4 0%, #F8F8FA 60%);
+  --sd-surface: #EFEFF4;
+  --sd-surface2: #E6E6EE;
+  --sd-surface3: #DCDCE8;
+  --sd-border: #D0D0DC;
+  --sd-border-hi: #B8B8CC;
+  --sd-border-bright: #A0A0BA;
+  --sd-text: #0E0E16;
+  --sd-text-dim: #5A5A70;
+  --sd-text-mute: #9090A0;
+  --sd-primary: #0066CC;
+  --sd-primary-deep: #3344CC;
+  --sd-danger: #CC1122;
+  --sd-danger-soft: rgba(204, 17, 34, 0.10);
+  --sd-success: #1A9966;
+  --sd-success-soft: rgba(26, 153, 102, 0.10);
+  --sd-warning: #CC8800;
+  --sd-warning-soft: rgba(204, 136, 0, 0.10);
+  --sd-font-display: "Archivo", "Space Grotesk", system-ui, sans-serif;
+  --sd-font-body: "Space Grotesk", system-ui, sans-serif;
+  --sd-font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* SmartDrive HQ-dark design system */
+.sd-root {
+  font-family: var(--font-space-grotesk, system-ui, sans-serif);
+  color: var(--sd-text);
+  background: var(--sd-bg);
+  -webkit-font-smoothing: antialiased;
+}
+.sd-mono {
+  font-family: var(--font-jetbrains-mono, ui-monospace, monospace);
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.01em;
+}
+.sd-display {
+  font-family: var(--font-archivo, system-ui, sans-serif);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+.sd-label {
+  font-family: var(--font-space-grotesk, system-ui, sans-serif);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--sd-text-dim);
+}
+.sd-scan {
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.018) 0 1px,
+    transparent 1px 3px
+  );
+}
+.sd-pulse {
+  animation: sdPulse 1.6s ease-in-out infinite;
+}
+@keyframes sdPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.sd-blink {
+  animation: sdBlink 1s steps(2, start) infinite;
+}
+@keyframes sdBlink {
+  to { visibility: hidden; }
+}
+.sd-tick {
+  animation: sdTick 1s linear infinite;
+}
+@keyframes sdTick {
+  to { transform: rotate(360deg); }
+}
+.sd-btn {
+  cursor: pointer;
+  user-select: none;
+}
+.sd-btn:active {
+  transform: translate(2px, 2px);
+}
+.sd-hover-row:hover {
+  background: var(--sd-surface2);
+}
+.sd-marquee {
+  animation: sdMarquee 28s linear infinite;
+}
+@keyframes sdMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.sd-route-draw {
+  stroke-dasharray: 2000;
+  animation: sdRouteDraw 8s linear forwards;
+}
+@keyframes sdRouteDraw {
+  to { stroke-dashoffset: -2000; }
+}
+.sd-need {
+  animation: sdNeed 4s ease-in-out infinite alternate;
+}
+@keyframes sdNeed {
+  from { transform: rotate(-12deg); }
+  to { transform: rotate(48deg); }
+}
+.sd-bar-rise {
+  animation: sdBarRise 2.4s ease-out infinite alternate;
+}
+@keyframes sdBarRise {
+  from { transform: scaleY(0.55); }
+  to { transform: scaleY(1); }
+}
+.sd-burst {
+  clip-path: polygon(
+    50% 0%, 60% 12%, 78% 6%, 78% 24%, 96% 26%, 84% 40%, 100% 50%,
+    84% 60%, 96% 74%, 78% 76%, 78% 94%, 60% 88%, 50% 100%, 40% 88%,
+    22% 94%, 22% 76%, 4% 74%, 16% 60%, 0% 50%, 16% 40%, 4% 26%,
+    22% 24%, 22% 6%, 40% 12%
+  );
+}
