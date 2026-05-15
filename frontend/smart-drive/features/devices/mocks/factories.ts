@@ -1,4 +1,5 @@
 import type { Device } from '@/features/shared/types'
+import { DeviceStatus } from '@/features/shared/types'
 
 let deviceCounter = 0
 
@@ -9,7 +10,7 @@ const PRESET_DEVICES: Omit<Device, 'id'>[] = [
     vehicleId: 'vehicle-001',
     firmwareVersion: 'v0.4.1',
     lastSeenAt: '2024-03-10T08:32:00.000Z',
-    status: 'ONLINE',
+    status: DeviceStatus.ONLINE,
   },
   {
     deviceCode: 'esp32-backup-001',
@@ -17,7 +18,7 @@ const PRESET_DEVICES: Omit<Device, 'id'>[] = [
     vehicleId: 'vehicle-002',
     firmwareVersion: 'v0.3.8',
     lastSeenAt: '2024-03-08T14:20:00.000Z',
-    status: 'OFFLINE',
+    status: DeviceStatus.OFFLINE,
   },
   {
     deviceCode: 'esp32-test-002',
@@ -25,7 +26,7 @@ const PRESET_DEVICES: Omit<Device, 'id'>[] = [
     vehicleId: 'vehicle-003',
     firmwareVersion: 'v0.4.1',
     lastSeenAt: '2024-03-10T09:00:00.000Z',
-    status: 'PAIRING',
+    status: DeviceStatus.PAIRING,
   },
 ]
 

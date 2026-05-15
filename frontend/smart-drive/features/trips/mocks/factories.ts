@@ -1,4 +1,5 @@
 import type { Trip, DrivingEvent, FuelEstimate } from '@/features/shared/types'
+import { DrivingEventType, EventSeverity, TripMode, TripStatus } from '@/features/shared/types'
 
 let tripCounter = 0
 
@@ -23,17 +24,16 @@ export function makeTrip(overrides?: Partial<Trip>): Trip {
   const maxSpeedKmh = randomBetween(60, 95, 1)
   const estimatedConsumptionKmL = randomBetween(10.5, 14.5, 1)
   const estimatedFuelSpentLiters = parseFloat((distanceKm / estimatedConsumptionKmL).toFixed(2))
-  const startedAt = '2024-03-10T08:00:00.000Z'
 
   return {
     id: `trip-${id}`,
     vehicleId: 'vehicle-001',
     deviceId: 'esp32-demo-001',
     driverId: 'driver-001',
-    mode: 'REAL',
-    startedAt,
+    mode: TripMode.REAL,
+    startedAt: '2024-03-10T08:00:00.000Z',
     endedAt: '2024-03-10T08:32:00.000Z',
-    status: 'FINISHED',
+    status: TripStatus.FINISHED,
     distanceKm,
     durationSeconds,
     averageSpeedKmh,
@@ -57,11 +57,11 @@ export function makeTripSummary(tripId: string) {
   const trip = makeTrip({ id: tripId })
   const events: DrivingEvent[] = [
     {
-      id: `event-001`,
+      id: 'event-001',
       tripId,
-      type: 'HARD_BRAKE',
-      severity: 'HIGH',
-      timestamp: Date.now() - 900000,
+      type: DrivingEventType.HARD_BRAKE,
+      severity: EventSeverity.HIGH,
+      timestamp: new Date(Date.now() - 900000).toISOString(),
       lat: -3.7318,
       lng: -38.5213,
       value: -0.62,
@@ -69,11 +69,11 @@ export function makeTripSummary(tripId: string) {
       description: 'Frenagem brusca detectada',
     },
     {
-      id: `event-002`,
+      id: 'event-002',
       tripId,
-      type: 'HARD_ACCELERATION',
-      severity: 'MEDIUM',
-      timestamp: Date.now() - 600000,
+      type: DrivingEventType.HARD_ACCELERATION,
+      severity: EventSeverity.MEDIUM,
+      timestamp: new Date(Date.now() - 600000).toISOString(),
       lat: -3.7452,
       lng: -38.5301,
       value: 0.52,
@@ -82,7 +82,7 @@ export function makeTripSummary(tripId: string) {
     },
   ]
   const fuelEstimate: FuelEstimate = {
-    id: `fuel-001`,
+    id: 'fuel-001',
     tripId,
     baseConsumptionKmL: 12.5,
     adjustedConsumptionKmL: 11.8,

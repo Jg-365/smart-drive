@@ -1,4 +1,5 @@
 import type { Vehicle } from '@/features/shared/types'
+import { FuelType } from '@/features/shared/types'
 
 let vehicleCounter = 0
 
@@ -8,7 +9,7 @@ const PRESET_VEHICLES: Omit<Vehicle, 'id' | 'ownerId' | 'calibrationFactor' | 'c
     model: 'Onix LT 1.0 Turbo',
     year: 2022,
     engine: '1.0 Turbo',
-    fuelType: 'FLEX',
+    fuelType: FuelType.FLEX,
     tankCapacityLiters: 42,
     baseUrbanConsumptionKmL: 12.5,
     baseHighwayConsumptionKmL: 16.0,
@@ -20,7 +21,7 @@ const PRESET_VEHICLES: Omit<Vehicle, 'id' | 'ownerId' | 'calibrationFactor' | 'c
     model: 'Argo Drive 1.0',
     year: 2021,
     engine: '1.0',
-    fuelType: 'FLEX',
+    fuelType: FuelType.FLEX,
     tankCapacityLiters: 48,
     baseUrbanConsumptionKmL: 11.0,
     baseHighwayConsumptionKmL: 14.5,
@@ -32,7 +33,7 @@ const PRESET_VEHICLES: Omit<Vehicle, 'id' | 'ownerId' | 'calibrationFactor' | 'c
     model: 'HB20 Comfort 1.0',
     year: 2023,
     engine: '1.0',
-    fuelType: 'GASOLINE',
+    fuelType: FuelType.GASOLINE,
     tankCapacityLiters: 47,
     baseUrbanConsumptionKmL: 13.0,
     baseHighwayConsumptionKmL: 15.5,
@@ -44,7 +45,7 @@ const PRESET_VEHICLES: Omit<Vehicle, 'id' | 'ownerId' | 'calibrationFactor' | 'c
     model: 'Compass Longitude 2.0',
     year: 2020,
     engine: '2.0 Diesel',
-    fuelType: 'DIESEL',
+    fuelType: FuelType.DIESEL,
     tankCapacityLiters: 64,
     baseUrbanConsumptionKmL: 10.5,
     baseHighwayConsumptionKmL: 14.0,

@@ -1,4 +1,5 @@
 import type { TelemetryPoint, DrivingEvent, FuelEstimate } from '@/features/shared/types'
+import { DrivingEventType, EventSeverity } from '@/features/shared/types'
 import { makeTelemetryPoint, makeDrivingEvent } from '@/features/dashboard/mocks/factories'
 
 export interface DrivingScenario {
@@ -52,8 +53,8 @@ export function smoothDrivingScenario(): DrivingScenario {
   const drivingEvents: DrivingEvent[] = [
     makeDrivingEvent({
       tripId,
-      type: 'HARD_BRAKE',
-      severity: 'LOW',
+      type: DrivingEventType.HARD_BRAKE,
+      severity: EventSeverity.LOW,
       value: -0.51,
       threshold: -0.5,
       description: 'Frenagem leve detectada',
@@ -71,11 +72,11 @@ export function normalDrivingScenario(): DrivingScenario {
   const tripId = 'demo-trip-normal'
   const telemetryPoints = buildRoute(tripId, 50, [30, 60])
   const drivingEvents: DrivingEvent[] = [
-    makeDrivingEvent({ tripId, type: 'HARD_BRAKE', severity: 'MEDIUM', value: -0.62, threshold: -0.5 }),
-    makeDrivingEvent({ tripId, type: 'HARD_ACCELERATION', severity: 'MEDIUM', value: 0.53, threshold: 0.4 }),
-    makeDrivingEvent({ tripId, type: 'SHARP_TURN', severity: 'MEDIUM', value: 0.47, threshold: 0.4 }),
-    makeDrivingEvent({ tripId, type: 'SPEED_SPIKE', severity: 'LOW', value: 22, threshold: 15 }),
-    makeDrivingEvent({ tripId, type: 'HARD_BRAKE', severity: 'HIGH', value: -0.71, threshold: -0.5 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.HARD_BRAKE, severity: EventSeverity.MEDIUM, value: -0.62, threshold: -0.5 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.HARD_ACCELERATION, severity: EventSeverity.MEDIUM, value: 0.53, threshold: 0.4 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.SHARP_TURN, severity: EventSeverity.MEDIUM, value: 0.47, threshold: 0.4 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.SPEED_SPIKE, severity: EventSeverity.LOW, value: 22, threshold: 15 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.HARD_BRAKE, severity: EventSeverity.HIGH, value: -0.71, threshold: -0.5 }),
   ]
   return {
     tripId,
@@ -89,16 +90,16 @@ export function aggressiveDrivingScenario(): DrivingScenario {
   const tripId = 'demo-trip-aggressive'
   const telemetryPoints = buildRoute(tripId, 50, [45, 90])
   const drivingEvents: DrivingEvent[] = [
-    makeDrivingEvent({ tripId, type: 'HARD_ACCELERATION', severity: 'HIGH', value: 0.64, threshold: 0.4 }),
-    makeDrivingEvent({ tripId, type: 'HARD_BRAKE', severity: 'CRITICAL', value: -0.74, threshold: -0.5 }),
-    makeDrivingEvent({ tripId, type: 'SPEED_SPIKE', severity: 'HIGH', value: 27, threshold: 15 }),
-    makeDrivingEvent({ tripId, type: 'SHARP_TURN', severity: 'HIGH', value: 0.57, threshold: 0.4 }),
-    makeDrivingEvent({ tripId, type: 'HARD_ACCELERATION', severity: 'HIGH', value: 0.61, threshold: 0.4 }),
-    makeDrivingEvent({ tripId, type: 'HARD_BRAKE', severity: 'HIGH', value: -0.68, threshold: -0.5 }),
-    makeDrivingEvent({ tripId, type: 'SPEED_SPIKE', severity: 'CRITICAL', value: 28, threshold: 15 }),
-    makeDrivingEvent({ tripId, type: 'SHARP_TURN', severity: 'HIGH', value: 0.55, threshold: 0.4 }),
-    makeDrivingEvent({ tripId, type: 'IMPACT_SUSPECTED', severity: 'CRITICAL', value: 2.1, threshold: 1.2 }),
-    makeDrivingEvent({ tripId, type: 'HARD_ACCELERATION', severity: 'MEDIUM', value: 0.48, threshold: 0.4 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.HARD_ACCELERATION, severity: EventSeverity.HIGH, value: 0.64, threshold: 0.4 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.HARD_BRAKE, severity: EventSeverity.CRITICAL, value: -0.74, threshold: -0.5 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.SPEED_SPIKE, severity: EventSeverity.HIGH, value: 27, threshold: 15 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.SHARP_TURN, severity: EventSeverity.HIGH, value: 0.57, threshold: 0.4 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.HARD_ACCELERATION, severity: EventSeverity.HIGH, value: 0.61, threshold: 0.4 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.HARD_BRAKE, severity: EventSeverity.HIGH, value: -0.68, threshold: -0.5 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.SPEED_SPIKE, severity: EventSeverity.CRITICAL, value: 28, threshold: 15 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.SHARP_TURN, severity: EventSeverity.HIGH, value: 0.55, threshold: 0.4 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.IMPACT_SUSPECTED, severity: EventSeverity.CRITICAL, value: 2.1, threshold: 1.2 }),
+    makeDrivingEvent({ tripId, type: DrivingEventType.HARD_ACCELERATION, severity: EventSeverity.MEDIUM, value: 0.48, threshold: 0.4 }),
   ]
   return {
     tripId,

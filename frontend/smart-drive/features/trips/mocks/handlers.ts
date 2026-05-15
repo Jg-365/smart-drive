@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import type { Trip } from '@/features/shared/types'
+import { TripStatus } from '@/features/shared/types'
 import { makeTrip, makeTripList, makeTripSummary } from './factories'
 import { makeDrivingEvent } from '@/features/dashboard/mocks/factories'
 
@@ -39,7 +40,7 @@ export const tripHandlers = [
   http.post('/api/trips/start', async ({ request }) => {
     seed()
     const body = (await request.json()) as Partial<Trip>
-    const trip = makeTrip({ ...body, status: 'ACTIVE', endedAt: undefined })
+    const trip = makeTrip({ ...body, status: TripStatus.ACTIVE, endedAt: undefined })
     db.set(trip.id, trip)
     return HttpResponse.json(trip, { status: 201 })
   }),
@@ -48,7 +49,7 @@ export const tripHandlers = [
     seed()
     const existing = db.get(params.id as string)
     if (!existing) return HttpResponse.json({ error: 'Not found' }, { status: 404 })
-    const finished = { ...existing, status: 'FINISHED' as const, endedAt: new Date().toISOString() }
+    const finished = { ...existing, status: TripStatus.FINISHED, endedAt: new Date().toISOString() }
     db.set(finished.id, finished)
     return HttpResponse.json(finished)
   }),

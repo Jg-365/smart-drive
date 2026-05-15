@@ -1,4 +1,5 @@
-import type { TelemetryPoint, DrivingEvent, DrivingEventType } from '@/features/shared/types'
+import type { TelemetryPoint, DrivingEvent } from '@/features/shared/types'
+import { DrivingEventType, EventSeverity } from '@/features/shared/types'
 
 let telemetryCounter = 0
 let eventCounter = 0
@@ -32,18 +33,18 @@ const EVENT_CONFIGS: Record<
   DrivingEventType,
   { value: [number, number]; threshold: number; description: string }
 > = {
-  HARD_BRAKE: { value: [-0.75, -0.55], threshold: -0.5, description: 'Frenagem brusca detectada' },
-  HARD_ACCELERATION: { value: [0.45, 0.65], threshold: 0.4, description: 'Aceleração brusca detectada' },
-  SHARP_TURN: { value: [0.42, 0.58], threshold: 0.4, description: 'Curva acentuada detectada' },
-  SPEED_SPIKE: { value: [18, 28], threshold: 15, description: 'Excesso de velocidade detectado' },
-  IMPACT_SUSPECTED: { value: [1.5, 2.5], threshold: 1.2, description: 'Possível impacto detectado' },
-  GPS_LOST: { value: [0, 0], threshold: 0, description: 'Sinal GPS perdido' },
-  DEVICE_DISCONNECTED: { value: [0, 0], threshold: 0, description: 'Dispositivo desconectado' },
+  [DrivingEventType.HARD_BRAKE]: { value: [-0.75, -0.55], threshold: -0.5, description: 'Frenagem brusca detectada' },
+  [DrivingEventType.HARD_ACCELERATION]: { value: [0.45, 0.65], threshold: 0.4, description: 'Aceleração brusca detectada' },
+  [DrivingEventType.SHARP_TURN]: { value: [0.42, 0.58], threshold: 0.4, description: 'Curva acentuada detectada' },
+  [DrivingEventType.SPEED_SPIKE]: { value: [18, 28], threshold: 15, description: 'Excesso de velocidade detectado' },
+  [DrivingEventType.IMPACT_SUSPECTED]: { value: [1.5, 2.5], threshold: 1.2, description: 'Possível impacto detectado' },
+  [DrivingEventType.GPS_LOST]: { value: [0, 0], threshold: 0, description: 'Sinal GPS perdido' },
+  [DrivingEventType.DEVICE_DISCONNECTED]: { value: [0, 0], threshold: 0, description: 'Dispositivo desconectado' },
 }
 
 export function makeDrivingEvent(overrides?: Partial<DrivingEvent>): DrivingEvent {
   const id = String(++eventCounter).padStart(3, '0')
-  const type: DrivingEventType = overrides?.type ?? 'HARD_BRAKE'
+  const type: DrivingEventType = overrides?.type ?? DrivingEventType.HARD_BRAKE
   const config = EVENT_CONFIGS[type]
   const value = rand(config.value[0], config.value[1])
 
@@ -51,8 +52,8 @@ export function makeDrivingEvent(overrides?: Partial<DrivingEvent>): DrivingEven
     id: `event-${id}`,
     tripId: 'trip-001',
     type,
-    severity: 'HIGH',
-    timestamp: Date.now(),
+    severity: EventSeverity.HIGH,
+    timestamp: new Date().toISOString(),
     lat: rand(-3.74, -3.72),
     lng: rand(-38.535, -38.51),
     value,

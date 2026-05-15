@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import type { Device } from '@/features/shared/types'
+import { DeviceStatus } from '@/features/shared/types'
 import { makeDevice, makeDeviceList } from './factories'
 
 const db: Map<string, Device> = new Map()
@@ -40,7 +41,7 @@ export const deviceHandlers = [
     const body = (await request.json()) as { vehicleId?: string }
     const paired = {
       ...existing,
-      status: 'ONLINE' as const,
+      status: DeviceStatus.ONLINE,
       vehicleId: body.vehicleId ?? existing.vehicleId,
       lastSeenAt: new Date().toISOString(),
     }
