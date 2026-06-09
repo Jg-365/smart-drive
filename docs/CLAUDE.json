@@ -1,0 +1,764 @@
+{
+  "project": "SmartDrive ExpoIOT",
+  "version": "2.0",
+  "owner": "João",
+  "description": "Sistema IoT de telemetria veicular com ESP32, acelerômetro e GPS. Dashboard em tempo real, score de condução, estimativa de consumo e modo demo com carrinho RC para apresentação na ExpoIOT.",
+
+  "philosophy": {
+    "approach": "TDD-first em todas as camadas. Nenhuma lógica de domínio deve existir sem teste. Testes são especificações vivas — escreva o teste antes de escrever a implementação.",
+    "tdd_cycle": ["RED: escreva o teste que falha", "GREEN: implemente o mínimo para passar", "REFACTOR: limpe sem quebrar"],
+    "architecture": "Clean Architecture com DDD. Domínio nunca depende de infraestrutura. Casos de uso orquestram entidades. Adaptadores isolam frameworks.",
+    "contracts_first": "Antes de qualquer implementação, defina o contrato: payload, response shape, event types. Nada deve ser integrado sem contrato documentado. Qualquer alteração no contrato de payload exige alinhamento explícito entre João, Nathan e Pedro.",
+    "honesty": "Consumo é ESTIMATIVA. A interface jamais deve afirmar medição real. Sempre exibir nível de confiança.",
+    "resilience": "O sistema deve funcionar com dados reais, dados simulados, GPS válido, GPS ausente e GPS instável. Todo caminho crítico tem fallback.",
+    "no_blocking": "Nenhum membro do time deve bloquear outro. Pedro fornece contratos/mocks antes dos endpoints finais. Nathan entrega regras como funções puras testáveis. João consome via interfaces, não implementações."
+  },
+
+  "session_management": {
+    "current_session_file": "session-current.xml",
+    "next_session_file": "session-next.xml",
+    "instructions": [
+      "Ao iniciar uma sessão, leia session-current.xml para entender o estado exato de onde parou.",
+      "Ao finalizar uma sessão ou bloco de trabalho, atualize session-current.xml com o que foi feito, o que está pendente, decisões tomadas e dívidas técnicas.",
+      "Ao identificar o que falta, bloqueios e próximos passos, escreva em session-next.xml.",
+      "Nunca sobrescreva session-next.xml sem ler o anterior — acumule e priorize.",
+      "session-current.xml é o estado ATUAL. session-next.xml é o PLANEJAMENTO do que vem depois."
+    ]
+  },
+
+  "files": {
+    "CLAUDE.json": "Este arquivo. Instruções gerais, filosofia, responsabilidades completas dos três membros e specs do João.",
+    "context.xml": "Contexto geral do projeto: stack, arquitetura, decisões, personas, riscos e mapa de interfaces entre times.",
+    "credentials.xml": "Credenciais e variáveis de ambiente necessárias. NUNCA commitar. Está no .gitignore.",
+    "session-current.xml": "Estado da sessão atual: o que foi feito, o que está em progresso, decisões e dívidas.",
+    "session-next.xml": "Planejamento da próxima sessão: o que falta, gargalos, dependências e prioridades."
+  },
+
+  "stack": {
+    "firmware": {
+      "framework": "ESP-IDF",
+      "rtos": "FreeRTOS",
+      "language": "C",
+      "build": "idf.py",
+      "path": "firmware/",
+      "owner": "João"
+    },
+    "backend": {
+      "framework": "NestJS",
+      "language": "TypeScript",
+      "orm": "Prisma",
+      "database": "PostgreSQL",
+      "realtime": "WebSocket (Socket.IO)",
+      "testing": "Jest + Supertest",
+      "path": "backend/",
+      "owners": {
+        "schema_migrations": "João",
+        "modules_users_auth_devices_trips_telemetry_exports": "Pedro",
+        "modules_driving_analysis_score_fuel_simulator": "Nathan",
+        "modules_vehicles_demo_websocket_gateway": "João"
+      }
+    },
+    "frontend": {
+      "framework": "Next.js 14 (App Router)",
+      "language": "TypeScript",
+      "ui": "Tailwind CSS + shadcn/ui",
+      "state_server": "TanStack Query",
+      "state_local": "Zustand",
+      "charts": "Recharts",
+      "maps": "MapLibre GL JS",
+      "realtime": "WebSocket client",
+      "testing": "Vitest + React Testing Library + Playwright",
+      "path": "frontend/",
+      "owner": "João"
+    },
+    "simulator": {
+      "language": "TypeScript (Node.js)",
+      "purpose": "Gerador de telemetria fake para desenvolvimento sem hardware",
+      "path": "simulator/",
+      "owner": "Nathan",
+      "note": "João consome o simulador do Nathan — não reimplementar"
+    },
+    "infra": {
+      "local": "Docker Compose (PostgreSQL)",
+      "mvp_cloud": "Cloud Run (backend) + Cloud SQL (PostgreSQL) + Vercel (frontend)",
+      "expo_fallback": "Backend local no notebook + hotspot",
+      "owner": "João"
+    }
+  },
+
+  "monorepo_structure": {
+    "root": "smartdrive/",
+    "directories": {
+      "firmware/": "ESP-IDF project — João",
+      "firmware/main/": "Entry point e inicialização",
+      "firmware/main/tasks/": "FreeRTOS tasks",
+      "firmware/main/drivers/": "Drivers de sensores (IMU, GPS)",
+      "firmware/main/services/": "Serviços embarcados (network, storage)",
+      "backend/": "NestJS application",
+      "backend/prisma/": "Schema Prisma e migrations — João",
+      "backend/src/modules/users/": "Cadastro de usuário — Pedro",
+      "backend/src/modules/auth/": "Login e autenticação — Pedro",
+      "backend/src/modules/devices/": "Cadastro e pareamento de ESP32 — Pedro",
+      "backend/src/modules/trips/": "Início, encerramento e histórico de viagem — Pedro",
+      "backend/src/modules/telemetry/": "Ingestão e persistência de telemetria — Pedro",
+      "backend/src/modules/exports/": "Exportação de dados — Pedro",
+      "backend/src/modules/vehicles/": "CRUD de veículos — João",
+      "backend/src/modules/demo/": "Endpoints e lógica do modo demo — João",
+      "backend/src/modules/driving-analysis/": "Detecção de eventos — Nathan",
+      "backend/src/modules/driving-score/": "Cálculo de score — Nathan",
+      "backend/src/modules/fuel-estimation/": "Estimativa de consumo — Nathan",
+      "backend/src/modules/telemetry-simulator/": "Simulador de telemetria — Nathan",
+      "backend/src/common/dto/": "DTOs compartilhados",
+      "backend/src/common/errors/": "Erros e exceções",
+      "backend/src/infra/": "WebSocket gateway, repositories — João",
+      "backend/test/api/": "Testes de integração de API — Pedro",
+      "backend/test/driving-analysis/": "Testes unitários de domínio analítico — Nathan",
+      "backend/test/fuel-estimation/": "Testes unitários de consumo — Nathan",
+      "backend/docker/": "Dockerfiles e compose — João",
+      "frontend/src/app/": "Next.js App Router pages — João",
+      "frontend/src/app/dashboard/": "Dashboard em tempo real",
+      "frontend/src/app/demo/": "Modo demo ExpoIOT",
+      "frontend/src/app/vehicles/": "Cadastro e gestão de veículos",
+      "frontend/src/app/trips/": "Histórico de viagens",
+      "frontend/src/components/dashboard/": "Cards, métricas e gráficos",
+      "frontend/src/components/map/": "Mapa, polyline e marcadores",
+      "frontend/src/components/vehicle/": "Formulários de veículo",
+      "frontend/src/components/demo/": "Painel de controle da demo",
+      "frontend/src/lib/api/": "Clients HTTP",
+      "frontend/src/lib/socket/": "WebSocket hooks e provider",
+      "frontend/src/lib/types/": "Tipos compartilhados",
+      "frontend/src/store/": "Zustand stores",
+      "frontend/src/styles/": "Tokens de design e globals",
+      "simulator/": "Gerador de telemetria fake — Nathan",
+      "docs/architecture/": "Diagramas e documento de arquitetura",
+      "docs/database/": "Modelagem e DDL",
+      "docs/analytics/": "Documentação do modelo analítico — Nathan",
+      "docs/demo/": "Roteiro e checklist da ExpoIOT",
+      "docs/testing/": "Plano de testes"
+    }
+  },
+
+  "team": {
+    "joao": {
+      "role": "Integração geral, frontend, banco, devops, firmware, hardware, demo e QA final",
+      "owns": [
+        "Schema Prisma e migrations (JOA-TEC-01)",
+        "Contratos de payload — alinhamento entre todos",
+        "Frontend completo — todas as telas",
+        "Dashboard em tempo real",
+        "Mapa ao vivo (MapLibre)",
+        "Tela de veículos (CRUD)",
+        "Modo demo ExpoIOT",
+        "Tema visual dark/HQ",
+        "Relatório de viagem",
+        "Firmware ESP-IDF + FreeRTOS tasks + drivers GPS/IMU (JOA-TEC-02)",
+        "WebSocket Gateway (NestJS)",
+        "Módulo vehicles no backend",
+        "Módulo demo no backend",
+        "Docker Compose + .env.example + README (JOA-TEC-03)",
+        "QA final e integração (JOA-TEC-04)",
+        "Apresentação e roteiro ExpoIOT"
+      ],
+      "does_not_own": [
+        "Regras de score → Nathan (NAT-RF-05)",
+        "Modelo de consumo → Nathan (NAT-RF-04)",
+        "Detecção de eventos analíticos → Nathan (NAT-RF-01/02/03)",
+        "Simulador de telemetria → Nathan (NAT-RF-07)",
+        "Auth e cadastro de usuário → Pedro (PED-RF-01/02)",
+        "Cadastro e pareamento de dispositivo → Pedro (PED-RF-03)",
+        "Início e encerramento de viagem → Pedro (PED-RF-04/05)",
+        "Ingestão e persistência de telemetria → Pedro (PED-RF-06)",
+        "Histórico de trajeto → Pedro (PED-RF-07)",
+        "Exportação de dados → Pedro (PED-RF-08)"
+      ],
+      "integration_points": [
+        "João consome endpoints de Pedro via TanStack Query no frontend",
+        "João exibe score e consumo calculados por Nathan nos cards do dashboard",
+        "João conecta WebSocket gateway (próprio) ao fluxo de ingestão do Pedro",
+        "João usa simulador do Nathan no modo demo como fallback de hardware",
+        "João é o responsável por garantir que as três partes se encaixam no QA final"
+      ]
+    },
+    "pedro": {
+      "role": "Backend estrutural — API, auth, dispositivos, viagens, telemetria, histórico, exportação",
+      "owns": [
+        "PED-RF-01: Cadastro de usuário (users module)",
+        "PED-RF-02: Login de usuário (auth module)",
+        "PED-RF-03: Cadastro e pareamento de dispositivo ESP32 (devices module)",
+        "PED-RF-04: Início de viagem (trips module)",
+        "PED-RF-05: Encerramento de viagem (trips module)",
+        "PED-RF-06: Recebimento e persistência de telemetria (telemetry module)",
+        "PED-RF-07: Histórico de trajeto (trips/telemetry modules)",
+        "PED-RF-08: Exportação de dados JSON (exports module)",
+        "PED-RNF-01: Baixa perda de dados",
+        "PED-RNF-02: Escalabilidade (deviceId obrigatório, multi-device, multi-user)",
+        "PED-RNF-03: Segurança mínima (hash de senha, validação de payload, token de dispositivo)",
+        "PED-RNF-04: Manutenibilidade (controllers/services/DTOs separados, testes de API)"
+      ],
+      "does_not_own": [
+        "Frontend",
+        "Schema Prisma (João define, Pedro implementa em cima)",
+        "Score e consumo (Nathan)",
+        "DevOps final (João)",
+        "Firmware/hardware (João)"
+      ],
+      "contracts_pedro_must_expose": [
+        "POST /users — cadastro",
+        "POST /auth/login — retorna token",
+        "POST /devices — registrar ESP32",
+        "POST /devices/:id/pair — vincular a veículo",
+        "POST /trips/start — iniciar viagem",
+        "POST /trips/:id/finish — encerrar viagem",
+        "GET /trips — listar viagens",
+        "GET /trips/:id — detalhe da viagem",
+        "GET /trips/:id/summary — resumo",
+        "GET /trips/:id/events — eventos da viagem",
+        "GET /trips/:id/route — pontos GPS",
+        "POST /telemetry — ingestão de pacote",
+        "GET /trips/:id/telemetry — histórico de telemetria",
+        "GET /exports/trips/:id — exportar JSON"
+      ],
+      "pedro_must_not_block_joao": "Pedro deve disponibilizar mocks ou contratos antes dos endpoints finais para João não parar o frontend. Isso é prioridade máxima."
+    },
+    "nathan": {
+      "role": "Camada analítica — detecção de eventos, score, consumo, simulador e base futura de IA",
+      "owns": [
+        "NAT-RF-01: Detecção de aceleração brusca → evento HARD_ACCELERATION",
+        "NAT-RF-02: Detecção de frenagem brusca → evento HARD_BRAKE",
+        "NAT-RF-03: Detecção de curva forte → evento SHARP_TURN",
+        "NAT-RF-04: Modelo de estimativa de consumo (determinístico, não IA)",
+        "NAT-RF-05: Cálculo de score do condutor 0-100",
+        "NAT-RF-06: Documentação do modelo de calibração futura (pós-MVP)",
+        "NAT-RF-07: Simulador de telemetria com cenários: gentle, aggressive, gps_loss, impact",
+        "NAT-RNF-01: Testabilidade — todas as regras com testes unitários sem banco/frontend",
+        "NAT-RNF-02: Observabilidade — eventos rastreáveis, penalidades explicáveis",
+        "NAT-RNF-03: Precisão honesta — consumo sempre como estimativa com confiança"
+      ],
+      "does_not_own": [
+        "Cadastro de usuário/veículo/dispositivo",
+        "Persistência no banco (entrega funções puras, Pedro/João persistem)",
+        "Frontend",
+        "WebSocket",
+        "DevOps",
+        "Firmware/hardware"
+      ],
+      "nathan_delivery_format": "Funções puras TypeScript e serviços NestJS injetáveis. Tudo testável sem banco. Interface: entrada = TelemetryPoint[], saída = { events: DrivingEvent[], score: DrivingScore, fuelEstimate: FuelEstimate }.",
+      "nathan_must_not_change_contract": "Qualquer alteração no formato do payload de telemetria deve ser alinhada com João e Pedro antes de implementar.",
+      "key_algorithms": {
+        "score": "score = clamp(100 - hardAccels*4 - hardBrakes*5 - sharpTurns*2 - impacts*20 - speedPenalty, 0, 100)",
+        "consumption": "estimatedKmL = consumoBase × fatorVelocidade × fatorAceleracao × fatorFrenagem × fatorRota × fatorCalibracao",
+        "acceleration_filter": "filteredAccel = alpha * currentAccel + (1 - alpha) * previousFilteredAccel",
+        "event_thresholds": "Limiares configuráveis por veículo ou modo — não hardcoded no código, passados como parâmetro"
+      },
+      "class_names": [
+        "DrivingEventDetector",
+        "HardAccelerationDetector",
+        "HardBrakeDetector",
+        "SharpTurnDetector",
+        "DrivingScoreCalculator",
+        "FuelConsumptionEstimator",
+        "TelemetryScenarioGenerator",
+        "DemoTelemetrySimulator",
+        "VehicleCalibrationService"
+      ]
+    }
+  },
+
+  "interfaces_between_teams": {
+    "description": "Pontos exatos onde o trabalho de cada membro se conecta. João é o responsável por garantir que essas interfaces funcionem.",
+    "pedro_to_joao": [
+      "Pedro entrega endpoints REST que João consome no frontend via TanStack Query",
+      "Pedro disponibiliza GET /trips/:id/route com array de {lat, lng, timestamp} para o mapa do João",
+      "Pedro disponibiliza GET /trips/:id/events com array de DrivingEvent para o EventsFeed do João",
+      "Pedro disponibiliza GET /trips/:id/summary com score, consumo e métricas para o TripReportView do João",
+      "Pedro expõe POST /telemetry que deve disparar evento WebSocket — João implementa o gateway WS em cima disso",
+      "Pedro deve disponibilizar mock/contrato antes do endpoint final para João não parar"
+    ],
+    "nathan_to_joao": [
+      "Nathan entrega DrivingScoreCalculator como serviço NestJS injetável — João usa no DrivingScoreCard",
+      "Nathan entrega FuelConsumptionEstimator — João usa no FuelEstimateCard",
+      "Nathan entrega simulador (NAT-RF-07) — João usa no modo demo como fallback de hardware",
+      "Nathan entrega eventos tipados (DrivingEvent[]) — João renderiza no EventsFeed e nos marcadores do mapa"
+    ],
+    "nathan_to_pedro": [
+      "Pedro chama os serviços do Nathan após persistir telemetria para calcular score e consumo",
+      "Pedro salva os eventos retornados por Nathan na tabela driving_events",
+      "Pedro atualiza o resumo da trip com score final e estimativa final ao encerrar viagem"
+    ],
+    "joao_to_all": [
+      "João define e versiona o schema Prisma — Pedro e Nathan implementam em cima",
+      "João define o contrato de payload de telemetria — todos seguem sem alterar unilateralmente",
+      "João faz QA final integrando as três partes antes da ExpoIOT"
+    ]
+  },
+
+  "telemetry_contract": {
+    "description": "Payload canônico enviado pela ESP32 ou simulador via HTTP POST /telemetry. IMUTÁVEL sem alinhamento entre João, Nathan e Pedro.",
+    "version": "1.0",
+    "shape": {
+      "deviceId": "string — obrigatório — identificador único da ESP32",
+      "vehicleId": "string — obrigatório — veículo vinculado",
+      "sessionId": "string — obrigatório — ID da viagem/sessão ativa",
+      "timestamp": "number — obrigatório — Unix timestamp em ms",
+      "gps": {
+        "lat": "number | null — null quando GPS sem fix",
+        "lng": "number | null — null quando GPS sem fix",
+        "speedKmh": "number | null",
+        "satellites": "number | null",
+        "hdop": "number | null"
+      },
+      "imu": {
+        "accelX": "number — obrigatório",
+        "accelY": "number — obrigatório",
+        "accelZ": "number — obrigatório",
+        "gyroX": "number — 0.0 se giroscópio ausente",
+        "gyroY": "number — 0.0 se giroscópio ausente",
+        "gyroZ": "number — 0.0 se giroscópio ausente"
+      },
+      "events": {
+        "hardAcceleration": "boolean",
+        "hardBrake": "boolean",
+        "sharpTurn": "boolean",
+        "impactSuspected": "boolean"
+      },
+      "battery": {
+        "voltage": "number | null",
+        "percentage": "number | null"
+      }
+    },
+    "validation_rules": [
+      "deviceId é obrigatório e não pode ser vazio — HTTP 400 se ausente",
+      "timestamp é obrigatório e deve ser número positivo — HTTP 400 se inválido",
+      "lat/lng quando presentes devem estar em ranges válidos (-90/90, -180/180)",
+      "accelX/Y/Z são obrigatórios — HTTP 400 se ausentes",
+      "GPS null é aceito — não é erro, é condição esperada em ambiente fechado",
+      "Dispositivo desconhecido (deviceId não cadastrado) deve retornar HTTP 404 ou 403"
+    ]
+  },
+
+  "websocket_events": {
+    "owner": "João implementa o gateway. Pedro dispara após persistir. Nathan alimenta com dados analíticos.",
+    "server_to_client": [
+      "telemetry:new — novo ponto de telemetria recebido e processado",
+      "trip:eventDetected — evento de condução detectado (Nathan)",
+      "trip:scoreUpdated — score recalculado (Nathan)",
+      "trip:fuelEstimateUpdated — estimativa de consumo atualizada (Nathan)",
+      "device:statusChanged — status da ESP32 mudou online/offline (Pedro)",
+      "trip:finished — viagem encerrada (Pedro)"
+    ],
+    "client_to_server": [
+      "subscribe:trip — cliente se inscreve para atualizações de uma viagem",
+      "unsubscribe:trip — cliente cancela inscrição"
+    ]
+  },
+
+  "requirements_joao": {
+    "JOA-RF-01": {
+      "title": "Cadastro de veículo",
+      "type": "functional",
+      "priority": "high",
+      "module": "vehicles",
+      "prd_ref": "RF-03",
+      "depends_on": "JOA-TEC-01 (schema Prisma)",
+      "tdd_specs": [
+        "SPEC: deve rejeitar veículo com consumo urbano <= 0",
+        "SPEC: deve rejeitar veículo com capacidade de tanque <= 0",
+        "SPEC: deve rejeitar veículo sem marca",
+        "SPEC: deve rejeitar veículo sem modelo",
+        "SPEC: deve rejeitar veículo sem tipo de combustível",
+        "SPEC: deve criar veículo com todos os campos válidos",
+        "SPEC: peso deve ser opcional — criação sem peso deve funcionar",
+        "SPEC: veículo criado deve pertencer ao usuário autenticado",
+        "SPEC: dois veículos podem ter mesma marca+modelo se de usuários diferentes",
+        "SPEC: veículo criado deve aparecer na listagem do dashboard",
+        "SPEC: veículo criado deve estar disponível para seleção em nova viagem"
+      ],
+      "acceptance_criteria": [
+        "Aceita: marca, modelo, ano, tipo de combustível, consumo urbano, consumo rodoviário, capacidade do tanque",
+        "Peso é opcional",
+        "Consumos devem ser positivos",
+        "Tanque deve ser maior que zero",
+        "Veículo aparece no dashboard após criação",
+        "Veículo pode ser usado em viagem"
+      ],
+      "edge_cases": [
+        "consumo = 0 deve ser rejeitado",
+        "consumo negativo deve ser rejeitado",
+        "tanque = 0 deve ser rejeitado",
+        "campos de texto com apenas espaços devem ser tratados como vazios",
+        "ano fora de range razoável deve ser rejeitado ou alertado",
+        "caracteres especiais em marca/modelo devem ser sanitizados mas não rejeitados"
+      ]
+    },
+    "JOA-RF-02": {
+      "title": "Edição de veículo",
+      "type": "functional",
+      "priority": "high",
+      "module": "vehicles",
+      "prd_ref": "RF-04",
+      "tdd_specs": [
+        "SPEC: deve atualizar campos editados corretamente",
+        "SPEC: deve manter campos não editados inalterados",
+        "SPEC: alteração deve refletir nas estimativas de viagens futuras",
+        "SPEC: viagens passadas não devem ser recalculadas com novos valores",
+        "SPEC: campos inválidos devem exibir erro e não salvar",
+        "SPEC: UI deve atualizar imediatamente após salvar com sucesso",
+        "SPEC: tentativa de editar veículo de outro usuário deve ser bloqueada"
+      ],
+      "acceptance_criteria": [
+        "Permite alterar dados principais",
+        "Alterações refletem nas próximas estimativas",
+        "Viagens antigas preservam snapshot do modelo",
+        "Campos inválidos exibem erro",
+        "Interface atualiza após salvar"
+      ],
+      "edge_cases": [
+        "Editar apenas um campo — os outros devem ser preservados",
+        "Salvar sem alterar nada — sem erro, sem efeito colateral",
+        "Alterar consumo base de veículo com viagem ativa em andamento — viagem corrente usa valor anterior"
+      ]
+    },
+    "JOA-RF-03": {
+      "title": "Dashboard em tempo real",
+      "type": "functional",
+      "priority": "high",
+      "module": "dashboard",
+      "prd_ref": "RF-09",
+      "depends_on": ["PED-RF-06 (telemetria)", "NAT-RF-05 (score)", "NAT-RF-04 (consumo)", "JOA-TEC-WS (WebSocket gateway)"],
+      "tdd_specs": [
+        "SPEC: deve exibir velocidade atual do último ponto de telemetria",
+        "SPEC: deve exibir aceleração atual",
+        "SPEC: deve exibir localização quando GPS disponível",
+        "SPEC: deve exibir 'GPS indisponível' quando lat/lng forem null",
+        "SPEC: deve exibir status online quando dispositivo enviar telemetria",
+        "SPEC: deve exibir status offline após N segundos sem pacote",
+        "SPEC: deve exibir eventos detectados em lista recente",
+        "SPEC: deve exibir score parcial da viagem corrente",
+        "SPEC: deve exibir consumo estimado parcial",
+        "SPEC: deve atualizar sem refresh de página",
+        "SPEC: deve indicar visualmente quando dispositivo desconectar",
+        "SPEC: sem viagem ativa deve exibir estado vazio com call-to-action"
+      ],
+      "edge_cases": [
+        "GPS null — exibir placeholder, não quebrar o card",
+        "WebSocket cai — banner de reconexão, reconnect automático",
+        "Velocidade > 300 km/h — tratar como dado inválido",
+        "Múltiplos eventos simultâneos — lista suporta burst sem travar",
+        "Dispositivo reconecta após offline — status volta para online automaticamente"
+      ]
+    },
+    "JOA-RF-04": {
+      "title": "Mapa em tempo real",
+      "type": "functional",
+      "priority": "high",
+      "module": "map",
+      "prd_ref": "RF-10",
+      "depends_on": ["PED-RF-07 (rota histórica)", "PED-RF-06 (telemetria ao vivo)", "NAT-RF-01/02/03 (eventos para marcadores)"],
+      "tdd_specs": [
+        "SPEC: deve renderizar marcador na posição atual do veículo",
+        "SPEC: deve atualizar marcador a cada novo ponto com coordenada válida",
+        "SPEC: deve desenhar polyline acumulando pontos da viagem corrente",
+        "SPEC: deve aceitar pontos simulados com a mesma interface de pontos reais",
+        "SPEC: deve exibir marcadores de eventos no mapa",
+        "SPEC: deve permitir zoom in e zoom out",
+        "SPEC: deve funcionar em viewport mobile (< 768px)",
+        "SPEC: deve funcionar em viewport desktop (>= 1024px)",
+        "SPEC: ponto com lat/lng null deve ser ignorado sem quebrar o mapa",
+        "SPEC: downsampling deve ser aplicado quando polyline superar 500 pontos"
+      ],
+      "edge_cases": [
+        "lat/lng fora dos ranges válidos — ignorar ponto, não quebrar polyline",
+        "GPS perdido no meio da viagem — polyline interrompida, marcador congelado no último ponto",
+        "Mapa sem conexão com tile server — exibir fallback",
+        "Primeiro ponto recebido — centralizar mapa automaticamente"
+      ]
+    },
+    "JOA-RF-05": {
+      "title": "Modo demo ExpoIOT",
+      "type": "functional",
+      "priority": "high",
+      "module": "demo",
+      "prd_ref": "RF-17",
+      "depends_on": ["NAT-RF-07 (simulador como fallback)", "PED-RF-04 (iniciar viagem)", "JOA-RF-04 (mapa)"],
+      "tdd_specs": [
+        "SPEC: botão 'Iniciar demo' deve criar sessão demo com veículo configurável",
+        "SPEC: botão 'Reset demo' deve limpar todos os dados da sessão corrente",
+        "SPEC: reset deve funcionar durante sessão ativa sem erros",
+        "SPEC: deve aceitar dados do carrinho RC real via WebSocket",
+        "SPEC: deve aceitar dados do simulador (Nathan) quando hardware ausente",
+        "SPEC: deve funcionar com GPS ausente usando posição simulada na pista virtual",
+        "SPEC: início rápido deve ser possível em menos de 3 cliques",
+        "SPEC: múltiplos resets seguidos não devem acumular estado corrompido"
+      ],
+      "edge_cases": [
+        "Clicar em 'Iniciar demo' duas vezes rapidamente — não criar duas sessões",
+        "GPS cai no meio da demo — fallback automático para pista virtual sem interromper apresentação",
+        "Hardware desconecta durante demo — simulador do Nathan assume automaticamente",
+        "Demo iniciada sem veículo selecionado — usa veículo demo padrão ou solicita seleção"
+      ]
+    },
+    "JOA-RF-06": {
+      "title": "Tema dark/light",
+      "type": "functional",
+      "priority": "medium",
+      "module": "theme",
+      "prd_ref": "RF-18",
+      "tdd_specs": [
+        "SPEC: tema dark deve ser o padrão ao carregar pela primeira vez",
+        "SPEC: alternância deve persistir em localStorage",
+        "SPEC: tema light não deve quebrar contraste em nenhum componente",
+        "SPEC: tema dark não deve ter fundo branco em nenhum componente",
+        "SPEC: tokens de cor do design system devem ser respeitados em ambos os temas"
+      ],
+      "edge_cases": [
+        "localStorage indisponível (modo privado) — fallback para dark sem erro",
+        "Alternância rápida consecutiva — não piscar ou travar",
+        "MapLibre — aplicar tema correto ao estilo do mapa"
+      ]
+    },
+    "JOA-RF-07": {
+      "title": "Estilo visual HQ dark",
+      "type": "ux",
+      "priority": "high",
+      "module": "design-system",
+      "prd_ref": "RF-19",
+      "tdd_specs": [
+        "SPEC: score card deve ter borda marcada com cor primária (ciano/azul elétrico)",
+        "SPEC: alertas de frenagem brusca devem ter shape expressivo",
+        "SPEC: fundo da aplicação deve ser grafite (#0F0F0F a #1A1A1A)",
+        "SPEC: cor primária de ação deve ser ciano/azul elétrico",
+        "SPEC: alertas críticos (impacto) devem usar vermelho com destaque visual",
+        "SPEC: nenhum componente deve usar cor infantil ou estilo cartoon",
+        "SPEC: legibilidade de dados técnicos não pode ser comprometida por efeitos visuais"
+      ],
+      "edge_cases": [
+        "Texto sobre fundo colorido — verificar ratio de contraste WCAG AA mínimo",
+        "Animações de alerta — não podem travar scroll ou interação",
+        "Cards em mobile — bordas e sombras não podem ocupar espaço útil excessivo"
+      ]
+    },
+    "JOA-RF-08": {
+      "title": "Relatório de viagem",
+      "type": "functional",
+      "priority": "medium",
+      "module": "trip-report",
+      "prd_ref": "RF-20",
+      "depends_on": ["PED-RF-05 (encerramento)", "PED-RF-07 (histórico)", "NAT-RF-05 (score final)", "NAT-RF-04 (consumo final)"],
+      "tdd_specs": [
+        "SPEC: deve exibir distância percorrida em km",
+        "SPEC: deve exibir duração em formato legível (hh:mm:ss)",
+        "SPEC: deve exibir velocidade média em km/h",
+        "SPEC: deve exibir velocidade máxima em km/h",
+        "SPEC: deve listar eventos com tipo, severidade e timestamp",
+        "SPEC: deve exibir score final com classificação textual",
+        "SPEC: deve exibir consumo estimado em km/L e litros com nível de confiança",
+        "SPEC: deve exibir mapa ou resumo do trajeto",
+        "SPEC: deve exibir pelo menos uma recomendação de melhoria",
+        "SPEC: viagem sem eventos deve exibir recomendação positiva"
+      ],
+      "edge_cases": [
+        "Viagem com 0 km — não dividir por zero no cálculo de médias",
+        "Viagem com 0 eventos — exibir mensagem positiva, não lista vazia",
+        "Viagem sem GPS — exibir distância como 'não disponível', não como 0",
+        "Score 0 — exibir 'Crítica' sem erro de array",
+        "Score 100 — exibir 'Excelente' sem overflow visual"
+      ]
+    },
+    "JOA-RNF-01": {
+      "title": "Tempo real percebido",
+      "type": "non-functional",
+      "priority": "high",
+      "prd_ref": "RNF-01",
+      "tdd_specs": [
+        "SPEC: WebSocket deve reconectar automaticamente em caso de queda",
+        "SPEC: fallback por polling deve ser ativado se WebSocket falhar após N tentativas",
+        "SPEC: atualização de cards não deve causar re-render desnecessário de componentes não relacionados",
+        "SPEC: mapa não deve re-renderizar completamente a cada novo ponto"
+      ]
+    },
+    "JOA-RNF-02": {
+      "title": "Disponibilidade na demo",
+      "type": "non-functional",
+      "priority": "critical",
+      "prd_ref": "RNF-04",
+      "tdd_specs": [
+        "SPEC: deve existir script documentado para subir backend local",
+        "SPEC: deve existir script documentado para subir frontend local",
+        "SPEC: simulador (Nathan) deve iniciar com um comando",
+        "SPEC: deve existir conjunto de dados gravados para último fallback"
+      ]
+    },
+    "JOA-RNF-03": {
+      "title": "Mobile-first",
+      "type": "non-functional",
+      "priority": "high",
+      "prd_ref": "RNF-05",
+      "tdd_specs": [
+        "SPEC: viewport de 375px (iPhone SE) deve renderizar sem overflow horizontal",
+        "SPEC: todos os botões críticos devem ter área de toque mínima de 44x44px",
+        "SPEC: mapa deve ser utilizável em 375px de largura",
+        "SPEC: dashboard mobile deve empilhar cards verticalmente"
+      ]
+    },
+    "JOA-RNF-04": {
+      "title": "Performance",
+      "type": "non-functional",
+      "priority": "high",
+      "prd_ref": "RNF-09",
+      "tdd_specs": [
+        "SPEC: UI não deve travar com 500+ pontos no trajeto",
+        "SPEC: downsampling deve ser aplicado automaticamente acima de threshold",
+        "SPEC: componentes de mapa e gráfico devem ser memoizados"
+      ]
+    },
+    "JOA-RNF-05": {
+      "title": "Portabilidade",
+      "type": "non-functional",
+      "priority": "high",
+      "prd_ref": "RNF-11",
+      "tdd_specs": [
+        "SPEC: setup deve ser documentado passo a passo no README",
+        "SPEC: .env.example deve conter todas as variáveis com comentários",
+        "SPEC: Docker Compose deve subir o banco com um comando"
+      ]
+    },
+    "JOA-TEC-01": {
+      "title": "Banco de dados",
+      "type": "technical",
+      "priority": "high",
+      "note": "João define o schema. Pedro e Nathan implementam em cima. É o primeiro artefato técnico a ser entregue.",
+      "tdd_specs": [
+        "SPEC: schema deve contemplar users, vehicles, devices, trips, telemetry_points, driving_events, fuel_estimates, refuel_records",
+        "SPEC: telemetry_points deve ter índice composto em (trip_id, timestamp)",
+        "SPEC: driving_events deve ter índice composto em (trip_id, timestamp)",
+        "SPEC: devices deve ter índice único em device_code",
+        "SPEC: trips deve ter índice em (vehicle_id, started_at)",
+        "SPEC: migration deve ser reprodutível em ambiente limpo",
+        "SPEC: deve suportar evolução futura para PostGIS sem refatoração destrutiva"
+      ]
+    },
+    "JOA-TEC-02": {
+      "title": "Firmware e hardware",
+      "type": "technical",
+      "priority": "high",
+      "tdd_specs": [
+        "SPEC: firmware deve compilar sem erros com idf.py build",
+        "SPEC: GPS deve emitir NMEA e ser parseado corretamente",
+        "SPEC: acelerômetro deve responder no endereço I2C esperado",
+        "SPEC: task_imu_reader deve rodar a 20-50Hz sem deadline miss",
+        "SPEC: task_gps_reader deve rodar a 1-10Hz",
+        "SPEC: task_network deve enviar payload JSON válido para /telemetry",
+        "SPEC: filtro de média móvel deve suavizar leituras do acelerômetro",
+        "SPEC: firmware deve logar status de conexão Wi-Fi no boot"
+      ]
+    },
+    "JOA-TEC-03": {
+      "title": "DevOps local",
+      "type": "technical",
+      "priority": "high",
+      "tdd_specs": [
+        "SPEC: README deve descrever passo a passo para subir o projeto do zero",
+        "SPEC: .env.example deve existir com todas as variáveis e comentários",
+        "SPEC: docker-compose.yml deve subir PostgreSQL com um comando",
+        "SPEC: backend deve subir com npm run start:dev após .env configurado",
+        "SPEC: frontend deve subir com npm run dev após .env configurado",
+        "SPEC: setup deve ser reprodutível em máquina de outro colaborador"
+      ]
+    },
+    "JOA-TEC-04": {
+      "title": "QA e testes finais",
+      "type": "technical",
+      "priority": "high",
+      "note": "João integra e valida as entregas de Pedro e Nathan antes da ExpoIOT.",
+      "tdd_specs": [
+        "SPEC: fluxo completo (ESP32/simulador → telemetria → backend → WebSocket → dashboard) deve ser testado",
+        "SPEC: modo demo deve ser testado em condição de GPS ausente",
+        "SPEC: fallback sem hardware deve ser testado com simulador do Nathan",
+        "SPEC: relatório de viagem deve ser testado com viagem real ou simulada",
+        "SPEC: deve existir checklist manual de apresentação na ExpoIOT",
+        "SPEC: score e consumo do Nathan devem aparecer corretamente no dashboard do João",
+        "SPEC: endpoints do Pedro devem responder corretamente quando chamados pelo frontend do João"
+      ]
+    }
+  },
+
+  "component_names": {
+    "frontend_joao": [
+      "RealtimeDashboard",
+      "VehicleStatusCard",
+      "DrivingScoreCard",
+      "FuelEstimateCard",
+      "LiveMap",
+      "TripPolyline",
+      "DrivingEventMarker",
+      "DemoControlPanel",
+      "VehicleForm",
+      "TripReportView",
+      "DeviceStatusBadge",
+      "TelemetryProvider",
+      "useTelemetrySocket",
+      "useDemoTelemetry"
+    ],
+    "backend_pedro": [
+      "UsersController", "UsersService",
+      "AuthController", "AuthService",
+      "DevicesController", "DevicesService",
+      "TripsController", "TripsService", "TripHistoryService",
+      "TelemetryController", "TelemetryIngestionService",
+      "ExportService"
+    ],
+    "backend_nathan": [
+      "DrivingEventDetector",
+      "HardAccelerationDetector",
+      "HardBrakeDetector",
+      "SharpTurnDetector",
+      "DrivingScoreCalculator",
+      "FuelConsumptionEstimator",
+      "TelemetryScenarioGenerator",
+      "DemoTelemetrySimulator",
+      "VehicleCalibrationService"
+    ]
+  },
+
+  "git_conventions": {
+    "branch_prefixes": {
+      "joao": "feature/joa-* | infra/joa-* | firmware/joa-* | test/joa-*",
+      "pedro": "feature/ped-* | test/ped-*",
+      "nathan": "feature/nat-* | test/nat-* | docs/nat-*"
+    },
+    "commit_format": "type(scope): description",
+    "commit_types": ["feat", "fix", "infra", "firmware", "test", "docs", "refactor", "chore"],
+    "labels_all": [
+      "area:frontend", "area:database", "area:firmware", "area:devops", "area:demo", "area:qa",
+      "area:backend", "area:api", "area:telemetry", "area:analytics", "area:simulator",
+      "type:feature", "type:infra", "type:test",
+      "priority:critical", "priority:high", "priority:medium",
+      "owner:joao", "owner:pedro", "owner:nathan"
+    ]
+  },
+
+  "session_instructions": {
+    "on_start": [
+      "1. Leia context.xml para entender o estado geral do projeto",
+      "2. Leia session-current.xml para saber exatamente onde parou",
+      "3. Leia session-next.xml para ver o plano da sessão atual",
+      "4. Confirme com João o objetivo da sessão antes de começar a codar",
+      "5. Nunca implemente sem antes definir o teste",
+      "6. Verifique se há entregas pendentes de Pedro ou Nathan que você precisará consumir"
+    ],
+    "during_session": [
+      "Siga o ciclo TDD: RED → GREEN → REFACTOR",
+      "Atualize session-current.xml ao completar cada requisito ou bloco significativo",
+      "Documente decisões de design no momento em que forem tomadas",
+      "Se encontrar um bloqueio por dependência de Pedro ou Nathan, documente e crie mock temporário",
+      "Nunca deixe código sem teste em camadas de domínio"
+    ],
+    "on_end": [
+      "1. Atualize session-current.xml com tudo que foi feito e decisões tomadas",
+      "2. Liste dívidas técnicas identificadas",
+      "3. Escreva session-next.xml com próximos passos, prioridades e bloqueios",
+      "4. Identifique o que você precisa de Pedro e Nathan para avançar",
+      "5. Commit com mensagem clara antes de encerrar"
+    ]
+  }
+}

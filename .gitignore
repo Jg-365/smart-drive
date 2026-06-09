@@ -1,0 +1,11 @@
+# Configurações pessoais de IDE (paths absolutos variam por máquina)
+.vscode/
+
+# Credenciais locais — NUNCA commitar (ver aviso no topo do arquivo)
+docs/credentials.xml
+
+# Worktrees git internos (sprint-1 feature branches)
+frontend/worktrees/
+
+# Artefatos de build do firmware ESP-IDF (regenerável com idf.py build)
+firmware/build/

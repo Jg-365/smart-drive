@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  INSTRUÇÕES PARA O CLAUDE CODE:
+  Este arquivo representa o estado ATUAL da sessão de trabalho.
+  - Leia este arquivo no início de cada sessão para saber exatamente onde parou.
+  - Atualize este arquivo ao completar cada requisito, bloco de trabalho ou decisão importante.
+  - Nunca perca informação — acumule o histórico em <history>.
+  - Seja específico: "criou VehicleForm component com validação Zod" é melhor que "trabalhou no frontend".
+-->
+
+<session id="session-002" date="2026-06-09" status="in_progress">
+
+  <objective>
+    Varredura geral do projeto (estado real vs. documentado), correção da documentação de sessão
+    (estava desatualizada em relação ao trabalho do sprint-1 já commitado) e elaboração do plano
+    de implementação em épicos para os requisitos do João.
+  </objective>
+
+  <current_focus>
+    EPIC-00 concluído: schema Prisma completo, migration aplicada, Postgres local rodando via
+    Docker, módulos NestJS base criados. Bloqueio B01 resolvido — Pedro e Nathan já podem
+    começar seus módulos sobre prisma/schema.prisma. Próximo passo: EPIC-01 (finalizar README
+    raiz de setup) e EPIC-02 (módulo Vehicles).
+  </current_focus>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ESTADO POR REQUISITO
+       Status: not_started | in_progress | blocked | done | skipped
+       ═══════════════════════════════════════════════════════════ -->
+  <requirements_status>
+
+    <req id="JOA-TEC-01" title="Banco de dados" status="done">
+      <notes>
+        backend/smart-drive/prisma/schema.prisma completo: 8 models (User, Vehicle, Device,
+        Trip, TelemetryPoint, DrivingEvent, FuelEstimate, RefuelRecord) + 6 enums (FuelType,
+        DeviceStatus, TripMode, TripStatus, DrivingEventType, EventSeverity), derivados de
+        features/shared/types/* com notas de design no topo do arquivo para Pedro/Nathan.
+        Migration `20260609234700_init` aplicada com sucesso contra Postgres 16 local
+        (docker compose). PrismaService/PrismaModule (global, com @prisma/adapter-pg) e
+        ConfigModule/ValidationPipe globais configurados. Módulos placeholder criados:
+        VehiclesModule, DevicesModule, TripsModule, TelemetryModule, DemoModule,
+        AnalysisModule. `nest build` e `npm test` (6 testes de integração Prisma) passam.
+      </notes>
+    </req>
+
+    <req id="JOA-TEC-02" title="Firmware e hardware" status="in_progress">
+      <notes>
+        Projeto ESP-IDF inicializado: firmware/main/main.c e CMakeLists.txt existem,
+        firmware/build/ presente (já compilado ao menos uma vez). Nenhuma FreeRTOS task,
+        driver de IMU/GPS ou lógica de sensor_fusion implementada ainda.
+      </notes>
+    </req>
+
+    <req id="JOA-TEC-03" title="DevOps local" status="in_progress">
+      <notes>
+        backend/docker/docker-compose.yml (postgres:16-alpine, volume nomeado
+        smartdrive_postgres_data, healthcheck) criado e testado — `docker compose up -d`
+        sobe o banco. backend/docker/.env.example e backend/smart-drive/.env.example
+        criados. backend/smart-drive/.env preenchido com DATABASE_URL/JWT_SECRET/PORT/
+        CORS_ORIGIN/NODE_ENV de dev local. Faltam: .env.example do frontend e README raiz
+        com passo a passo de setup (banco → backend → frontend).
+      </notes>
+    </req>
+
+    <req id="JOA-TEC-04" title="QA e testes finais" status="not_started">
+      <notes>Depende de TEC-01 a TEC-03 e dos módulos de Pedro/Nathan. Nada a testar ainda em integração.</notes>
+    </req>
+
+    <req id="JOA-RF-01" title="Cadastro de veículo" status="not_started">
+      <notes>
+        Existe VehiclesPage no frontend (features/vehicles) como protótipo visual com
+        dados mockados (mocks/factories.ts, mocks/handlers.ts via MSW). Sem endpoint
+        backend, sem formulário com validação real, sem integração com schema Prisma.
+      </notes>
+    </req>
+
+    <req id="JOA-RF-02" title="Edição de veículo" status="not_started" />
+
+    <req id="JOA-RF-03" title="Dashboard em tempo real" status="in_progress">
+      <notes>
+        DashboardPage e MobileLivePage existem (features/dashboard) com layout completo
+        (Stat, Panel, ScoreMeter equivalentes via primitives.tsx) mas dados 100% hardcoded/mockados.
+        Faltam: TanStack Query, Zustand, socket.io-client (nenhum instalado ainda),
+        useTelemetrySocket, TelemetryProvider, ligação real ao backend/WebSocket.
+      </notes>
+    </req>
+
+    <req id="JOA-RF-04" title="Mapa em tempo real" status="in_progress">
+      <notes>
+        MapPage existe (features/map) usando MapView SVG-based (components/ui/map-gauges.tsx)
+        com dados determinísticos simulados — NÃO é MapLibre GL JS ainda. maplibre-gl não
+        está instalado. Falta TripPolyline real, DrivingEventMarker, downsampling de 500 pontos,
+        integração com GET /trips/:id/route.
+      </notes>
+    </req>
+
+    <req id="JOA-RF-05" title="Modo demo ExpoIOT" status="in_progress">
+      <notes>
+        DemoPage e MobileDemoPage existem como protótipo visual (modos smooth/normal/aggressive
+        no app/page.tsx). Sem módulo /demo no backend, sem integração com simulador do Nathan,
+        sem lógica real de iniciar/resetar sessão demo.
+      </notes>
+    </req>
+
+    <req id="JOA-RF-06" title="Tema dark/light" status="done">
+      <notes>
+        Implementado em features/shared/theme/ (ThemeProvider, useTheme, ThemeToggle) com
+        CSS custom properties (lib/sd-vars.ts) e testes (theme.test.tsx). Tema dark é o default.
+        Persistência em localStorage a confirmar contra os SPECs de JOA-RF-06.
+      </notes>
+    </req>
+
+    <req id="JOA-RF-07" title="Estilo visual HQ dark" status="in_progress">
+      <notes>
+        Design system implementado via lib/sd-tokens.ts / lib/sd-vars.ts (cores grafite,
+        ciano/azul elétrico, vermelho de alerta) e componentes primitivos (Stat, Panel, Tag,
+        Dot, Btn). Aplicado consistentemente nas telas existentes. Falta auditoria formal de
+        contraste WCAG AA e revisão em todos os componentes finais (alguns ainda não migrados
+        de dados hardcoded para dados reais, o que pode mudar layout).
+      </notes>
+    </req>
+
+    <req id="JOA-RF-08" title="Relatório de viagem" status="in_progress">
+      <notes>
+        TripReportPage e MobileTripReportPage existem (features/trips) como protótipo visual
+        com dados mockados. Falta integração com GET /trips/:id/summary, GET /trips/:id/events,
+        score/consumo reais do Nathan, e tratamento dos edge cases (0 km, 0 eventos, sem GPS).
+      </notes>
+    </req>
+
+    <req id="JOA-RNF-01" title="Tempo real percebido" status="not_started" />
+    <req id="JOA-RNF-02" title="Disponibilidade na demo" status="not_started" />
+    <req id="JOA-RNF-03" title="Mobile-first" status="in_progress">
+      <notes>Layout mobile (402x780 simulado) e desktop já existem nas telas protótipo, mas não validados contra os SPECs formais (375px, áreas de toque 44x44px).</notes>
+    </req>
+    <req id="JOA-RNF-04" title="Performance" status="not_started" />
+    <req id="JOA-RNF-05" title="Portabilidade" status="not_started" />
+
+  </requirements_status>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       DECISÕES TOMADAS NESTA SESSÃO
+       ═══════════════════════════════════════════════════════════ -->
+  <decisions>
+    <decision date="PRE-SESSION" author="João + Claude">
+      <what>Stack tecnológica finalizada: NestJS + Next.js + PostgreSQL + Prisma + MapLibre</what>
+      <why>Desenvolvimento rápido, TypeScript ponta a ponta, 4 semanas de prazo</why>
+      <tradeoffs>Optou-se por NestJS sobre Spring Boot pela velocidade; Next.js sobre Electron pela simplicidade</tradeoffs>
+    </decision>
+    <decision date="PRE-SESSION" author="João + Claude">
+      <what>Monorepo — único repositório com pastas firmware/, backend/, frontend/, simulator/, docs/</what>
+      <why>Time pequeno, tipos TypeScript compartilhados, visão unificada do projeto</why>
+    </decision>
+    <decision date="PRE-SESSION" author="João + Claude">
+      <what>IA explicitamente fora do escopo — modelo determinístico de consumo no MVP</what>
+      <why>Evitar scope creep, modelo explicável é mais defensável para o avaliador acadêmico</why>
+    </decision>
+    <decision date="2026-06-09" author="Claude">
+      <what>session-current.xml reescrito para refletir o estado real do código (frontend sprint-1 avançado, backend/firmware em estágio de esqueleto)</what>
+      <why>O arquivo estava no template "PRE-SESSION / not_started" mesmo após 5 commits de trabalho real do sprint-1 (test infra, MSW mocks, domain types, theme system, feature architecture). Documentação desalinhada do código é um risco para Pedro e Nathan, que dependem destes docs.</why>
+    </decision>
+    <decision date="2026-06-09" author="João + Claude">
+      <what>Prisma 7.8.0 com generator `provider = "prisma-client"`, `output = "../generated/prisma"`, `moduleFormat = "cjs"`, e datasource SEM `url` (Prisma 7 não permite mais `url` no schema). PrismaClient instanciado via @prisma/adapter-pg (driver adapter), lendo DATABASE_URL via ConfigService.</what>
+      <why>Prisma 7 mudou a API de configuração: `url` no datasource foi removido (P1012), e o client gerado em ESM (default) quebra o ts-jest do projeto ("Cannot use import.meta outside a module"). `moduleFormat = "cjs"` + driver adapter resolve ambos sem mudar o stack CommonJS/Nest existente.</why>
+      <tradeoffs>generated/prisma ainda exige moduleNameMapper no jest (resolver imports `.js"->".ts") e NODE_OPTIONS=--experimental-vm-modules (o query compiler wasm usa dynamic import mesmo em CJS) — já configurado em package.json.</tradeoffs>
+    </decision>
+  </decisions>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       DÍVIDAS TÉCNICAS IDENTIFICADAS
+       ═══════════════════════════════════════════════════════════ -->
+  <technical_debts>
+    <debt priority="high" created="2026-06-09">
+      Frontend tem telas completas com dados 100% hardcoded/mockados — falta camada de dados real
+      (TanStack Query, Zustand, socket.io-client) e nenhuma dessas libs está instalada ainda.
+    </debt>
+    <debt priority="high" created="2026-06-09">
+      MapPage usa um MapView SVG customizado (determinístico) em vez de MapLibre GL JS —
+      JOA-RF-04 exige MapLibre com polyline/marcadores reais e downsampling.
+    </debt>
+    <debt priority="medium" created="PRE-SESSION">
+      Tipos TypeScript compartilhados entre backend e frontend precisam de estratégia
+      (package shared/ ou geração via Prisma) — frontend já definiu seus próprios tipos em
+      features/shared/types/, que devem servir de referência para o schema Prisma do backend.
+    </debt>
+    <debt priority="medium" created="2026-06-09">
+      Falta .env.example do frontend e README raiz de setup (resto do JOA-TEC-03 / EPIC-01).
+    </debt>
+    <debt priority="low" created="2026-06-09">
+      frontend/smart-drive/features/shared/types/telemetry.ts declara lat/lng/speedKmh/satellites/hdop
+      como obrigatórios em TelemetryPoint, mas o schema Prisma (fonte: telemetry_contract v1.0) os
+      trata como opcionais (GPS pode ser null). Ajustar o tipo do frontend para `?`.
+    </debt>
+    <debt priority="low" created="2026-06-09">
+      Prisma 7 exige `moduleFormat = "cjs"` no generator (senão o client gerado é ESM e quebra
+      ts-jest com "Cannot use import.meta") + moduleNameMapper no jest config para resolver
+      imports `.js` do client gerado para `.ts` + NODE_OPTIONS=--experimental-vm-modules nos
+      scripts de teste (o query compiler wasm do Prisma 7 usa dynamic import). Já configurado em
+      backend/smart-drive/package.json — documentar para Pedro/Nathan se tiverem testes próprios
+      que importam o Prisma Client gerado.
+    </debt>
+  </technical_debts>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       BLOQUEIOS ATIVOS
+       ═══════════════════════════════════════════════════════════ -->
+  <blockers>
+    <blocker id="B01" status="resolved" severity="critical" resolved_date="2026-06-09">
+      Schema Prisma (JOA-TEC-01) implementado e migrado. Pedro e Nathan podem implementar seus
+      módulos sobre backend/smart-drive/prisma/schema.prisma e o PrismaService global
+      (importável via PrismaModule, @Global). Ler as "NOTAS PARA O TIME" no topo do
+      schema.prisma antes de começar.
+    </blocker>
+  </blockers>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HISTÓRICO DE ATIVIDADES
+       ═══════════════════════════════════════════════════════════ -->
+  <history>
+    <entry date="PRE-SESSION" type="planning">
+      PRD analisado. Requisitos do João identificados e documentados em CLAUDE.json.
+      Memórias do projeto gravadas. Documentação de requisitos do frontend gerada em markdown.
+      Arquivos de configuração do Claude Code criados (CLAUDE.json, context.xml, credentials.xml, session-current.xml, session-next.xml).
+    </entry>
+    <entry date="sprint-1 (data exata não registrada)" type="implementation">
+      5 commits de frontend: configuração de Vitest+RTL+MSW (test infra), MSW server/handlers/factories
+      para todos os domínios (vehicles, devices, trips, telemetry, demo, dashboard), tipos TypeScript
+      de domínio com enums (Vehicle, Device, Trip, TelemetryPoint, DrivingEvent, FuelEstimate, DrivingScore),
+      sistema de tema dark/light com CSS custom properties (sdVars), e migração para arquitetura
+      feature-based (features/dashboard, demo, devices, home, map, shared, shell, trips, vehicles).
+      Branches feat/s1-* e release/sprint-1 criados. Esse trabalho NÃO estava refletido em session-current.xml.
+    </entry>
+    <entry date="2026-06-09" type="planning">
+      Sessão de varredura: leitura de toda a documentação em docs/ e do código atual de
+      firmware/, backend/ e frontend/. Constatada defasagem grande entre session-current.xml
+      e o estado real (frontend muito mais avançado, backend/firmware em esqueleto).
+      session-current.xml reescrito. Memórias de longo prazo gravadas (team roles, convenção
+      de docs de sessão, referências de requisitos).
+    </entry>
+    <entry date="2026-06-09" type="planning">
+      Plano de implementação em épicos elaborado e aprovado: EPIC-00 (schema Prisma, crítico)
+      até EPIC-13 (QA final/ExpoIOT), cobrindo todos os JOA-RF/RNF/TEC. Plano salvo em
+      /home/joao/.claude/plans/wobbly-coalescing-comet.md e replicado em session-next.xml
+      (plan-002), com bottlenecks, dependências entre times e perguntas em aberto atualizadas.
+    </entry>
+    <entry date="2026-06-09" type="implementation">
+      EPIC-00 implementado de ponta a ponta: `npx prisma init` no backend (com prisma.config.ts,
+      .env, @prisma/client/prisma 7.8.0); prisma/schema.prisma modelado com 8 models + 6 enums
+      a partir de features/shared/types/*, com notas de design para Pedro/Nathan; ajustes para
+      Prisma 7 (remoção de `url` do datasource, `moduleFormat = "cjs"`, @prisma/adapter-pg);
+      `npx prisma format/validate/generate` ok. Criados PrismaService/PrismaModule (global),
+      ConfigModule + ValidationPipe globais em main.ts, e módulos placeholder VehiclesModule/
+      DevicesModule/TripsModule/TelemetryModule/DemoModule/AnalysisModule, todos importados em
+      AppModule. `nest build` ok. Criado backend/docker/docker-compose.yml (postgres:16-alpine)
+      + backend/docker/.env.example, backend/smart-drive/.env.example, e .env de dev local
+      preenchido (DATABASE_URL/JWT_SECRET/PORT/CORS_ORIGIN/NODE_ENV). Usuário instalou Docker e
+      adicionou-se ao grupo docker (sudo usermod -aG docker joao). `docker compose up -d` subiu
+      o Postgres; `npx prisma migrate dev --name init` aplicou a migration inicial com sucesso.
+      Escritos 5 testes de integração Prisma (criação válida, FK inválida rejeitada, deviceCode
+      único, TelemetryPoint sem GPS, cascade delete de Trip) — todos passando contra o Postgres
+      real (`npm test`: 2 suites, 6 testes, 100% pass). Blocker B01 resolvido.
+    </entry>
+  </history>
+
+</session>

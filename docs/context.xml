@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<context project="SmartDrive ExpoIOT" version="2.0">
+
+  <project_summary>
+    <name>SmartDrive ExpoIOT</name>
+    <description>
+      Sistema IoT de telemetria veicular com ESP32, acelerômetro e GPS.
+      Coleta dados de condução em tempo real, detecta eventos bruscos,
+      estima consumo de combustível e calcula score de condução.
+      Apresentado na ExpoIOT com carrinho RC em pista física.
+    </description>
+    <deadline>4 semanas</deadline>
+    <presentation>ExpoIOT — demonstração ao vivo com carrinho RC</presentation>
+    <academic_context>
+      Avaliador técnico quer ver: FreeRTOS real com tasks e prioridades,
+      arquitetura limpa, DDD, tempo real funcionando, testes, escalabilidade
+      e modelo de dados defensável. Interface bonita sozinha não é suficiente.
+    </academic_context>
+  </project_summary>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       TIME — RESPONSABILIDADES COMPLETAS
+       ═══════════════════════════════════════════════════════════ -->
+  <team>
+
+    <member name="João" role="Integração, frontend, banco, firmware, DevOps, demo, QA">
+      <owns>
+        <item>Schema Prisma e migrations — entregue antes de Pedro e Nathan começarem</item>
+        <item>Contrato de payload de telemetria — imutável sem alinhamento do time</item>
+        <item>Frontend completo: dashboard, mapa, veículos, demo, relatório, tema HQ dark</item>
+        <item>WebSocket Gateway NestJS — dispara eventos para o frontend</item>
+        <item>Módulo vehicles no backend (CRUD de veículos)</item>
+        <item>Módulo demo no backend (endpoints /demo/*)</item>
+        <item>Firmware ESP-IDF + FreeRTOS tasks + drivers GPS/acelerômetro</item>
+        <item>Docker Compose + .env.example + README de setup</item>
+        <item>QA final — integra as entregas de Nathan e Pedro</item>
+        <item>Apresentação e roteiro da ExpoIOT</item>
+      </owns>
+      <does_not_own>
+        <item>Score e consumo → Nathan</item>
+        <item>Detecção analítica de eventos → Nathan</item>
+        <item>Simulador de telemetria → Nathan (João consome)</item>
+        <item>Auth, usuário, dispositivo, viagem → Pedro (João integra no frontend)</item>
+      </does_not_own>
+    </member>
+
+    <member name="Pedro" role="Backend estrutural — API, auth, dispositivos, viagens, telemetria">
+      <owns>
+        <item>PED-RF-01: Cadastro de usuário com hash de senha e validação de e-mail</item>
+        <item>PED-RF-02: Login de usuário com token/sessão</item>
+        <item>PED-RF-03: Cadastro e pareamento de ESP32 a veículo</item>
+        <item>PED-RF-04: Início de viagem — vincula device, vehicle e user</item>
+        <item>PED-RF-05: Encerramento de viagem — consolida resumo, score e consumo</item>
+        <item>PED-RF-06: Ingestão e persistência de telemetria com validação rigorosa</item>
+        <item>PED-RF-07: Histórico de trajeto — lista viagens e pontos GPS</item>
+        <item>PED-RF-08: Exportação de dados em JSON</item>
+        <item>PED-RNF-01: Baixa perda de dados — endpoint de telemetria rápido e robusto</item>
+        <item>PED-RNF-02: Escalabilidade — deviceId obrigatório, multi-device/user/vehicle</item>
+        <item>PED-RNF-03: Segurança mínima — hash, validação de payload, token de device</item>
+        <item>PED-RNF-04: Manutenibilidade — controllers/services/DTOs separados, testes de API</item>
+      </owns>
+      <does_not_own>
+        <item>Frontend, firmware, hardware</item>
+        <item>Schema Prisma (João define, Pedro usa)</item>
+        <item>Score e consumo analítico (Nathan)</item>
+        <item>DevOps final (João)</item>
+      </does_not_own>
+      <critical_rule>
+        Pedro NUNCA deve bloquear João. Se um endpoint não estiver pronto,
+        Pedro fornece mock ou contrato tipado para João integrar o frontend.
+      </critical_rule>
+      <endpoints_pedro_must_expose>
+        POST /users | POST /auth/login |
+        POST /devices | POST /devices/:id/pair |
+        POST /trips/start | POST /trips/:id/finish |
+        GET /trips | GET /trips/:id | GET /trips/:id/summary |
+        GET /trips/:id/events | GET /trips/:id/route |
+        POST /telemetry | GET /trips/:id/telemetry |
+        GET /exports/trips/:id
+      </endpoints_pedro_must_expose>
+    </member>
+
+    <member name="Nathan" role="Camada analítica — eventos, score, consumo, simulador, base de IA">
+      <owns>
+        <item>NAT-RF-01: Detecção de HARD_ACCELERATION com limiar configurável</item>
+        <item>NAT-RF-02: Detecção de HARD_BRAKE com classificação de severidade</item>
+        <item>NAT-RF-03: Detecção de SHARP_TURN — leve, média ou forte</item>
+        <item>NAT-RF-04: Modelo determinístico de estimativa de consumo em km/L com confiança</item>
+        <item>NAT-RF-05: Score 0-100 com penalidades e classificação textual</item>
+        <item>NAT-RF-06: Documentação do modelo de calibração futura (pós-MVP, não implementar)</item>
+        <item>NAT-RF-07: Simulador com cenários: gentle, aggressive, gps_loss, impact</item>
+        <item>NAT-RNF-01: Todos as regras com testes unitários — sem banco, sem frontend, sem ESP32</item>
+        <item>NAT-RNF-02: Observabilidade — eventos rastreáveis, penalidades explicáveis</item>
+        <item>NAT-RNF-03: Precisão honesta — saída sempre como estimativa com confidence level</item>
+      </owns>
+      <does_not_own>
+        <item>Cadastro de usuário/veículo/dispositivo</item>
+        <item>Persistência no banco (entrega funções puras, Pedro/João persistem)</item>
+        <item>Frontend, WebSocket, DevOps, firmware, hardware</item>
+      </does_not_own>
+      <critical_rule>
+        Código do Nathan deve ser testável isoladamente.
+        Entrada: dados de telemetria. Saída: eventos + score + estimativa.
+        Nenhuma dependência de banco, frontend ou ESP32 nas funções de domínio.
+        Qualquer mudança no contrato de payload exige alinhamento com João e Pedro.
+      </critical_rule>
+      <delivery_interface>
+        Serviços NestJS injetáveis:
+        DrivingEventDetector.detect(telemetry: TelemetryPoint[]): DrivingEvent[]
+        DrivingScoreCalculator.calculate(events: DrivingEvent[]): DrivingScore
+        FuelConsumptionEstimator.estimate(trip: TripData, vehicle: Vehicle): FuelEstimate
+        TelemetryScenarioGenerator.generate(scenario: ScenarioType): TelemetryPoint[]
+      </delivery_interface>
+    </member>
+
+  </team>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       INTERFACES ENTRE TIMES
+       João é responsável por garantir que essas conexões funcionem.
+       ═══════════════════════════════════════════════════════════ -->
+  <team_interfaces>
+
+    <interface from="Pedro" to="João" criticality="high">
+      <connection>GET /trips/:id/route → array {lat, lng, timestamp} → LiveMap (TripPolyline)</connection>
+      <connection>GET /trips/:id/events → DrivingEvent[] → EventsFeed + DrivingEventMarker no mapa</connection>
+      <connection>GET /trips/:id/summary → score, consumo, métricas → TripReportView</connection>
+      <connection>POST /telemetry persiste → dispara evento WebSocket (gateway do João) → dashboard atualiza</connection>
+      <connection>GET /trips → lista de viagens → tela de histórico</connection>
+      <fallback>Pedro disponibiliza mock/contrato tipado enquanto endpoint não está pronto</fallback>
+    </interface>
+
+    <interface from="Nathan" to="João" criticality="high">
+      <connection>DrivingScoreCalculator → DrivingScoreCard no dashboard</connection>
+      <connection>FuelConsumptionEstimator → FuelEstimateCard com confidence level</connection>
+      <connection>DrivingEvent[] com lat/lng → DrivingEventMarker no mapa</connection>
+      <connection>NAT-RF-07 simulador → DemoControlPanel como fallback de hardware</connection>
+    </interface>
+
+    <interface from="Nathan" to="Pedro" criticality="high">
+      <connection>Pedro chama DrivingEventDetector após persistir telemetria</connection>
+      <connection>Pedro chama DrivingScoreCalculator ao acumular eventos da viagem</connection>
+      <connection>Pedro chama FuelConsumptionEstimator ao encerrar viagem</connection>
+      <connection>Pedro persiste DrivingEvent[] em driving_events</connection>
+      <connection>Pedro atualiza trips.driving_score e trips.estimated_consumption_kml ao encerrar</connection>
+    </interface>
+
+    <interface from="João" to="all" criticality="critical">
+      <connection>João define schema Prisma — todos implementam em cima</connection>
+      <connection>João define contrato de payload — ninguém altera sem alinhamento</connection>
+      <connection>João implementa WebSocket gateway que Pedro alimenta e João consome no frontend</connection>
+      <connection>João faz QA final — testa as três partes integradas</connection>
+    </interface>
+
+  </team_interfaces>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HARDWARE
+       ═══════════════════════════════════════════════════════════ -->
+  <hardware>
+    <item name="ESP32 30 pinos soldados" owner="João" description="MCU, Wi-Fi integrado, executa FreeRTOS" />
+    <item name="Acelerômetro" owner="João" description="Captura aceleração X/Y/Z para detecção de eventos" />
+    <item name="GPS com antena" owner="João" description="Captura lat, lng, velocidade, satélites" />
+    <item name="40 jumpers macho-fêmea" owner="João" description="Prototipação e debug" />
+  </hardware>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STACK TECNOLÓGICA
+       ═══════════════════════════════════════════════════════════ -->
+  <stack>
+    <layer name="firmware" owner="João">
+      ESP-IDF + FreeRTOS + C
+      Tasks: task_imu_reader (20-50Hz), task_gps_reader (1-10Hz),
+             task_sensor_fusion (10Hz), task_event_detector (10Hz),
+             task_network (1-5Hz), task_storage (on-demand), task_health_monitor (1Hz)
+    </layer>
+    <layer name="backend" owners="João+Pedro+Nathan">
+      NestJS + TypeScript + PostgreSQL + Prisma + WebSocket/Socket.IO + Jest
+    </layer>
+    <layer name="frontend" owner="João">
+      Next.js 14 App Router + TypeScript + Tailwind CSS + shadcn/ui +
+      TanStack Query + Zustand + Recharts + MapLibre GL JS +
+      Vitest + React Testing Library + Playwright
+    </layer>
+    <layer name="simulator" owner="Nathan">
+      Node.js + TypeScript — cenários: gentle, aggressive, gps_loss, impact
+    </layer>
+    <layer name="infra" owner="João">
+      Docker Compose (local) → Cloud Run + Cloud SQL + Vercel (MVP cloud)
+      Fallback ExpoIOT: backend local no notebook + hotspot do celular
+    </layer>
+  </stack>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ARQUITETURA
+       ═══════════════════════════════════════════════════════════ -->
+  <architecture>
+    <principles>
+      <p>Clean Architecture — domínio nunca depende de infraestrutura</p>
+      <p>DDD — bounded contexts isolados, entidades com identidade</p>
+      <p>TDD — teste antes da implementação em todas as camadas</p>
+      <p>Contratos primeiro — payload e shapes definidos antes de implementar</p>
+      <p>Resiliência — GPS real, GPS ausente, hardware real, simulador: todos funcionam</p>
+    </principles>
+
+    <data_flow>
+      ESP32 coleta IMU (20-50Hz) e GPS (1-10Hz)
+      → task_sensor_fusion normaliza (10Hz)
+      → task_event_detector detecta eventos (10Hz)
+      → task_network envia HTTP POST /telemetry (1-5Hz)
+      → Pedro (TelemetryIngestionService) valida e persiste
+      → Nathan (DrivingEventDetector) analisa e retorna eventos
+      → Nathan (DrivingScoreCalculator + FuelConsumptionEstimator) calcula score e consumo
+      → João (WebSocket Gateway) emite telemetry:new, trip:eventDetected, trip:scoreUpdated
+      → João (frontend) atualiza dashboard sem refresh
+    </data_flow>
+
+    <freertos_tasks>
+      task_imu_reader     20-50Hz  prioridade ALTA      lê acelerômetro
+      task_gps_reader     1-10Hz   prioridade MÉDIA-ALTA lê GPS NMEA
+      task_sensor_fusion  10Hz     prioridade ALTA      normaliza, aplica filtro média móvel
+      task_event_detector 10Hz     prioridade ALTA      detecta frenagem, aceleração, curva, impacto
+      task_network        1-5Hz    prioridade MÉDIA     envia payload JSON ao backend
+      task_storage        on-demand prioridade BAIXA    buffer local opcional
+      task_health_monitor 1Hz      prioridade ALTA      Wi-Fi watchdog, status
+    </freertos_tasks>
+  </architecture>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       DOMÍNIO
+       ═══════════════════════════════════════════════════════════ -->
+  <domain>
+    <bounded_contexts>
+      <ctx name="Device"         owner="Pedro"  description="ESP32, status, pareamento, saúde" />
+      <ctx name="Vehicle"        owner="João"   description="Veículos, modelo, consumo base, parâmetros" />
+      <ctx name="Trip"           owner="Pedro"  description="Viagens, pontos, trajetos, sessões" />
+      <ctx name="Telemetry"      owner="Pedro"  description="Dados brutos dos sensores" />
+      <ctx name="DrivingAnalysis" owner="Nathan" description="Eventos, score, comportamento, consumo" />
+      <ctx name="User"           owner="Pedro"  description="Usuários, autenticação, preferências" />
+      <ctx name="Demo"           owner="João"   description="Modo ExpoIOT, carrinho, pista, simulações" />
+    </bounded_contexts>
+
+    <driving_events>
+      HARD_ACCELERATION  penalidade=-4   origem=IMU/GPS   Nathan detecta, Pedro persiste
+      HARD_BRAKE         penalidade=-5   origem=IMU/GPS   Nathan detecta, Pedro persiste
+      SHARP_TURN         penalidade=-2   origem=IMU/giroscópio  Nathan detecta, Pedro persiste
+      IMPACT_SUSPECTED   penalidade=-20  origem=IMU       Nathan detecta, Pedro persiste
+      SPEED_SPIKE        penalidade=var  origem=GPS       Nathan detecta
+      GPS_LOST           penalidade=0    origem=GPS       Pedro registra condição
+      DEVICE_DISCONNECTED penalidade=0   origem=backend   Pedro detecta por timeout
+    </driving_events>
+
+    <models>
+      <score>
+        score = clamp(100 - hardAccels*4 - hardBrakes*5 - sharpTurns*2 - impacts*20 - speedPenalty, 0, 100)
+        Classificação: 90-100=Excelente | 75-89=Boa | 60-74=Moderada | 40-59=Agressiva | 0-39=Crítica
+        Responsável: Nathan
+      </score>
+      <consumption>
+        estimatedKmL = consumoBase × fatorVelocidade × fatorAceleracao × fatorFrenagem × fatorRota × fatorCalibracao
+        Sempre exibido como ESTIMATIVA com confidence level. Nunca afirmar medição real.
+        Responsável: Nathan
+      </consumption>
+      <accel_filter>
+        filteredAccel = alpha * currentAccel + (1 - alpha) * previousFilteredAccel
+        Responsável: João (firmware)
+      </accel_filter>
+    </models>
+  </domain>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       BANCO DE DADOS
+       ═══════════════════════════════════════════════════════════ -->
+  <database>
+    <engine>PostgreSQL</engine>
+    <orm>Prisma</orm>
+    <schema_owner>João — define e versiona. Pedro e Nathan implementam em cima.</schema_owner>
+    <tables>
+      users          — Pedro usa
+      vehicles       — João usa (CRUD próprio)
+      devices        — Pedro usa
+      trips          — Pedro usa (início/fim), João usa (relatório/demo)
+      telemetry_points — Pedro persiste, Nathan analisa, João exibe no mapa
+      driving_events — Nathan detecta, Pedro persiste, João exibe
+      fuel_estimates — Nathan calcula, Pedro persiste, João exibe
+      refuel_records — pós-MVP
+    </tables>
+    <critical_indexes>
+      telemetry_points(trip_id, timestamp)  — performance de queries por viagem
+      driving_events(trip_id, timestamp)    — performance de queries de eventos
+      devices(device_code) UNIQUE           — integridade de pareamento
+      trips(vehicle_id, started_at)         — histórico por veículo
+    </critical_indexes>
+    <future>PostGIS — lat/lng como Float agora, migrável para GEOGRAPHY depois</future>
+  </database>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       API
+       ═══════════════════════════════════════════════════════════ -->
+  <api>
+    <group prefix="/users"      owner="Pedro"  ops="POST" />
+    <group prefix="/auth"       owner="Pedro"  ops="POST /login" />
+    <group prefix="/devices"    owner="Pedro"  ops="POST, GET, GET/:id, PATCH/:id, POST/:id/pair" />
+    <group prefix="/trips"      owner="Pedro"  ops="POST /start, POST /:id/finish, GET, GET/:id, GET/:id/summary, GET/:id/events, GET/:id/route" />
+    <group prefix="/telemetry"  owner="Pedro"  ops="POST (ingestão), GET /trips/:id/telemetry" />
+    <group prefix="/exports"    owner="Pedro"  ops="GET /trips/:id" />
+    <group prefix="/vehicles"   owner="João"   ops="POST, GET, GET/:id, PATCH/:id, DELETE/:id" />
+    <group prefix="/demo"       owner="João"   ops="POST /start, POST /reset, POST /telemetry/simulate, GET /current" />
+
+    <websocket owner="João gateway | Pedro alimenta | Nathan fornece dados analíticos">
+      Server→Client: telemetry:new, trip:eventDetected, trip:scoreUpdated,
+                     trip:fuelEstimateUpdated, device:statusChanged, trip:finished
+      Client→Server: subscribe:trip, unsubscribe:trip
+    </websocket>
+  </api>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       DESIGN SYSTEM
+       ═══════════════════════════════════════════════════════════ -->
+  <design_system owner="João">
+    <theme name="dark" default="true">
+      background: grafite quase preto (#0F0F0F a #1A1A1A)
+      surface: cinza escuro (#1E1E1E a #2A2A2A)
+      primary: ciano/azul elétrico (#00D4FF a #0096FF)
+      danger: vermelho (#FF3B3B)
+      success: verde (#00C875)
+      warning: amarelo/laranja (#FF9500)
+      text: branco suavizado (#E5E5E5)
+    </theme>
+    <style>
+      HQ dark — cards com bordas espessas, sombras marcadas,
+      alertas com shapes expressivos, microinterações em eventos bruscos.
+      Profissional, não infantil. Dados sempre legíveis.
+    </style>
+    <layout>Mobile-first. 375px como breakpoint base. Desktop expande os mesmos componentes.</layout>
+  </design_system>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       RISCOS
+       ═══════════════════════════════════════════════════════════ -->
+  <risks>
+    <risk id="R01" prob="alta" impact="alto" owner="João">
+      GPS indoor instável → simulador do Nathan + pista virtual + modo GPS fallback
+    </risk>
+    <risk id="R02" prob="alta" impact="medio" owner="Nathan/João">
+      Ruído do acelerômetro → filtro média móvel no firmware (João) + thresholds calibrados (Nathan)
+    </risk>
+    <risk id="R03" prob="media" impact="alto" owner="João">
+      Wi-Fi instável na ExpoIOT → backend local no notebook + hotspot do celular
+    </risk>
+    <risk id="R04" prob="media" impact="alto" owner="João">
+      Hardware atrasa → simulador do Nathan cobre Semana 1 e 2
+    </risk>
+    <risk id="R05" prob="alta" impact="alto" owner="Nathan/João">
+      Estimativa imprecisa questionada → interface sempre exibe como estimativa com confiança
+    </risk>
+    <risk id="R06" prob="media" impact="alto" owner="Pedro">
+      Endpoints de Pedro atrasam e bloqueiam frontend de João → Pedro entrega mocks primeiro
+    </risk>
+    <risk id="R07" prob="media" impact="medio" owner="Nathan">
+      Serviços analíticos do Nathan não integram com módulos do Pedro → interfaces definidas antes de implementar
+    </risk>
+  </risks>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ROADMAP
+       ═══════════════════════════════════════════════════════════ -->
+  <roadmap>
+    <week n="1" focus="Software base sem hardware">
+      João:   Schema Prisma, Docker Compose, estrutura monorepo, módulos vehicles/demo,
+              WebSocket gateway, frontend base com design system, dashboard consumindo simulador
+      Pedro:  Módulos users/auth/devices/trips/telemetry (endpoints + testes)
+      Nathan: Detecção de eventos (NAT-RF-01/02/03), score (NAT-RF-05),
+              consumo (NAT-RF-04), simulador (NAT-RF-07)
+    </week>
+    <week n="2" focus="ESP32 + acelerômetro + eventos">
+      João:   Firmware task_imu_reader, task_event_detector, task_network enviando ao backend
+      Pedro:  Integração final dos módulos, testes de API, correções
+      Nathan: Ajustes de thresholds com dados reais do hardware
+    </week>
+    <week n="3" focus="GPS + mapa + rota">
+      João:   task_gps_reader, mapa em tempo real com MapLibre, polyline, marcadores de eventos
+      Pedro:  GET /trips/:id/route retornando pontos GPS, histórico
+      Nathan: Validação do simulador contra dados GPS reais
+    </week>
+    <week n="4" focus="Demo ExpoIOT + polish + testes + QA">
+      João:   Modo demo completo, tema HQ finalizado, QA final integrando os três,
+              roteiro de apresentação, case físico
+      Pedro:  Testes finais de API, exportação JSON
+      Nathan: Documentação do modelo analítico, NAT-RF-06 (calibração futura)
+    </week>
+  </roadmap>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ESTADO ATUAL DO PROJETO
+       ═══════════════════════════════════════════════════════════ -->
+  <current_state>
+    <completed>
+      <item>PRD analisado e documentado</item>
+      <item>Repositório GitHub criado com colaboradores (João, Nathan, Pedro) adicionados</item>
+      <item>Stack tecnológica decidida por todos</item>
+      <item>Arquitetura e domínio modelados</item>
+      <item>Atribuições de cada membro documentadas</item>
+      <item>Requisitos do frontend documentados (24 requisitos com critérios de aceite)</item>
+      <item>Arquivos CLAUDE.json/context.xml/credentials.xml/session*.xml criados</item>
+    </completed>
+    <in_progress>
+      <item>Estrutura do monorepo ainda não criada no repositório</item>
+      <item>Nenhum código implementado por nenhum membro</item>
+    </in_progress>
+    <blocked>
+      <item>Nenhum bloqueio — todos aguardam início da Semana 1</item>
+    </blocked>
+  </current_state>
+
+</context>
