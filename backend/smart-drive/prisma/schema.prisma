@@ -1,0 +1,259 @@
+// SmartDrive ExpoIOT — schema.prisma
+// Definido por João (JOA-TEC-01). Pedro e Nathan implementam seus módulos em cima deste schema.
+// Fonte de verdade: frontend/smart-drive/features/shared/types/* (tipos de domínio já maduros do sprint-1).
+// Qualquer alteração de shape que afete o telemetry_contract (docs/CLAUDE.json) exige alinhamento
+// explícito entre João, Nathan e Pedro.
+//
+// NOTAS PARA O TIME (decisões tomadas ao gerar este schema a partir dos tipos do frontend):
+// - lat/lng/speedKmh/satellites/hdop em TelemetryPoint são opcionais aqui (nullable), seguindo o
+//   telemetry_contract v1.0 ("GPS null é aceito — não é erro"). O tipo TelemetryPoint do frontend
+//   ainda os declara como obrigatórios — ajustar para `?` no frontend (dívida técnica).
+// - Device.vehicleId é opcional: PED-RF-03 separa "cadastro" de "pareamento", então um device pode
+//   existir sem veículo vinculado até o pareamento.
+// - DrivingScore (value/classification/penalties) e ScorePenalties NÃO viram tabelas — Trip guarda
+//   apenas o score final (drivingScore Int?); classificação e penalidades são derivadas em runtime
+//   pelos serviços do Nathan a partir de driving_events + score, evitando dado duplicado.
+// - Trip.vehicleSnapshot (Json) congela os parâmetros de consumo do veículo no início da viagem,
+//   para que edições posteriores no veículo (JOA-RF-02) não recalculem viagens passadas.
+// - timestamp em TelemetryPoint/DrivingEvent é armazenado como DateTime (não como epoch-ms);
+//   a conversão do payload (`timestamp: number` em ms, conforme telemetry_contract) para DateTime
+//   é responsabilidade do TelemetryIngestionService (Pedro).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ENUMS — espelham features/shared/types/*.ts
+// ═══════════════════════════════════════════════════════════════════════════
+
+enum FuelType {
+  GASOLINE
+  ETHANOL
+  FLEX
+  DIESEL
+  ELECTRIC
+  HYBRID
+}
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  PAIRING
+  ERROR
+}
+
+enum TripMode {
+  REAL
+  DEMO
+  SIMULATOR
+}
+
+enum TripStatus {
+  ACTIVE
+  FINISHED
+  CANCELLED
+}
+
+enum DrivingEventType {
+  HARD_ACCELERATION
+  HARD_BRAKE
+  SHARP_TURN
+  IMPACT_SUSPECTED
+  SPEED_SPIKE
+  GPS_LOST
+  DEVICE_DISCONNECTED
+}
+
+enum EventSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MODELS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  vehicles Vehicle[]
+  trips    Trip[]
+
+  @@map("users")
+}
+
+model Vehicle {
+  id      String @id @default(cuid())
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  brand  String
+  model  String
+  year   Int
+  engine String
+
+  fuelType FuelType
+
+  tankCapacityLiters        Float
+  baseUrbanConsumptionKmL   Float
+  baseHighwayConsumptionKmL Float
+  baseMixedConsumptionKmL   Float
+  weightKg                  Float?
+  calibrationFactor         Float  @default(1.0)
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  devices       Device[]
+  trips         Trip[]
+  refuelRecords RefuelRecord[]
+
+  @@index([ownerId])
+  @@map("vehicles")
+}
+
+model Device {
+  id         String   @id @default(cuid())
+  deviceCode String   @unique
+  name       String
+  vehicleId  String?
+  vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
+
+  firmwareVersion String?
+  lastSeenAt      DateTime?
+  status          DeviceStatus @default(PAIRING)
+
+  trips Trip[]
+
+  @@index([vehicleId])
+  @@map("devices")
+}
+
+model Trip {
+  id String @id @default(cuid())
+
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  deviceId String
+  device   Device @relation(fields: [deviceId], references: [id])
+
+  driverId String
+  driver   User   @relation(fields: [driverId], references: [id])
+
+  mode   TripMode
+  status TripStatus @default(ACTIVE)
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  distanceKm               Float  @default(0)
+  durationSeconds          Int    @default(0)
+  averageSpeedKmh          Float  @default(0)
+  maxSpeedKmh              Float  @default(0)
+  estimatedConsumptionKmL  Float?
+  estimatedFuelSpentLiters Float?
+  drivingScore             Int?
+
+  // Snapshot dos parâmetros de consumo do veículo no momento de início da viagem (JOA-RF-02)
+  vehicleSnapshot Json
+
+  telemetryPoints TelemetryPoint[]
+  drivingEvents   DrivingEvent[]
+  fuelEstimate    FuelEstimate?
+
+  @@index([vehicleId, startedAt])
+  @@map("trips")
+}
+
+model TelemetryPoint {
+  id     String @id @default(cuid())
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  timestamp DateTime
+
+  // GPS — null aceito (sem fix), conforme telemetry_contract v1.0
+  lat        Float?
+  lng        Float?
+  speedKmh   Float?
+  satellites Int?
+  hdop       Float?
+
+  // IMU — accel obrigatório, gyro 0.0 se ausente
+  accelX Float
+  accelY Float
+  accelZ Float
+  gyroX  Float @default(0)
+  gyroY  Float @default(0)
+  gyroZ  Float @default(0)
+
+  @@index([tripId, timestamp])
+  @@map("telemetry_points")
+}
+
+model DrivingEvent {
+  id     String @id @default(cuid())
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  type      DrivingEventType
+  severity  EventSeverity
+  timestamp DateTime
+
+  lat Float?
+  lng Float?
+
+  value       Float
+  threshold   Float
+  description String
+
+  @@index([tripId, timestamp])
+  @@map("driving_events")
+}
+
+model FuelEstimate {
+  id     String @id @default(cuid())
+  tripId String @unique
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  baseConsumptionKmL     Float
+  adjustedConsumptionKmL Float
+  estimatedLitersSpent   Float
+  estimatedCost          Float?
+  confidenceLevel        Float
+  modelVersion           String
+
+  @@map("fuel_estimates")
+}
+
+model RefuelRecord {
+  id        String  @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  date          DateTime
+  liters        Float
+  pricePerLiter Float
+  odometerKm    Float
+  fullTank      Boolean  @default(true)
+
+  computedRealConsumptionKmL Float?
+
+  @@index([vehicleId, date])
+  @@map("refuel_records")
+}
