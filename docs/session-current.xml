@@ -18,9 +18,11 @@
 
   <current_focus>
     EPIC-00, EPIC-01 e EPIC-02 concluídos. EPIC-02 (módulo Vehicles, CRUD + validações) implementado
-    em branch separada (feature/joa-rf-01-02-vehicles-module), conforme nova convenção de
-    branching por épico. Próximo passo: EPIC-03 (camada de dados real-time do frontend —
-    TanStack Query, Zustand, socket.io-client, MapLibre).
+    em branch separada (feature/joa-rf-01-02-vehicles-module) e PR #1 aberto (não mergeado ainda).
+    EPIC-03 (camada de dados real-time do frontend) iniciado: branch
+    feature/joa-rnf-01-realtime-data-layer criada a partir de main, levantamento de contexto feito
+    (ver entrada de history "EPIC-03 (kickoff)"), nenhum código escrito ainda. Sessão pausada por
+    limite de uso — retomar por aí. Ver session-next.xml para o plano detalhado dos próximos passos.
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -320,7 +322,25 @@
       passando, suite completa 41/41, `nest build` e lint OK. Smoke test manual via curl
       (criação com sanitização de `<Fiat>`→`Fiat`, 401 sem x-user-id, 400 em consumo=0,
       PATCH parcial preservando campos, 404 em acesso cross-user, soft delete via DELETE)
-      validado de ponta a ponta contra o Postgres local.
+      validado de ponta a ponta contra o Postgres local. Branch enviada ao GitHub e PR #1
+      aberto (https://github.com/Jg-365/smart-drive/pull/1) — não mergeado ainda.
+    </entry>
+    <entry date="2026-06-09" type="planning">
+      EPIC-03 (kickoff): branch feature/joa-rnf-01-realtime-data-layer criada a partir de main.
+      Levantamento de contexto feito (sem código escrito ainda):
+      - websocket_events (docs/CLAUDE.json): server→client = telemetry:new, trip:eventDetected,
+        trip:scoreUpdated, trip:fuelEstimateUpdated, device:statusChanged, trip:finished;
+        client→server = subscribe:trip, unsubscribe:trip.
+      - telemetry_contract v1.0 revisado (payload deviceId/vehicleId/sessionId/timestamp/gps/imu/
+        events/battery, gps pode ser null).
+      - Frontend: nenhuma lib de dados instalada ainda (confirma G02). package.json tem apenas
+        next/react/vitest+RTL+MSW+tailwind. features/shared/types/* já tem TelemetryPoint,
+        DrivingEvent (+enums), DrivingScore, FuelEstimate, Device (+DeviceStatus) — usar como
+        tipos dos eventos WS. vitest.config.ts já configurado (jsdom, alias @/, setupTests.ts
+        com import opcional de mocks/server para MSW) — mesma infra serve para testar o hook
+        com mock de socket.io-client.
+      Sessão pausada aqui por limite de uso, conforme pedido do João ("salve tudo, continuamos
+      amanhã"). Próximos passos detalhados em session-next.xml (EPIC-03).
     </entry>
   </history>
 

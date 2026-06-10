@@ -25,10 +25,34 @@
        ═══════════════════════════════════════════════════════════ -->
   <epics>
 
-    <epic id="EPIC-03" req="JOA-RNF-01" priority="critical" status="not_started">
+    <epic id="EPIC-03" req="JOA-RNF-01" priority="critical" status="in_progress">
       <title>Frontend: camada de dados real-time (TanStack Query, Zustand, socket.io-client, MapLibre)</title>
       <summary>Instalar dependências (nenhuma instalada ainda). lib/api/ tipado. TelemetryProvider + useTelemetrySocket com reconexão automática + fallback polling, store Zustand separado da conexão. TDD com mock de socket.</summary>
       <done_when>Hook testado isoladamente, pronto para plugar nas páginas.</done_when>
+      <progress>
+        Branch feature/joa-rnf-01-realtime-data-layer criada a partir de main (sem commits
+        ainda). Levantamento de contexto feito (ver entrada "EPIC-03 (kickoff)" em
+        session-current.xml history): eventos WS e telemetry_contract v1.0 revisados; confirmado
+        que features/shared/types/* (TelemetryPoint, DrivingEvent/EventSeverity, DrivingScore,
+        FuelEstimate, Device/DeviceStatus) cobrem os payloads dos eventos WS; vitest+RTL+MSW já
+        configurados (vitest.config.ts, setupTests.ts) e servem para o TDD com socket mockado.
+      </progress>
+      <next_steps>
+        1. Instalar deps: @tanstack/react-query, zustand, socket.io-client, maplibre-gl (+ @types
+           se necessário).
+        2. Criar lib/api/ — client HTTP tipado (fetch wrapper) usando os tipos de
+           features/shared/types/, com base URL configurável via env (NEXT_PUBLIC_API_URL,
+           ver frontend/smart-drive/.env.example).
+        3. TDD do useTelemetrySocket: escrever spec com socket.io-client mockado primeiro
+           (conecta, recebe telemetry:new e os demais eventos da lista websocket_events,
+           atualiza store; reconecta automaticamente após queda simulada; após N tentativas
+           falhas cai para fallback de polling via lib/api/).
+        4. Implementar useTelemetrySocket + TelemetryProvider (store Zustand separado da lógica
+           de conexão, conforme JOA-RNF-01 specs — sem re-render desnecessário).
+        5. Rodar `npm test` no frontend, garantir hook testado isoladamente (done_when do épico).
+        6. Atualizar session-current.xml/session-next.xml e abrir PR (mesmo padrão do EPIC-02:
+           push + PR para main).
+      </next_steps>
     </epic>
 
     <epic id="EPIC-04" req="JOA-RF-03 (infra)" priority="high" status="not_started">
