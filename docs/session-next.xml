@@ -25,13 +25,6 @@
        ═══════════════════════════════════════════════════════════ -->
   <epics>
 
-    <epic id="EPIC-02" req="JOA-RF-01,JOA-RF-02" priority="high" status="not_started">
-      <title>Backend: módulo Vehicles (CRUD + validações)</title>
-      <depends_on>EPIC-00 (concluído)</depends_on>
-      <summary>POST/GET/PATCH/DELETE /vehicles com validações completas (specs em docs/CLAUDE.json), soft delete, snapshot em trips ativas, sanitização de marca/modelo. Auth do Pedro pode não estar pronta — usar guard placeholder, documentar.</summary>
-      <done_when>Testes do VehiclesModule passam; CRUD funcional via curl/Insomnia.</done_when>
-    </epic>
-
     <epic id="EPIC-03" req="JOA-RNF-01" priority="critical" status="not_started">
       <title>Frontend: camada de dados real-time (TanStack Query, Zustand, socket.io-client, MapLibre)</title>
       <summary>Instalar dependências (nenhuma instalada ainda). lib/api/ tipado. TelemetryProvider + useTelemetrySocket com reconexão automática + fallback polling, store Zustand separado da conexão. TDD com mock de socket.</summary>
@@ -149,8 +142,10 @@
       do schema.prisma (Opção A informal).
     </question>
     <question id="Q02" priority="medium" status="open">
-      Pedro vai implementar JWT na semana 1 ou 2? Impacta se EPIC-02/07 usam guard real ou
-      placeholder.
+      Pedro vai implementar JWT na semana 1 ou 2? EPIC-02 já saiu com TempUserGuard
+      (header x-user-id, contrato request.user.id) — EPIC-07 e demais módulos (Devices/
+      Trips/Telemetry) devem trocar para o guard real do Pedro assim que disponível, mantendo
+      o mesmo contrato.
     </question>
     <question id="Q03" priority="medium" status="open">
       Nathan entrega score/consumo como serviço NestJS injetável ou função pura TS?
@@ -166,6 +161,14 @@
        ITENS CONCLUÍDOS DO PLANO ANTERIOR (plan-001)
        ═══════════════════════════════════════════════════════════ -->
   <completed_from_plan>
+    <item from="plan-002" task="EPIC-02">
+      VehiclesModule completo (POST/GET/PATCH/DELETE /vehicles) em
+      backend/smart-drive/src/vehicles/, com TempUserGuard placeholder em src/auth/
+      (request.user.id, a substituir pelo guard JWT do Pedro). 35 testes (DTO + integração
+      Postgres real) passando, smoke test via curl ok. Branch
+      feature/joa-rf-01-02-vehicles-module (primeira branch isolada por épico). Concluído em
+      2026-06-09 — ver detalhes em session-current.xml.
+    </item>
     <item from="plan-002" task="EPIC-01">
       docker-compose.yml + .env.example (backend, docker, frontend) + README.md raiz com setup
       passo a passo (banco → backend → frontend), validado de ponta a ponta. Concluído em
