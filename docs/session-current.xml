@@ -17,12 +17,10 @@
   </objective>
 
   <current_focus>
-    EPIC-00 e EPIC-01 concluídos: schema Prisma + migration aplicados, Postgres local via Docker,
-    módulos NestJS base, docker-compose, .env.example (backend, docker e frontend) e README raiz
-    com setup passo a passo (banco → backend → frontend), validado de ponta a ponta (migrate dev
-    idempotente + `npm run start:dev` sobe limpo e conecta ao Postgres). Commits enviados ao
-    GitHub (d17b2ad, 9b643ae). Bloqueio B01 resolvido — Pedro e Nathan já podem começar seus
-    módulos sobre prisma/schema.prisma. Próximo passo: EPIC-02 (módulo Vehicles, CRUD + validações).
+    EPIC-00, EPIC-01 e EPIC-02 concluídos. EPIC-02 (módulo Vehicles, CRUD + validações) implementado
+    em branch separada (feature/joa-rf-01-02-vehicles-module), conforme nova convenção de
+    branching por épico. Próximo passo: EPIC-03 (camada de dados real-time do frontend —
+    TanStack Query, Zustand, socket.io-client, MapLibre).
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -69,15 +67,31 @@
       <notes>Depende de TEC-01 a TEC-03 e dos módulos de Pedro/Nathan. Nada a testar ainda em integração.</notes>
     </req>
 
-    <req id="JOA-RF-01" title="Cadastro de veículo" status="not_started">
+    <req id="JOA-RF-01" title="Cadastro de veículo" status="done">
       <notes>
-        Existe VehiclesPage no frontend (features/vehicles) como protótipo visual com
-        dados mockados (mocks/factories.ts, mocks/handlers.ts via MSW). Sem endpoint
-        backend, sem formulário com validação real, sem integração com schema Prisma.
+        Backend: VehiclesModule completo (POST/GET/PATCH/DELETE /vehicles) em
+        backend/smart-drive/src/vehicles/. CreateVehicleDto com class-validator cobre todos os
+        SPECs/edge cases (consumos e tanque devem ser positivos, marca/modelo obrigatórios e
+        tratados como vazios se só espaços, fuelType enum, ano em [1900, anoAtual+1], peso
+        opcional). sanitizeText() remove caracteres especiais de marca/modelo sem rejeitar
+        (mantém acentos/hífen/apóstrofo/ponto/parênteses). VehiclesService usa PrismaService;
+        veículo sempre criado com ownerId do usuário autenticado. 35 testes (unit DTO +
+        integração contra Postgres real) + smoke test via curl, todos passando.
+        Frontend (VehiclesPage com dados mockados) ainda não conectado — fica para EPIC-07.
       </notes>
     </req>
 
-    <req id="JOA-RF-02" title="Edição de veículo" status="not_started" />
+    <req id="JOA-RF-02" title="Edição de veículo" status="done">
+      <notes>
+        PATCH /vehicles/:id (UpdateVehicleDto = PartialType de CreateVehicleDto) atualiza só os
+        campos enviados, preserva os demais (Prisma ignora chaves undefined). Salvar sem alterar
+        nada (`{}`) não gera erro nem efeito colateral. Tentativa de editar/deletar/ler veículo de
+        outro usuário retorna 404 (NotFoundException — não revela existência). Soft delete via
+        `deletedAt`; findAll/findOne já filtram deletedAt=null. "Trip ativa usa snapshot anterior"
+        é suportado pelo schema (Trip.vehicleSnapshot, EPIC-00) — não há lógica adicional aqui,
+        pois criação de Trip é do Pedro. Frontend (VehicleForm) fica para EPIC-07.
+      </notes>
+    </req>
 
     <req id="JOA-RF-03" title="Dashboard em tempo real" status="in_progress">
       <notes>
@@ -167,6 +181,22 @@
       <why>Prisma 7 mudou a API de configuração: `url` no datasource foi removido (P1012), e o client gerado em ESM (default) quebra o ts-jest do projeto ("Cannot use import.meta outside a module"). `moduleFormat = "cjs"` + driver adapter resolve ambos sem mudar o stack CommonJS/Nest existente.</why>
       <tradeoffs>generated/prisma ainda exige moduleNameMapper no jest (resolver imports `.js"->".ts") e NODE_OPTIONS=--experimental-vm-modules (o query compiler wasm usa dynamic import mesmo em CJS) — já configurado em package.json.</tradeoffs>
     </decision>
+    <decision date="2026-06-09" author="João + Claude">
+      <what>A partir do EPIC-02, cada épico é desenvolvido em sua própria branch
+      (feature/joa-*, infra/joa-*, firmware/joa-*, test/joa-* conforme git_conventions em
+      docs/CLAUDE.json), nunca direto em main. Commits sem trailer de coautoria de IA.</what>
+      <why>João pediu isolamento por épico para review/merge independente e para não tornar
+      main um alvo móvel enquanto Pedro/Nathan também trabalham nela.</why>
+    </decision>
+    <decision date="2026-06-09" author="João + Claude">
+      <what>EPIC-02 introduziu TempUserGuard + @CurrentUser() (src/auth/) como placeholder de
+      autenticação: lê o header `x-user-id` e popula `request.user = { id }`. Documentado em
+      código como temporário, a ser substituído pelo guard JWT real do Pedro (PED-RF-02) sem
+      alterar VehiclesController — o contrato `request.user.id` deve ser preservado.</what>
+      <why>Auth do Pedro ainda não existe (Q02 em aberto) e EPIC-02 precisa de um `ownerId`
+      para criar/filtrar veículos. Mantendo o mesmo shape de `request.user`, a troca pelo guard
+      real é um diff mínimo.</why>
+    </decision>
   </decisions>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -198,6 +228,12 @@
       scripts de teste (o query compiler wasm do Prisma 7 usa dynamic import). Já configurado em
       backend/smart-drive/package.json — documentar para Pedro/Nathan se tiverem testes próprios
       que importam o Prisma Client gerado.
+    </debt>
+    <debt priority="medium" created="2026-06-09">
+      VehiclesController usa TempUserGuard (header `x-user-id`) em vez de auth JWT real —
+      substituir pelo guard do Pedro (PED-RF-02) assim que disponível, mantendo
+      `request.user = { id: string }` (src/auth/request-with-user.ts). Mesmo guard deve ser
+      reaproveitado por Devices/Trips/Telemetry quando esses módulos exigirem dono autenticado.
     </debt>
   </technical_debts>
 
@@ -269,6 +305,22 @@
       criado (com exceção `!.env.example` no .gitignore do frontend), README.md raiz
       reescrito com setup passo a passo (banco/backend/frontend). Setup validado de ponta
       a ponta (`prisma migrate dev` idempotente, `npm run start:dev` ok).
+    </entry>
+    <entry date="2026-06-09" type="implementation">
+      EPIC-02 implementado em branch feature/joa-rf-01-02-vehicles-module (primeira branch
+      separada por épico, conforme nova convenção). Criados: src/auth/ (TempUserGuard,
+      @CurrentUser(), RequestWithUser — placeholder de auth documentado, contrato
+      request.user.id preservável para o guard real do Pedro); src/vehicles/dto/
+      (sanitize-text.ts + spec, CreateVehicleDto + spec cobrindo todos os SPECs/edge cases de
+      JOA-RF-01, UpdateVehicleDto via @nestjs/mapped-types PartialType — pacote instalado);
+      VehiclesService (create/findAll/findOne/update/remove com soft delete e bloqueio
+      cross-user via NotFoundException); VehiclesController (POST/GET/GET:id/PATCH:id/
+      DELETE:id, @UseGuards(TempUserGuard)); VehiclesModule atualizado (deixou de ser
+      placeholder). 35 testes (24 de DTO/sanitização + 11 de integração contra Postgres real)
+      passando, suite completa 41/41, `nest build` e lint OK. Smoke test manual via curl
+      (criação com sanitização de `<Fiat>`→`Fiat`, 401 sem x-user-id, 400 em consumo=0,
+      PATCH parcial preservando campos, 404 em acesso cross-user, soft delete via DELETE)
+      validado de ponta a ponta contra o Postgres local.
     </entry>
   </history>
 
