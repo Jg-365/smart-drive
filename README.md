@@ -52,5 +52,5 @@ backend/
 firmware/         # firmware ESP-IDF (ESP32)
 frontend/
   smart-drive/   # app Next.js
-docs/             # specs, contratos e docs de sessão (ver docs/CLAUDE.json)
+docs/             # specs, contratos e docs de sessão
 ```
