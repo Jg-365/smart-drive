@@ -25,12 +25,6 @@
        ═══════════════════════════════════════════════════════════ -->
   <epics>
 
-    <epic id="EPIC-01" req="JOA-TEC-03" priority="high" status="in_progress">
-      <title>DevOps local</title>
-      <summary>backend/docker/docker-compose.yml (postgres:16-alpine) e .env.example (backend) já feitos no EPIC-00. Falta: .env.example do frontend e README raiz com setup passo a passo (banco → backend → frontend).</summary>
-      <done_when>Setup completo funciona em máquina limpa seguindo só o README.</done_when>
-    </epic>
-
     <epic id="EPIC-02" req="JOA-RF-01,JOA-RF-02" priority="high" status="not_started">
       <title>Backend: módulo Vehicles (CRUD + validações)</title>
       <depends_on>EPIC-00 (concluído)</depends_on>
@@ -172,6 +166,11 @@
        ITENS CONCLUÍDOS DO PLANO ANTERIOR (plan-001)
        ═══════════════════════════════════════════════════════════ -->
   <completed_from_plan>
+    <item from="plan-002" task="EPIC-01">
+      docker-compose.yml + .env.example (backend, docker, frontend) + README.md raiz com setup
+      passo a passo (banco → backend → frontend), validado de ponta a ponta. Concluído em
+      2026-06-09.
+    </item>
     <item from="plan-002" task="EPIC-00">
       Schema Prisma completo (8 models, 6 enums) + migration `20260609234700_init` aplicada;
       PrismaService/PrismaModule globais com @prisma/adapter-pg; ConfigModule + ValidationPipe

@@ -17,10 +17,12 @@
   </objective>
 
   <current_focus>
-    EPIC-00 concluído: schema Prisma completo, migration aplicada, Postgres local rodando via
-    Docker, módulos NestJS base criados. Bloqueio B01 resolvido — Pedro e Nathan já podem
-    começar seus módulos sobre prisma/schema.prisma. Próximo passo: EPIC-01 (finalizar README
-    raiz de setup) e EPIC-02 (módulo Vehicles).
+    EPIC-00 e EPIC-01 concluídos: schema Prisma + migration aplicados, Postgres local via Docker,
+    módulos NestJS base, docker-compose, .env.example (backend, docker e frontend) e README raiz
+    com setup passo a passo (banco → backend → frontend), validado de ponta a ponta (migrate dev
+    idempotente + `npm run start:dev` sobe limpo e conecta ao Postgres). Commits enviados ao
+    GitHub (d17b2ad, 9b643ae). Bloqueio B01 resolvido — Pedro e Nathan já podem começar seus
+    módulos sobre prisma/schema.prisma. Próximo passo: EPIC-02 (módulo Vehicles, CRUD + validações).
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -51,14 +53,15 @@
       </notes>
     </req>
 
-    <req id="JOA-TEC-03" title="DevOps local" status="in_progress">
+    <req id="JOA-TEC-03" title="DevOps local" status="done">
       <notes>
         backend/docker/docker-compose.yml (postgres:16-alpine, volume nomeado
         smartdrive_postgres_data, healthcheck) criado e testado — `docker compose up -d`
-        sobe o banco. backend/docker/.env.example e backend/smart-drive/.env.example
-        criados. backend/smart-drive/.env preenchido com DATABASE_URL/JWT_SECRET/PORT/
-        CORS_ORIGIN/NODE_ENV de dev local. Faltam: .env.example do frontend e README raiz
-        com passo a passo de setup (banco → backend → frontend).
+        sobe o banco. .env.example criados em backend/docker, backend/smart-drive e
+        frontend/smart-drive (com `!.env.example` no .gitignore do frontend, que tem
+        `.env*` ignorado). README.md raiz reescrito com passo a passo completo
+        (banco → backend → frontend). Validado: `npx prisma migrate dev` idempotente
+        e `npm run start:dev` sobe limpo conectando ao Postgres real.
       </notes>
     </req>
 
@@ -183,9 +186,6 @@
       (package shared/ ou geração via Prisma) — frontend já definiu seus próprios tipos em
       features/shared/types/, que devem servir de referência para o schema Prisma do backend.
     </debt>
-    <debt priority="medium" created="2026-06-09">
-      Falta .env.example do frontend e README raiz de setup (resto do JOA-TEC-03 / EPIC-01).
-    </debt>
     <debt priority="low" created="2026-06-09">
       frontend/smart-drive/features/shared/types/telemetry.ts declara lat/lng/speedKmh/satellites/hdop
       como obrigatórios em TelemetryPoint, mas o schema Prisma (fonte: telemetry_contract v1.0) os
@@ -259,6 +259,16 @@
       Escritos 5 testes de integração Prisma (criação válida, FK inválida rejeitada, deviceCode
       único, TelemetryPoint sem GPS, cascade delete de Trip) — todos passando contra o Postgres
       real (`npm test`: 2 suites, 6 testes, 100% pass). Blocker B01 resolvido.
+    </entry>
+    <entry date="2026-06-09" type="implementation">
+      Adicionado .gitignore raiz (exclui docs/credentials.xml, frontend/worktrees/,
+      firmware/build/, .vscode/). Removido .git aninhado de backend/smart-drive (criado pelo
+      `nest new`). Trabalho de EPIC-00 commitado e enviado ao GitHub em 2 commits: d17b2ad
+      (docs/specs, firmware skeleton, configs raiz) e 9b643ae (backend EPIC-00 — Prisma,
+      NestJS, Docker). Em seguida, EPIC-01 finalizado: frontend/smart-drive/.env.example
+      criado (com exceção `!.env.example` no .gitignore do frontend), README.md raiz
+      reescrito com setup passo a passo (banco/backend/frontend). Setup validado de ponta
+      a ponta (`prisma migrate dev` idempotente, `npm run start:dev` ok).
     </entry>
   </history>
 
