@@ -1,7 +1,7 @@
 # SmartDrive ExpoIOT
 
 Monorepo do projeto SmartDrive (ESP32 + acelerômetro + GPS): firmware, backend (NestJS + Prisma)
-e frontend (Next.js). Especificações e contratos em `docs/` (`docs/CLAUDE.json`, `docs/context.xml`).
+e frontend (Next.js). Especificações e contratos em `docs/`.
 
 ## Pré-requisitos
 
