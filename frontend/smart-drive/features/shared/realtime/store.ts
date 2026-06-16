@@ -28,6 +28,8 @@ export interface TelemetryState {
   fuelEstimate: FuelEstimate | null
   deviceStatus: DeviceStatus | null
   connection: ConnectionState
+  /** Epoch ms do último ponto recebido — base para detectar offline por staleness. */
+  lastPacketAt: number | null
   tripFinished: boolean
 
   // actions — mutações atômicas, uma por tipo de evento WS
@@ -50,6 +52,7 @@ const initialState = {
   fuelEstimate: null as FuelEstimate | null,
   deviceStatus: null as DeviceStatus | null,
   connection: 'offline' as ConnectionState,
+  lastPacketAt: null as number | null,
   tripFinished: false,
 }
 
@@ -58,7 +61,7 @@ export const useTelemetryStore = create<TelemetryState>()((set) => ({
 
   setConnection: (connection) => set({ connection }),
   setTrip: (tripId) => set({ tripId }),
-  ingestPoint: (lastPoint) => set({ lastPoint }),
+  ingestPoint: (lastPoint) => set({ lastPoint, lastPacketAt: Date.now() }),
   addEvent: (e) => set((s) => ({ events: [e, ...s.events].slice(0, MAX_EVENTS) })),
   setScore: (score) => set({ score }),
   setFuelEstimate: (fuelEstimate) => set({ fuelEstimate }),
@@ -77,3 +80,4 @@ export const useDrivingScore = () => useTelemetryStore((s) => s.score)
 export const useFuelEstimate = () => useTelemetryStore((s) => s.fuelEstimate)
 export const useDeviceStatus = () => useTelemetryStore((s) => s.deviceStatus)
 export const useTripFinished = () => useTelemetryStore((s) => s.tripFinished)
+export const useLastPacketAt = () => useTelemetryStore((s) => s.lastPacketAt)
