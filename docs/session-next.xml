@@ -31,13 +31,6 @@
       <done_when>Hook testado isoladamente, pronto para plugar nas páginas.</done_when>
     </epic>
 
-    <epic id="EPIC-04" req="JOA-RF-03 (infra)" priority="high" status="not_started">
-      <title>Backend: WebSocket Gateway</title>
-      <depends_on>EPIC-00 (concluído)</depends_on>
-      <summary>TelemetryGateway com subscribe:trip/unsubscribe:trip, emite telemetry:new e device:statusChanged. POST /telemetry real é do Pedro (PED-RF-06, ainda não existe) — criar endpoint mock temporário só para disparar o gateway em dev, mesmo payload contract v1.0.</summary>
-      <done_when>Cliente WS recebe telemetry:new ao postar payload de teste.</done_when>
-    </epic>
-
     <epic id="EPIC-05" req="JOA-RF-03" priority="critical" status="not_started">
       <title>Dashboard em tempo real</title>
       <depends_on>EPIC-03,EPIC-04</depends_on>
@@ -161,6 +154,18 @@
        ITENS CONCLUÍDOS DO PLANO ANTERIOR (plan-001)
        ═══════════════════════════════════════════════════════════ -->
   <completed_from_plan>
+    <item from="plan-002" task="EPIC-04">
+      Backend WebSocket Gateway (JOA-RF-03 infra). TelemetryGateway (socket.io via
+      @nestjs/platform-socket.io) com rooms por viagem (subscribe:trip/unsubscribe:trip), emite
+      telemetry:new e device:statusChanged só para quem assinou. TelemetryPayloadDto valida o
+      contrato v1.0; telemetry.mapper achata gps/imu no LiveTelemetryPoint (tripId=sessionId).
+      TelemetryController mock/dev TEMPORÁRIO (POST /telemetry dispara o gateway) até o endpoint
+      real do Pedro (PED-RF-06). 16 testes (DTO, gateway unit, integração com socket real provando
+      o done_when), suite 57/57 serial. Adicionado setupFiles reflect-metadata ao jest (corrige
+      flake de "Reflect.getMetadata is not a function" nos specs de DTO). Branch
+      feature/joa-rf-03-websocket-gateway (a partir de origin/main). Concluído em 2026-06-15 —
+      detalhes em session-current.xml. Destrava o EPIC-05.
+    </item>
     <item from="plan-002" task="EPIC-02">
       VehiclesModule completo (POST/GET/PATCH/DELETE /vehicles) em
       backend/smart-drive/src/vehicles/, com TempUserGuard placeholder em src/auth/

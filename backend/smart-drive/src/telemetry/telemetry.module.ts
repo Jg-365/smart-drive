@@ -1,5 +1,13 @@
 import { Module } from '@nestjs/common';
+import { TelemetryController } from './telemetry.controller';
+import { TelemetryGateway } from './telemetry.gateway';
 
-// Placeholder — ingestão a cargo do Pedro (PED-RF-06); gateway WebSocket é JOA-RF-03/EPIC 4.
-@Module({})
+// Gateway WebSocket (JOA-RF-03/EPIC-04). A ingestão real é do Pedro (PED-RF-06);
+// TelemetryController aqui é o disparo mock/dev temporário. TelemetryGateway é
+// exportado para que outros módulos (ex: Demo) possam emitir eventos.
+@Module({
+  controllers: [TelemetryController],
+  providers: [TelemetryGateway],
+  exports: [TelemetryGateway],
+})
 export class TelemetryModule {}
