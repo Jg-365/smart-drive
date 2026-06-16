@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
+import { VehiclesController } from './vehicles.controller';
+import { VehiclesService } from './vehicles.service';
 
-// Placeholder — implementação em JOA-RF-01/02 (EPIC 2).
-@Module({})
+@Module({
+  controllers: [VehiclesController],
+  providers: [VehiclesService],
+})
 export class VehiclesModule {}

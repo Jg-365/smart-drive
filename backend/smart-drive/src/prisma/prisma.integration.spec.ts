@@ -109,7 +109,11 @@ describe('PrismaService (integration)', () => {
       },
     });
     const device = await prisma.device.create({
-      data: { deviceCode: 'esp32-demo-002', name: 'Device sem GPS', vehicleId: vehicle.id },
+      data: {
+        deviceCode: 'esp32-demo-002',
+        name: 'Device sem GPS',
+        vehicleId: vehicle.id,
+      },
     });
     const trip = await prisma.trip.create({
       data: {
@@ -155,7 +159,11 @@ describe('PrismaService (integration)', () => {
       },
     });
     const device = await prisma.device.create({
-      data: { deviceCode: 'esp32-demo-003', name: 'Device cascata', vehicleId: vehicle.id },
+      data: {
+        deviceCode: 'esp32-demo-003',
+        name: 'Device cascata',
+        vehicleId: vehicle.id,
+      },
     });
     const trip = await prisma.trip.create({
       data: {
@@ -168,7 +176,13 @@ describe('PrismaService (integration)', () => {
     });
 
     await prisma.telemetryPoint.create({
-      data: { tripId: trip.id, timestamp: new Date(), accelX: 0, accelY: 0, accelZ: 9.8 },
+      data: {
+        tripId: trip.id,
+        timestamp: new Date(),
+        accelX: 0,
+        accelY: 0,
+        accelZ: 9.8,
+      },
     });
     await prisma.drivingEvent.create({
       data: {
@@ -184,7 +198,11 @@ describe('PrismaService (integration)', () => {
 
     await prisma.trip.delete({ where: { id: trip.id } });
 
-    expect(await prisma.telemetryPoint.count({ where: { tripId: trip.id } })).toBe(0);
-    expect(await prisma.drivingEvent.count({ where: { tripId: trip.id } })).toBe(0);
+    expect(
+      await prisma.telemetryPoint.count({ where: { tripId: trip.id } }),
+    ).toBe(0);
+    expect(
+      await prisma.drivingEvent.count({ where: { tripId: trip.id } }),
+    ).toBe(0);
   });
 });
