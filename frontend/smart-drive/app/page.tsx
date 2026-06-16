@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { sdVars as SD } from '@/lib/sd-vars';
 
+import { TelemetryProvider } from '@/features/shared/realtime';
 import { DesktopShell } from '@/features/shell';
 import { DashboardPage } from '@/features/dashboard';
 import { TripReportPage } from '@/features/trips';
@@ -19,6 +20,11 @@ import { MobileDemoPage } from '@/features/demo';
 type AppMode = 'desktop' | 'mobile';
 type DesktopScreen = 'dashboard' | 'trips' | 'vehicles' | 'devices' | 'demo';
 type MobileTab = 'home' | 'live' | 'map' | 'trips' | 'menu';
+
+// Viagem assinada em dev (casa com o sessionId do tools/telemetry-feeder). Sem a
+// env, fica null → dashboard mostra estado vazio (default seguro para produção,
+// até existir seleção de viagem real / modo demo).
+const DEV_TRIP_ID = process.env.NEXT_PUBLIC_DEV_TRIP_ID ?? null;
 
 export default function Page() {
   const [mode, setMode] = useState<AppMode>('desktop');
@@ -37,6 +43,7 @@ export default function Page() {
   };
 
   return (
+    <TelemetryProvider tripId={DEV_TRIP_ID}>
     <div style={{ height: '100vh', width: '100vw', overflow: 'hidden', background: SD.bg, position: 'relative' }}>
       {/* Mode switcher */}
       <div style={{
@@ -105,6 +112,7 @@ export default function Page() {
         </div>
       )}
     </div>
+    </TelemetryProvider>
   );
 }
 

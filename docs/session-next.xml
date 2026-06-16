@@ -25,13 +25,6 @@
        ═══════════════════════════════════════════════════════════ -->
   <epics>
 
-    <epic id="EPIC-05" req="JOA-RF-03" priority="critical" status="not_started">
-      <title>Dashboard em tempo real</title>
-      <depends_on>EPIC-03,EPIC-04</depends_on>
-      <summary>Conectar DashboardPage/MobileLivePage (layout já pronto) ao TelemetryProvider: velocidade/aceleração/GPS null/status online-offline/EventsFeed/empty state/score e fuel cards (mocks MSW com mesma interface dos serviços do Nathan). Memoização (RNF-01).</summary>
-      <done_when>Specs JOA-RF-03 passam com dados de simulador/mocks.</done_when>
-    </epic>
-
     <epic id="EPIC-06" req="JOA-RF-04" priority="high" status="not_started">
       <title>Mapa em tempo real com MapLibre GL JS</title>
       <depends_on>EPIC-03</depends_on>
@@ -149,6 +142,17 @@
        ITENS CONCLUÍDOS DO PLANO ANTERIOR (plan-001)
        ═══════════════════════════════════════════════════════════ -->
   <completed_from_plan>
+    <item from="plan-002" task="EPIC-05">
+      Dashboard em tempo real (JOA-RF-03). DashboardPage/MobileLivePage ligados ao store via
+      seletores atômicos; 12 SPECs cobertos (velocidade+guard inválido, accel, GPS/placeholder,
+      online/offline por staleness via useLiveStatus, eventos, score, consumo, sem refresh, banner
+      de reconexão, estado vazio+CTA). Helpers em features/dashboard/derive.tsx; store ganhou
+      lastPacketAt. TelemetryProvider plugado em app/page.tsx (tripId via NEXT_PUBLIC_DEV_TRIP_ID).
+      Dev feeder em tools/telemetry-feeder/ (POST /telemetry em loop). Favicon app/icon.svg.
+      26 testes novos, suite frontend 132/132. Branch feature/joa-rf-03-dashboard-realtime.
+      Concluído em 2026-06-15. LIMITAÇÃO: score/consumo/eventos dependem do caminho do Nathan
+      (trip:scoreUpdated/fuelEstimateUpdated/eventDetected); o feeder só dispara telemetry:new.
+    </item>
     <item from="plan-002" task="EPIC-03">
       Camada de dados real-time do frontend (JOA-RNF-01). Instaladas @tanstack/react-query,
       zustand, socket.io-client, maplibre-gl. lib/api/ (client fetch tipado + ApiError, config,

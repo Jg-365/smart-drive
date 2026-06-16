@@ -7,9 +7,17 @@ export {
   useFuelEstimate,
   useDeviceStatus,
   useTripFinished,
+  useLastPacketAt,
   MAX_EVENTS,
 } from './store'
 export type { ConnectionState, TelemetryState } from './store'
+export {
+  useLiveStatus,
+  isValidSpeed,
+  STALE_TIMEOUT_MS,
+  MAX_VALID_SPEED_KMH,
+} from './useLiveStatus'
+export type { LiveStatus, LiveStatusInfo } from './useLiveStatus'
 export { useTelemetrySocket } from './useTelemetrySocket'
 export type { UseTelemetrySocketOptions } from './useTelemetrySocket'
 export { TelemetryProvider } from './TelemetryProvider'

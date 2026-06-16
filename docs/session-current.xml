@@ -17,13 +17,13 @@
   </objective>
 
   <current_focus>
-    EPIC-00, EPIC-01, EPIC-02, EPIC-03 e EPIC-04 concluídos. EPIC-02 (módulo Vehicles) e EPIC-04
-    (WebSocket Gateway backend, JOA-RF-03 infra) em main (PRs #1 e #3 mergeados). EPIC-03 (camada
-    de dados real-time do frontend, JOA-RNF-01: lib/api/ + features/shared/realtime/ com store
-    Zustand, useTelemetrySocket com reconexão+fallback, TelemetryProvider; 106/106 testes) nesta
-    branch (PR #2), sendo mergeado agora. Com EPIC-03 (provider) + EPIC-04 (gateway) prontos,
-    próximo é EPIC-05: ligar DashboardPage/MobileLivePage ao TelemetryProvider/store. Ver
-    session-next.xml.
+    EPIC-00 a EPIC-05 concluídos. EPIC-02/03/04 em main (PRs #1/#2/#3 mergeados). EPIC-05
+    (Dashboard em tempo real, JOA-RF-03) implementado na branch
+    feature/joa-rf-03-dashboard-realtime: DashboardPage/MobileLivePage ligados ao store, 12 SPECs
+    cobertos, useLiveStatus (staleness offline), dev feeder (tools/telemetry-feeder), provider
+    plugado em app/page.tsx, favicon (app/icon.svg). 132/132 testes frontend. PR a abrir.
+    Próximo: EPIC-06 (Mapa MapLibre real, JOA-RF-04) — substituir o MapView SVG; risco G03 (SSR).
+    Ver session-next.xml.
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -96,13 +96,26 @@
       </notes>
     </req>
 
-    <req id="JOA-RF-03" title="Dashboard em tempo real" status="in_progress">
+    <req id="JOA-RF-03" title="Dashboard em tempo real" status="done">
       <notes>
-        DashboardPage e MobileLivePage existem (features/dashboard) com layout completo
-        (Stat, Panel, ScoreMeter equivalentes via primitives.tsx) mas dados 100% hardcoded/mockados.
-        INFRA pronta: frontend TelemetryProvider/useTelemetrySocket (EPIC-03, PR #2) +
-        TelemetryGateway no backend (EPIC-04, esta branch). Falta a ligação visual (EPIC-05):
-        plugar DashboardPage/MobileLivePage no provider/store.
+        EPIC-05 (branch feature/joa-rf-03-dashboard-realtime): DashboardPage (desktop) e
+        MobileLivePage (mobile) ligados ao store via seletores atômicos (RNF-01). Cobertos os 12
+        SPECs de JOA-RF-03: velocidade do último ponto (com guard isValidSpeed, edge >300km/h =
+        "dado inválido"), aceleração, GPS ou "GPS indisponível" (lat/lng null), status online/
+        offline (useLiveStatus: staleness — offline após 5s sem pacote mesmo com socket aberto,
+        volta a online sozinho), eventos recentes (feed do store, burst), score parcial +
+        classificação, consumo estimado parcial, atualização reativa sem refresh, banner de
+        reconexão (reconnecting/polling), estado vazio + CTA quando tripId null. Helpers comuns em
+        features/dashboard/derive.tsx (G, SCORE_HINT, EVENT_META, isHighSeverity). Store ganhou
+        lastPacketAt (em ingestPoint). TelemetryProvider plugado em app/page.tsx com tripId de dev
+        (NEXT_PUBLIC_DEV_TRIP_ID, null em prod → estado vazio). Dev feeder em
+        tools/telemetry-feeder/ (POST /telemetry em loop, exercita gateway→WS→store→dashboard).
+        26 testes novos (useLiveStatus 7, DashboardPage 14, MobileLivePage 5); suite frontend
+        132/132. tsc/eslint limpos. NOTA: score/consumo/eventos só atualizam quando o caminho do
+        Nathan (trip:scoreUpdated/fuelEstimateUpdated/eventDetected) emitir — o feeder dispara só
+        telemetry:new; até lá ficam vazios/"—".
+        Histórico INFRA: frontend TelemetryProvider/useTelemetrySocket (EPIC-03) +
+        TelemetryGateway backend (EPIC-04), ambos em main.
         EPIC-04 (backend WebSocket Gateway): TelemetryModule deixou de ser placeholder —
         TelemetryGateway (socket.io via @nestjs/platform-socket.io) com rooms por viagem
         (subscribe:trip/unsubscribe:trip → room trip:&lt;id&gt;), emite telemetry:new e
@@ -429,6 +442,28 @@
       "setupFiles": ["reflect-metadata"] ao jest config. Suite backend 57/57 SERIAL (em paralelo,
       vehicles integration flakeia por isolamento de Postgres — dívida registrada). nest build e
       eslint limpos. Próximo: EPIC-05 (Dashboard real, depende de EPIC-03 PR #2 + EPIC-04).
+    </entry>
+    <entry date="2026-06-15" type="implementation">
+      Coordenação: mergeados PRs #3 (EPIC-04), #2 (EPIC-03) e #1 (EPIC-02) em main; conflitos dos
+      docs de sessão reconciliados manualmente (current_focus, history, technical_debts, lista de
+      épicos e completed_from_plan). main em 3036865 com EPIC-02/03/04. Criada branch
+      feature/joa-rf-03-dashboard-realtime a partir de main para o EPIC-05.
+      EPIC-05 (JOA-RF-03 Dashboard em tempo real): store ganhou lastPacketAt (setado em
+      ingestPoint) + seletor useLastPacketAt; novo useLiveStatus (deriva online/offline por
+      staleness 5s + connection + device:statusChanged; tica 1s) e isValidSpeed/MAX_VALID_SPEED_KMH
+      (edge >300). features/dashboard/derive.tsx com helpers comuns (G, SCORE_HINT, EVENT_META,
+      isHighSeverity). DashboardPage (desktop) e MobileLivePage (mobile) reescritos: decompostos em
+      subcomponentes que assinam só sua fatia do store (RNF-01), cobrindo os 12 SPECs + edge cases
+      (GPS null placeholder, velocidade inválida, burst de eventos, reconexão, estado vazio+CTA).
+      TelemetryProvider plugado em app/page.tsx com tripId de dev via NEXT_PUBLIC_DEV_TRIP_ID (null
+      em prod). Dev feeder em tools/telemetry-feeder/ (feed.mjs + README): POST /telemetry em loop
+      simulando direção, exercita gateway→WS→store→dashboard. Favicon: copiado assets/Vector.svg →
+      app/icon.svg (convenção de file do Next, confirmada no build como rota /icon.svg). 26 testes
+      novos (useLiveStatus 7, DashboardPage 14, MobileLivePage 5); suite frontend 132/132, tsc sem
+      novos erros, build OK, eslint limpo (resta 1 warning pré-existente: onNav em MobileScreenWrapper).
+      LIMITAÇÃO: score/consumo/eventos só preenchem quando o caminho do Nathan emitir
+      trip:scoreUpdated/fuelEstimateUpdated/eventDetected — o feeder dispara só telemetry:new.
+      Próximo: EPIC-06 (Mapa MapLibre, JOA-RF-04).
     </entry>
   </history>
 
