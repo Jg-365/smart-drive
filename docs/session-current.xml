@@ -17,16 +17,15 @@
   </objective>
 
   <current_focus>
-    EPIC-00 a EPIC-07 concluídos. EPIC-02/03/04/05/06 em main (PRs #1..#5 mergeados). EPIC-07
-    (Cadastro/edição de veículos no frontend, JOA-RF-01/02) implementado na branch
-    feature/joa-rf-01-02-vehicles-frontend: lib/api/vehicles.ts (CRUD tipado), features/vehicles
-    com schema Zod espelhando o CreateVehicleDto do backend, hooks React Query (useVehicles/
-    useCreate/useUpdate/useDelete com invalidação → UI atualiza na hora), VehicleForm (validação +
-    erros por campo + erro de servidor) e VehiclesPage reescrita (lista/detalhe/criar/editar/excluir
-    reais). QueryProvider plugado em app/page.tsx (React Query antes instalado mas não usado).
-    Corrigidos de brinde os 6 erros tsc pré-existentes em factories.test.ts (strings → enums).
-    168/168 testes frontend (+25), tsc limpo, build OK. PR a abrir.
-    Próximo: EPIC-08 (relatório de viagem), EPIC-09 (modo demo), EPIC-10/11/12/13. Ver session-next.xml.
+    EPIC-00 a EPIC-08 concluídos. EPIC-02..07 em main (PRs #1..#6 mergeados; EPIC-07 = PR #6, 9dae44e).
+    EPIC-08 (Relatório de viagem, JOA-RF-08) implementado na branch feature/joa-rf-08-trip-report,
+    PR #7 ABERTO (a revisar/mergear): lib/api/trips.ts (fetchTrips/fetchTripSummary/fetchTripRoute),
+    features/trips/derive.ts (formatDuration hh:mm:ss, classifyScore, formatDistance sem-GPS,
+    buildRecommendations), hooks React Query (useTrips/useTripSummary/useTripRoute) e
+    TripReportPage/MobileTripReportPage reescritas com dados reais (distância/duração/vel/score/
+    consumo/eventos/trajeto/recomendações + estados loading/erro/vazio). 22 testes novos.
+    190/190 testes frontend, tsc limpo, build OK.
+    Próximo: EPIC-09 (modo demo ExpoIOT), EPIC-10/11/12/13. Ver session-next.xml.
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -196,11 +195,23 @@
       </notes>
     </req>
 
-    <req id="JOA-RF-08" title="Relatório de viagem" status="in_progress">
+    <req id="JOA-RF-08" title="Relatório de viagem" status="done">
       <notes>
-        TripReportPage e MobileTripReportPage existem (features/trips) como protótipo visual
-        com dados mockados. Falta integração com GET /trips/:id/summary, GET /trips/:id/events,
-        score/consumo reais do Nathan, e tratamento dos edge cases (0 km, 0 eventos, sem GPS).
+        EPIC-08 (branch feature/joa-rf-08-trip-report, PR #7): TripReportPage e MobileTripReportPage
+        reescritas para consumir GET /api/trips/:id/summary ({trip,events,fuelEstimate}) e
+        /:id/route via React Query (lib/api/trips.ts + features/trips/hooks.ts). features/trips/derive.ts
+        (puro, testado): formatDuration (hh:mm:ss, guarda 0/negativo/NaN), classifyScore (bandas →
+        rótulo PT-BR: Excelente/Boa/Moderada/Agressiva/Crítica), formatDistance (sem GPS → 'não
+        disponível', não 0), hasGpsData, buildRecommendations (sempre ≥1; positiva quando não há
+        eventos). Os 10 SPECs cobertos (distância, duração hh:mm:ss, vel média/máxima, eventos com
+        tipo/severidade/hora, score+classificação, consumo km/L+litros+confiança, resumo do trajeto,
+        ≥1 recomendação, recomendação positiva sem eventos) + edges (0km sem divisão, 0 eventos →
+        msg positiva, sem GPS → 'não disponível', score 0 → Crítica, score 100 → Excelente). Página
+        auto-seleciona a última viagem encerrada quando sem tripId. 22 testes novos (derive 11,
+        TripReportPage 8, MobileTripReportPage 3). NOTA: classificação é derivada de trip.drivingScore
+        pois o /summary ainda não traz o DrivingScore detalhado (penalties) do Nathan; integrar quando
+        o payload incluir. Score/consumo finais reais dependem de NAT-RF-04/05; aqui consome o shape
+        que o backend/mocks já expõem.
       </notes>
     </req>
 
@@ -561,7 +572,23 @@
       404 cross-user, inválido não salva). De brinde: corrigidos os 6 erros tsc pré-existentes de
       factories.test.ts (strings → enums). 25 testes novos; suite frontend 143 → 168, todos verdes;
       tsc limpo; build OK; eslint limpo nos arquivos novos (restam 4 erros pré-existentes em
-      useTheme.ts/map-gauges.tsx, registrados como dívida). PR a abrir.
+      useTheme.ts/map-gauges.tsx, registrados como dívida). PR #6 aberto e mergeado em main (9dae44e).
+    </entry>
+    <entry date="2026-06-16" type="implementation">
+      EPIC-08 implementado (JOA-RF-08) na branch feature/joa-rf-08-trip-report (a partir de main já
+      com EPIC-07). Novo fluxo de trabalho pedido pelo João: implementar → commit → push → revisar →
+      SÓ ENTÃO atualizar os docs de sessão (docs por último). Criados: lib/api/trips.ts
+      (fetchTrips/fetchTripSummary/fetchTripRoute em /api/trips) + exports; features/trips/derive.ts
+      (formatDuration hh:mm:ss, classifyScore com rótulos PT-BR, formatDistance sem-GPS→'não disponível',
+      hasGpsData, buildRecommendations sempre ≥1 e positiva sem eventos); features/trips/hooks.ts
+      (useTrips/useTripSummary/useTripRoute via React Query, enabled por tripId). TripReportPage (desktop)
+      e MobileTripReportPage reescritas para dados reais: distância/duração/vel média+máxima, score+
+      classificação, consumo+confiança, eventos (tipo/severidade/hora via EVENT_META), resumo do trajeto,
+      recomendações; estados loading/erro/vazio; auto-seleção da última viagem encerrada quando sem tripId.
+      Cobertos 10 SPECs + 5 edges (0km, 0 eventos, sem GPS, score 0/100). 22 testes novos (derive 11,
+      TripReportPage 8, MobileTripReportPage 3); suite frontend 168 → 190, todos verdes; tsc limpo; build
+      OK; eslint limpo nos arquivos novos. Commit 7c9333e, push, PR #7 ABERTO (a revisar/mergear — NÃO
+      mergeado ainda, diferente do EPIC-07 que era dependência). Docs atualizados após a revisão.
     </entry>
   </history>
 

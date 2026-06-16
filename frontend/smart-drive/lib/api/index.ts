@@ -11,3 +11,5 @@ export {
   deleteVehicle,
 } from './vehicles'
 export type { CreateVehicleInput, UpdateVehicleInput } from './vehicles'
+export { fetchTrips, fetchTripSummary, fetchTripRoute } from './trips'
+export type { TripSummaryResponse, RoutePoint } from './trips'

@@ -2,100 +2,143 @@
 
 import React from 'react';
 import { sdVars as SD } from '@/lib/sd-vars';
-import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot, Stat } from '@/features/shared/ui/primitives';
-import { MapView, ArcGauge } from '@/features/shared/ui/map-gauges';
 import { MobileShell } from '@/features/shell/components/MobileShell';
+import { EVENT_META } from '@/features/dashboard/derive';
+import { EventSeverity, TripStatus } from '@/features/shared/types';
+import { useTrips, useTripSummary, useTripRoute } from '../hooks';
+import {
+  buildRecommendations, classifyScore, formatDistance, formatDuration, hasGpsData,
+} from '../derive';
 
-export function MobileTripReportPage() {
+const SEV_TONE: Record<EventSeverity, string> = {
+  [EventSeverity.LOW]: SD.textDim,
+  [EventSeverity.MEDIUM]: SD.warning,
+  [EventSeverity.HIGH]: SD.danger,
+  [EventSeverity.CRITICAL]: SD.danger,
+};
+
+function eventTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '--:--';
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+export function MobileTripReportPage({ tripId }: { tripId?: string }) {
+  const trips = useTrips();
+  const resolvedId =
+    tripId ??
+    trips.data?.find((t) => t.status === TripStatus.FINISHED)?.id ??
+    trips.data?.[0]?.id ??
+    null;
+
+  const summary = useTripSummary(resolvedId);
+  const route = useTripRoute(resolvedId);
+
+  const loading = trips.isLoading || summary.isLoading;
+  const title = summary.data ? summary.data.trip.id.toUpperCase() : 'VIAGEM';
+
   return (
-    <MobileShell active="trips" title="VIAGEM #030">
+    <MobileShell active="trips" title={title}>
       <div style={{ padding: '14px 18px 100px', display: 'grid', gap: 16 }}>
-        {/* Header */}
-        <div>
-          <Tag tone="green"><Dot tone="green" size={5} pulse={false} /> ENCERRADA</Tag>
-          <div className="sd-display" style={{ fontSize: 22, lineHeight: 1.05, marginTop: 8 }}>
-            FORTALEZA →<br />MARACANAÚ
-          </div>
-          <div className="sd-mono" style={{ fontSize: 11, color: SD.textDim, marginTop: 6 }}>
-            QUI 06 MAI · 16:42 → 17:38
-          </div>
-        </div>
+        {loading && <div className="sd-mono" style={{ fontSize: 12, color: SD.textDim }}>Carregando…</div>}
 
-        {/* Map */}
-        <div style={{ background: SD.surface, border: `1.5px solid ${SD.border}`, overflow: 'hidden' }}>
-          <div style={{ height: 160 }}>
-            <MapView width={400} height={160} mini animate={false} />
+        {!loading && (summary.isError || !summary.data) && (
+          <div className="sd-mono" style={{ fontSize: 12, color: SD.danger }}>
+            Não foi possível carregar o relatório.
           </div>
-        </div>
+        )}
 
-        {/* KPI grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: SD.border }}>
-          {[
-            { l: 'DISTÂNCIA', v: '28.4', u: 'km' },
-            { l: 'DURAÇÃO', v: '56:14', u: 'min' },
-            { l: 'VEL. MED', v: '31', u: 'km/h' },
-            { l: 'VEL. MAX', v: '78', u: 'km/h' },
-            { l: 'CONSUMO', v: '11.2', u: 'km/L', a: SD.success },
-            { l: 'GASTO', v: 'R$ 15', u: '· 2.54L', a: SD.warning },
-          ].map((k, i) => (
-            <div key={i} style={{ background: SD.surface, padding: 14 }}>
-              <Stat label={k.l} value={k.v} unit={k.u} size="md" accent={k.a} />
-            </div>
-          ))}
-        </div>
+        {!loading && summary.data && (() => {
+          const { trip, events, fuelEstimate } = summary.data;
+          const gps = hasGpsData(route.data);
+          const score = classifyScore(trip.drivingScore);
+          const recs = buildRecommendations(events);
 
-        {/* Score card */}
-        <div style={{ background: SD.surface, border: `1.5px solid ${SD.border}`, padding: 16 }}>
-          <div className="sd-label" style={{ fontSize: 10, marginBottom: 12 }}>SCORE DA VIAGEM</div>
-          <div style={{ display: 'grid', placeItems: 'center' }}>
-            <ArcGauge value={74} size={200} hint="BOA · PERFIL ECONÔMICO" />
-          </div>
-          <div style={{ display: 'grid', gap: 6, paddingTop: 12, borderTop: `1px dashed ${SD.border}` }}>
-            {[
-              { l: 'Aceleração', v: 'OK', t: 'green' as const },
-              { l: 'Frenagem · 2 eventos', v: '-6 pts', t: 'red' as const },
-              { l: 'Curvas · 3 fortes', v: '-9 pts', t: 'yellow' as const },
-              { l: 'Velocidade · 1 pico', v: '-7 pts', t: 'yellow' as const },
-            ].map((r, i) => (
-              <div key={i} style={{
-                display: 'flex', justifyContent: 'space-between', padding: '8px 0',
-                borderBottom: i < 3 ? `1px solid ${SD.border}` : 'none', alignItems: 'center',
-              }}>
-                <span style={{ fontSize: 12 }}>{r.l}</span>
-                <Tag tone={r.t}>{r.v}</Tag>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Events */}
-        <div>
-          <div className="sd-label" style={{ fontSize: 10, marginBottom: 10 }}>EVENTOS · 9</div>
-          <div style={{ display: 'grid', gap: 8 }}>
-            {[
-              { t: '16:51', l: 'Freada brusca · -0.71 g', icon: Icon.brake, c: SD.danger },
-              { t: '17:03', l: 'Curva forte · +0.62 g', icon: Icon.turn, c: SD.warning },
-              { t: '17:11', l: 'Aceleração brusca · +0.58 g', icon: Icon.bolt, c: SD.danger },
-              { t: '17:18', l: 'Pico de velocidade · 78 km/h', icon: Icon.speed, c: SD.warning },
-            ].map((e, i) => (
-              <div key={i} style={{
-                display: 'grid', gridTemplateColumns: '32px 1fr auto', gap: 12, alignItems: 'center',
-                padding: 12, background: SD.surface, border: `1px solid ${SD.border}`,
-              }}>
-                <div style={{ width: 32, height: 32, border: `1.5px solid ${e.c}`, color: e.c, display: 'grid', placeItems: 'center' }}>
-                  {e.icon(14)}
+          return (
+            <>
+              <div>
+                <Tag tone="green"><Dot tone="green" size={5} pulse={false} /> ENCERRADA</Tag>
+                <div className="sd-display" style={{ fontSize: 22, lineHeight: 1.05, marginTop: 8 }}>
+                  {formatDistance(trip.distanceKm, gps)}
                 </div>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600 }}>{e.l}</div>
-                  <div className="sd-mono" style={{ fontSize: 10, color: SD.textDim }}>{e.t}</div>
+                <div className="sd-mono" style={{ fontSize: 11, color: SD.textDim, marginTop: 6 }}>
+                  {formatDuration(trip.durationSeconds)}
                 </div>
-                <span style={{ color: SD.textDim }}>{Icon.arrow(14)}</span>
               </div>
-            ))}
-          </div>
-        </div>
+
+              {/* KPI grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: SD.border }}>
+                <KpiCell l="DISTÂNCIA" v={gps ? trip.distanceKm.toFixed(1) : '—'} u={gps ? 'km' : 'n/d'} />
+                <KpiCell l="DURAÇÃO" v={formatDuration(trip.durationSeconds)} u="" />
+                <KpiCell l="VEL. MÉD" v={String(trip.averageSpeedKmh)} u="km/h" />
+                <KpiCell l="VEL. MÁX" v={String(trip.maxSpeedKmh)} u="km/h" a={SD.warning} />
+                <KpiCell l="CONSUMO" v={fuelEstimate.adjustedConsumptionKmL.toFixed(1)} u="km/L" a={SD.success} />
+                <KpiCell l="GASTO" v={fuelEstimate.estimatedLitersSpent.toFixed(2)} u="L" />
+              </div>
+
+              {/* Score */}
+              <div style={{ background: SD.surface, border: `1.5px solid ${SD.border}`, padding: 16 }}>
+                <div className="sd-label" style={{ fontSize: 10, marginBottom: 8 }}>SCORE DA VIAGEM</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                  <span className="sd-display" style={{ fontSize: 40, color: SD.primary, lineHeight: 1 }}>
+                    {Math.round(trip.drivingScore)}
+                  </span>
+                  <span className="sd-mono" style={{ fontSize: 12, color: SD.textDim }}>/ 100</span>
+                </div>
+                <div className="sd-label" style={{ fontSize: 12, marginTop: 6 }}>CONDUÇÃO {score.label.toUpperCase()}</div>
+              </div>
+
+              {/* Events */}
+              <div>
+                <div className="sd-label" style={{ fontSize: 10, marginBottom: 10 }}>EVENTOS · {events.length}</div>
+                {events.length === 0 ? (
+                  <div className="sd-mono" style={{ fontSize: 12, color: SD.success }}>
+                    Nenhum evento de risco. 👏
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {events.map((e) => {
+                      const meta = EVENT_META[e.type];
+                      const c = SEV_TONE[e.severity];
+                      return (
+                        <div key={e.id} style={{
+                          display: 'grid', gridTemplateColumns: '32px 1fr auto', gap: 12, alignItems: 'center',
+                          padding: 12, background: SD.surface, border: `1px solid ${SD.border}`,
+                        }}>
+                          <div style={{ width: 32, height: 32, border: `1.5px solid ${c}`, color: c, display: 'grid', placeItems: 'center' }}>
+                            {meta?.icon(14, c)}
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 600 }}>{e.description || meta?.label}</div>
+                          <span className="sd-mono" style={{ fontSize: 10, color: SD.textDim }}>{eventTime(e.timestamp)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Recommendations */}
+              <div>
+                <div className="sd-label" style={{ fontSize: 10, marginBottom: 10 }}>RECOMENDAÇÕES</div>
+                <ul style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 6 }}>
+                  {recs.map((r, i) => (
+                    <li key={i} style={{ fontSize: 12, color: SD.text, lineHeight: 1.5 }}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          );
+        })()}
       </div>
     </MobileShell>
+  );
+}
+
+function KpiCell({ l, v, u, a }: { l: string; v: string; u: string; a?: string }) {
+  return (
+    <div style={{ background: SD.surface, padding: 14 }}>
+      <Stat label={l} value={v} unit={u} size="md" accent={a} />
+    </div>
   );
 }
