@@ -17,12 +17,12 @@
   </objective>
 
   <current_focus>
-    EPIC-00, EPIC-01 e EPIC-02 concluídos. EPIC-02 (módulo Vehicles, CRUD + validações) implementado
-    em branch separada (feature/joa-rf-01-02-vehicles-module) e PR #1 aberto (não mergeado ainda).
-    EPIC-03 (camada de dados real-time do frontend) iniciado: branch
-    feature/joa-rnf-01-realtime-data-layer criada a partir de main, levantamento de contexto feito
-    (ver entrada de history "EPIC-03 (kickoff)"), nenhum código escrito ainda. Sessão pausada por
-    limite de uso — retomar por aí. Ver session-next.xml para o plano detalhado dos próximos passos.
+    EPIC-00, EPIC-01, EPIC-02 e EPIC-03 concluídos. EPIC-02 (módulo Vehicles) em PR #1 (não
+    mergeado). EPIC-03 (camada de dados real-time do frontend, JOA-RNF-01) implementado e testado
+    na branch feature/joa-rnf-01-realtime-data-layer: lib/api/ tipado + features/shared/realtime/
+    (store Zustand, useTelemetrySocket com reconexão+fallback, TelemetryProvider), 106/106 testes.
+    Próximo: abrir PR do EPIC-03 e seguir para EPIC-04 (WebSocket Gateway no backend), que destrava
+    o EPIC-05 (ligar o Dashboard ao provider). Ver session-next.xml.
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -147,7 +147,25 @@
       </notes>
     </req>
 
-    <req id="JOA-RNF-01" title="Tempo real percebido" status="not_started" />
+    <req id="JOA-RNF-01" title="Tempo real percebido" status="done">
+      <notes>
+        EPIC-03 concluído na branch feature/joa-rnf-01-realtime-data-layer. Instaladas as libs de
+        dados (@tanstack/react-query, zustand, socket.io-client, maplibre-gl). Criado lib/api/
+        (client fetch tipado api.get/post/patch/delete + ApiError; config com NEXT_PUBLIC_API_URL/
+        WS_URL; serviços fetchLiveTelemetry/fetchTripTelemetry para o fallback de polling).
+        Criado features/shared/realtime/: store Zustand com selectors atômicos (useConnection,
+        useLastPoint, useDrivingScore, etc. — mudar um ponto não re-renderiza cards não
+        relacionados), events.ts (nomes dos eventos WS), useTelemetrySocket (conecta, subscribe:trip,
+        mapeia os 6 eventos server→client, reconexão 5x com backoff 0.5→8s, fallback de polling 2s
+        via lib/api ao esgotar, cleanup completo no unmount) e TelemetryProvider (sobe o hook sem
+        assinar o store). SPECs RNF-01 cobertos: reconexão automática, fallback por polling após N
+        tentativas, sem re-render desnecessário, base para "mapa não re-renderiza por ponto"
+        (consolidação visual fica no EPIC-06). 13 testes novos (hook, store, provider, client) com
+        socket.io-client e lib/api mockados; suite frontend 106/106, tsc/eslint limpos nos arquivos
+        novos. Bônus: corrigido bug em setupTests.ts (require não resolvia alias @/, MSW global
+        estava desligado em toda a suite) trocando por import estático.
+      </notes>
+    </req>
     <req id="JOA-RNF-02" title="Disponibilidade na demo" status="not_started" />
     <req id="JOA-RNF-03" title="Mobile-first" status="in_progress">
       <notes>Layout mobile (402x780 simulado) e desktop já existem nas telas protótipo, mas não validados contra os SPECs formais (375px, áreas de toque 44x44px).</notes>
@@ -230,6 +248,12 @@
       scripts de teste (o query compiler wasm do Prisma 7 usa dynamic import). Já configurado em
       backend/smart-drive/package.json — documentar para Pedro/Nathan se tiverem testes próprios
       que importam o Prisma Client gerado.
+    </debt>
+    <debt priority="low" created="2026-06-15">
+      mocks/__tests__/factories.test.ts (frontend, commit 282840c do sprint-1) tem 6 erros de
+      `tsc --noEmit`: usa strings cruas ('ELECTRIC', 'ONLINE', 'HARD_BRAKE', etc.) onde o tipo
+      espera os enums FuelType/DeviceStatus/DrivingEventType. Não quebra os testes (vitest roda via
+      transform sem typecheck), mas suja o tsc. Fix trivial: trocar pelos membros do enum.
     </debt>
     <debt priority="medium" created="2026-06-09">
       VehiclesController usa TempUserGuard (header `x-user-id`) em vez de auth JWT real —
@@ -341,6 +365,24 @@
         com mock de socket.io-client.
       Sessão pausada aqui por limite de uso, conforme pedido do João ("salve tudo, continuamos
       amanhã"). Próximos passos detalhados em session-next.xml (EPIC-03).
+    </entry>
+    <entry date="2026-06-15" type="implementation">
+      EPIC-03 implementado de ponta a ponta (JOA-RNF-01). Sidequest antes: criado
+      tools/telemetry-recorder/ (gravador de telemetria real via sensores do celular, CSV no
+      formato do contrato v1.0) a pedido do Nathan para calibrar os detectores com dados do mundo
+      real; diagnosticado e corrigido o motivo de o GPS não pedir permissão (contexto inseguro —
+      precisa de https; servido via cloudflared tunnel) e adicionado aviso de isSecureContext no
+      próprio HTML. Depois, EPIC-03: instaladas @tanstack/react-query, zustand, socket.io-client,
+      maplibre-gl; criado lib/api/ (client.ts fetch tipado + ApiError, config.ts, telemetry.ts com
+      fetchLiveTelemetry/fetchTripTelemetry, index.ts) com 4 testes; criado
+      features/shared/realtime/ (store.ts Zustand + selectors atômicos, events.ts, useTelemetrySocket
+      com reconexão 5x e fallback de polling 2s, TelemetryProvider, index.ts) com 9 testes (hook 6,
+      store 3, provider 2) usando socket.io-client e lib/api mockados. Decisão do João: reconexão =
+      5 tentativas + polling 2s. Corrigido bug latente em setupTests.ts (require não resolvia alias
+      @/ → MSW global desligado em toda a suite; trocado por import estático). Suite frontend
+      passou de 95 para 106 testes, todos verdes; tsc/eslint limpos nos arquivos novos (restam 6
+      erros tsc PRÉ-EXISTENTES em mocks/__tests__/factories.test.ts, commit 282840c, strings cruas
+      em vez de enums — dívida menor a corrigir à parte). Próximo: PR do EPIC-03 e EPIC-04.
     </entry>
   </history>
 
