@@ -25,13 +25,6 @@
        ═══════════════════════════════════════════════════════════ -->
   <epics>
 
-    <epic id="EPIC-08" req="JOA-RF-08" priority="medium" status="not_started">
-      <title>Relatório de viagem (real)</title>
-      <depends_on>EPIC-03</depends_on>
-      <summary>Conectar TripReportPage/MobileTripReportPage a GET /trips/:id/summary,/events,/route (Pedro) + score/consumo (Nathan), com mocks como fallback. Cobrir edge cases: 0km, 0 eventos, sem GPS, score 0/100.</summary>
-      <done_when>Specs JOA-RF-08 passam, incluindo edge cases.</done_when>
-    </epic>
-
     <epic id="EPIC-09" req="JOA-RF-05" priority="high" status="not_started">
       <title>Modo Demo ExpoIOT</title>
       <depends_on>EPIC-05,EPIC-06</depends_on>
@@ -132,6 +125,16 @@
        ITENS CONCLUÍDOS DO PLANO ANTERIOR (plan-001)
        ═══════════════════════════════════════════════════════════ -->
   <completed_from_plan>
+    <item from="plan-002" task="EPIC-08">
+      Relatório de viagem (JOA-RF-08). lib/api/trips.ts (fetchTrips/fetchTripSummary/fetchTripRoute),
+      features/trips/derive.ts (formatDuration hh:mm:ss, classifyScore, formatDistance sem-GPS,
+      buildRecommendations), hooks React Query, TripReportPage/MobileTripReportPage reescritas com
+      dados reais (distância/duração/vel/score/consumo/eventos/trajeto/recomendações + loading/erro/
+      vazio). 10 SPECs + 5 edges (0km, 0 eventos, sem GPS, score 0/100). 22 testes novos, suite
+      168 → 190. Branch feature/joa-rf-08-trip-report, PR #7 (a revisar/mergear). Concluído em
+      2026-06-16. PENDÊNCIA: classificação derivada de trip.drivingScore (o /summary ainda não traz
+      o DrivingScore detalhado do Nathan — NAT-RF-05); integrar quando o payload incluir penalties.
+    </item>
     <item from="plan-002" task="EPIC-07">
       Cadastro/edição de veículos no frontend (JOA-RF-01/02). lib/api/vehicles.ts (CRUD tipado),
       schema Zod espelhando o CreateVehicleDto, hooks React Query com invalidação (UI atualiza na
