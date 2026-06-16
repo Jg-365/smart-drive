@@ -25,13 +25,6 @@
        ═══════════════════════════════════════════════════════════ -->
   <epics>
 
-    <epic id="EPIC-06" req="JOA-RF-04" priority="high" status="not_started">
-      <title>Mapa em tempo real com MapLibre GL JS</title>
-      <depends_on>EPIC-03</depends_on>
-      <summary>Substituir MapView SVG (components/ui/map-gauges.tsx) por MapLibre em MapPage e dashboard. LiveMap (dynamic import, ssr:false — risco G03), TripPolyline com downsampling 500pts, VehicleMarker, DrivingEventMarker. Decidir tile server (Q04 — OpenFreeMap + fallback offline).</summary>
-      <done_when>Specs JOA-RF-04 passam com dados simulados.</done_when>
-    </epic>
-
     <epic id="EPIC-07" req="JOA-RF-01,JOA-RF-02" priority="medium" status="not_started">
       <title>Frontend: cadastro/edição de veículos (real)</title>
       <depends_on>EPIC-02,EPIC-03</depends_on>
@@ -94,7 +87,11 @@
       maplibre-gl; lib/api/ e features/shared/realtime/ (store + useTelemetrySocket +
       TelemetryProvider) prontos e testados. EPIC-05/06/08/09 já podem consumir o provider/store.
     </bottleneck>
-    <bottleneck id="G03" impact="medium" status="open">
+    <bottleneck id="G03" impact="medium" status="resolved" resolved_date="2026-06-15">
+      RESOLVIDO no EPIC-06: MapLibre carregado via next/dynamic ssr:false (LiveMapContainer em
+      MapPage); import do maplibre-gl fica fora do server bundle, build do Next passa. Original:
+    </bottleneck>
+    <bottleneck id="G03-old" impact="medium" status="resolved">
       MapLibre pode ter conflitos com SSR do Next.js 16/React 19 — usar dynamic import com
       ssr:false e testar cedo no EPIC-06.
     </bottleneck>
@@ -142,6 +139,17 @@
        ITENS CONCLUÍDOS DO PLANO ANTERIOR (plan-001)
        ═══════════════════════════════════════════════════════════ -->
   <completed_from_plan>
+    <item from="plan-002" task="EPIC-06">
+      Mapa em tempo real com MapLibre GL JS (JOA-RF-04). features/shared/geo.ts (isValidCoord,
+      toLngLat, downsample 500). Store.route acumulada (só coord válida). LiveMap (MapLibre
+      imperativo: style raster escuro CARTO inline, NavigationControl/zoom, polyline com
+      downsampling, marcadores de evento + veículo, centralização no 1º ponto, fallback de tiles).
+      LiveMapContainer liga o store; MapPage via next/dynamic ssr:false (resolve G03). 15 testes
+      novos, suite frontend 143/143. Branch feature/joa-rf-04-maplibre-map. Concluído em 2026-06-15.
+      Q04 decidido: style raster escuro CARTO inline (self-contained, dark, sem vector tile server),
+      override via styleUrl. NOTA: dashboard/mini-mapas seguem em SVG; GET /trips/:id/route (Pedro)
+      pendente.
+    </item>
     <item from="plan-002" task="EPIC-05">
       Dashboard em tempo real (JOA-RF-03). DashboardPage/MobileLivePage ligados ao store via
       seletores atômicos; 12 SPECs cobertos (velocidade+guard inválido, accel, GPS/placeholder,
