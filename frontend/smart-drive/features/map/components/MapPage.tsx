@@ -1,17 +1,22 @@
 'use client';
 
-import React from 'react';
+import dynamic from 'next/dynamic';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot, Btn, Stat } from '@/features/shared/ui/primitives';
-import { MapView } from '@/features/shared/ui/map-gauges';
 import { MobileShell } from '@/features/shell/components/MobileShell';
+
+// MapLibre só no cliente (usa WebGL/window) — evita quebra no SSR do Next (G03).
+const LiveMapContainer = dynamic(
+  () => import('./LiveMapContainer').then((m) => m.LiveMapContainer),
+  { ssr: false, loading: () => <div style={{ position: 'absolute', inset: 0, background: SD.bg }} /> },
+);
 
 export function MapPage() {
   return (
     <MobileShell active="map" hideBars>
       <div style={{ position: 'relative', height: '100%' }}>
-        <MapView width={400} height={760} />
+        <LiveMapContainer style={{ position: 'absolute', inset: 0 }} />
 
         {/* Top overlay */}
         <div style={{ position: 'absolute', top: 12, left: 12, right: 12, display: 'flex', gap: 8 }}>

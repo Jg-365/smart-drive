@@ -17,12 +17,12 @@
   </objective>
 
   <current_focus>
-    EPIC-00 a EPIC-05 concluídos. EPIC-02/03/04 em main (PRs #1/#2/#3 mergeados). EPIC-05
-    (Dashboard em tempo real, JOA-RF-03) implementado na branch
-    feature/joa-rf-03-dashboard-realtime: DashboardPage/MobileLivePage ligados ao store, 12 SPECs
-    cobertos, useLiveStatus (staleness offline), dev feeder (tools/telemetry-feeder), provider
-    plugado em app/page.tsx, favicon (app/icon.svg). 132/132 testes frontend. PR a abrir.
-    Próximo: EPIC-06 (Mapa MapLibre real, JOA-RF-04) — substituir o MapView SVG; risco G03 (SSR).
+    EPIC-00 a EPIC-06 concluídos. EPIC-02/03/04/05 em main (PRs #1/#2/#3/#4 mergeados). EPIC-06
+    (Mapa MapLibre real, JOA-RF-04) implementado na branch feature/joa-rf-04-maplibre-map: MapPage
+    com MapLibre GL JS (LiveMap + LiveMapContainer, via next/dynamic ssr:false), geo.ts (downsample/
+    validação), store.route acumulada, fallback de tiles. 143/143 testes frontend, build OK. PR a
+    abrir. Gargalo G03 (SSR do MapLibre) resolvido com dynamic import ssr:false.
+    Próximo: EPIC-07 (cadastro/edição de veículos no frontend, JOA-RF-01/02) ou EPIC-08/09/10/11.
     Ver session-next.xml.
   </current_focus>
 
@@ -131,12 +131,27 @@
       </notes>
     </req>
 
-    <req id="JOA-RF-04" title="Mapa em tempo real" status="in_progress">
+    <req id="JOA-RF-04" title="Mapa em tempo real" status="done">
       <notes>
-        MapPage existe (features/map) usando MapView SVG-based (components/ui/map-gauges.tsx)
-        com dados determinísticos simulados — NÃO é MapLibre GL JS ainda. maplibre-gl não
-        está instalado. Falta TripPolyline real, DrivingEventMarker, downsampling de 500 pontos,
-        integração com GET /trips/:id/route.
+        EPIC-06 (branch feature/joa-rf-04-maplibre-map): MapPage agora usa MapLibre GL JS real, não
+        mais o MapView SVG. features/shared/geo.ts (puro, testado): isValidCoord, toLngLat ([lng,lat]
+        ou null), downsample (uniforme, preserva extremos, MAX_POLYLINE_POINTS=500). Store ganhou
+        route: LngLat[] — ingestPoint só acumula coordenada válida (GPS null/fora de range é
+        ignorado → polyline não ganha o ponto e o marcador "congela" no último válido). LiveMap.tsx
+        (client, MapLibre imperativo): style raster escuro CARTO inline (self-contained, dark),
+        NavigationControl (zoom in/out), source/layer de rota (polyline com downsampling), source/
+        layer de eventos (círculos por severidade), marcador do veículo, centraliza no primeiro
+        ponto, e fallback visual quando o tile server falha (evento map 'error'). LiveMapContainer
+        liga o store (route, vehicle=último ponto válido, eventos com coord). MapPage carrega o
+        LiveMapContainer via next/dynamic ssr:false (mitiga G03 — MapLibre usa WebGL/window). CSS do
+        maplibre importado em app/layout.tsx. 14 SPECs/edges cobertos: marcador na posição atual e
+        atualização a cada ponto válido, polyline acumulada, pontos simulados = mesma interface
+        (LngLat), marcadores de evento, zoom, viewport mobile/desktop (componente fluido), lat/lng
+        null ignorado, downsampling > 500, fallback sem tiles, centralização no 1º ponto. 15 testes
+        novos (geo 6, store route 1, LiveMap 4 com maplibre-gl mockado + cobertura via utils). suite
+        frontend 143/143, tsc/build limpos. NOTA: integração com GET /trips/:id/route (replay,
+        Pedro) fica para depois; aqui a rota vem do fluxo ao vivo (store). O mini-mapa do dashboard
+        e telas (MobileLivePage/MapView SVG) seguem em SVG por ora — migração opcional no EPIC-10.
       </notes>
     </req>
 
@@ -464,6 +479,21 @@
       LIMITAÇÃO: score/consumo/eventos só preenchem quando o caminho do Nathan emitir
       trip:scoreUpdated/fuelEstimateUpdated/eventDetected — o feeder dispara só telemetry:new.
       Próximo: EPIC-06 (Mapa MapLibre, JOA-RF-04).
+    </entry>
+    <entry date="2026-06-15" type="implementation">
+      PR #4 (EPIC-05) mergeado em main (8799393). Criada branch feature/joa-rf-04-maplibre-map.
+      EPIC-06 (JOA-RF-04 Mapa em tempo real): features/shared/geo.ts (puro) com isValidCoord,
+      toLngLat, downsample (MAX_POLYLINE_POINTS=500). Store ganhou route: LngLat[] (ingestPoint só
+      acumula coord válida → marcador congela e polyline não quebra com GPS null) + seletor useRoute.
+      LiveMap.tsx (MapLibre imperativo: style raster escuro CARTO inline, NavigationControl/zoom,
+      polyline com downsampling, marcadores de evento por severidade, marcador do veículo,
+      centralização no 1º ponto, fallback no evento 'error' de tile). LiveMapContainer liga o store.
+      MapPage usa next/dynamic ssr:false (resolve G03 — MapLibre usa WebGL/window). CSS do maplibre
+      em app/layout.tsx. 15 testes novos (geo 6, store route 1, LiveMap 4 com maplibre-gl mockado +
+      utils); suite frontend 143/143, tsc/build limpos (1 warning de _opts em mock de teste).
+      Sem deps novas (maplibre-gl já instalado no EPIC-03). NOTA: dashboard/mini-mapas seguem em
+      MapView SVG (migração opcional EPIC-10); integração com GET /trips/:id/route (replay, Pedro)
+      pendente. Fim da sessão do dia.
     </entry>
   </history>
 

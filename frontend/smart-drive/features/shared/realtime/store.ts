@@ -6,6 +6,7 @@ import type {
   FuelEstimate,
   TelemetryPoint,
 } from '@/features/shared/types'
+import { type LngLat, toLngLat } from '@/features/shared/geo'
 
 /**
  * Estado da conexão de tempo real:
@@ -30,6 +31,8 @@ export interface TelemetryState {
   connection: ConnectionState
   /** Epoch ms do último ponto recebido — base para detectar offline por staleness. */
   lastPacketAt: number | null
+  /** Rota acumulada da viagem ([lng, lat]); só pontos com coordenada válida. */
+  route: LngLat[]
   tripFinished: boolean
 
   // actions — mutações atômicas, uma por tipo de evento WS
@@ -53,6 +56,7 @@ const initialState = {
   deviceStatus: null as DeviceStatus | null,
   connection: 'offline' as ConnectionState,
   lastPacketAt: null as number | null,
+  route: [] as LngLat[],
   tripFinished: false,
 }
 
@@ -61,7 +65,17 @@ export const useTelemetryStore = create<TelemetryState>()((set) => ({
 
   setConnection: (connection) => set({ connection }),
   setTrip: (tripId) => set({ tripId }),
-  ingestPoint: (lastPoint) => set({ lastPoint, lastPacketAt: Date.now() }),
+  ingestPoint: (lastPoint) =>
+    set((s) => {
+      const coord = toLngLat(lastPoint)
+      return {
+        lastPoint,
+        lastPacketAt: Date.now(),
+        // coord inválida (GPS null/fora de range) é ignorada: a polyline não
+        // ganha o ponto e o marcador "congela" no último válido (edge JOA-RF-04).
+        route: coord ? [...s.route, coord] : s.route,
+      }
+    }),
   addEvent: (e) => set((s) => ({ events: [e, ...s.events].slice(0, MAX_EVENTS) })),
   setScore: (score) => set({ score }),
   setFuelEstimate: (fuelEstimate) => set({ fuelEstimate }),
@@ -81,3 +95,4 @@ export const useFuelEstimate = () => useTelemetryStore((s) => s.fuelEstimate)
 export const useDeviceStatus = () => useTelemetryStore((s) => s.deviceStatus)
 export const useTripFinished = () => useTelemetryStore((s) => s.tripFinished)
 export const useLastPacketAt = () => useTelemetryStore((s) => s.lastPacketAt)
+export const useRoute = () => useTelemetryStore((s) => s.route)

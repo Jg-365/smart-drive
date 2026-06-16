@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { ThemeProvider } from '@/features/shared/theme/ThemeProvider';
 
 const archivo = Archivo({

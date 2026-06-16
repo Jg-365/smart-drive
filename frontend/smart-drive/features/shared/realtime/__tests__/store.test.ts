@@ -73,4 +73,22 @@ describe('telemetry store', () => {
 
     expect(renders).toBe(before) // sem re-render
   })
+
+  it('ingestPoint acumula a rota só com coordenadas válidas (JOA-RF-04)', () => {
+    const s = useTelemetryStore.getState()
+    const p = (lat: number | null, lng: number | null) => ({
+      id: 'p', tripId: 't', timestamp: 1,
+      lat: lat as number, lng: lng as number,
+      speedKmh: 0, accelX: 0, accelY: 0, accelZ: 0,
+    })
+    s.ingestPoint(p(-23.5, -46.6))
+    s.ingestPoint(p(null, null)) // GPS perdido — ignorado, marcador congela
+    s.ingestPoint(p(-23.6, -46.7))
+    s.ingestPoint(p(200, 0)) // fora de range — ignorado
+
+    expect(useTelemetryStore.getState().route).toEqual([
+      [-46.6, -23.5],
+      [-46.7, -23.6],
+    ])
+  })
 })
