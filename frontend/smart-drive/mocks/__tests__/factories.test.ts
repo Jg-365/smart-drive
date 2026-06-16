@@ -4,6 +4,7 @@ import { makeTrip } from '@/features/trips/mocks/factories'
 import { makeDevice } from '@/features/devices/mocks/factories'
 import { makeTelemetryPoint, makeDrivingEvent } from '@/features/dashboard/mocks/factories'
 import { smoothDrivingScenario, aggressiveDrivingScenario } from '@/features/demo/mocks/factories'
+import { FuelType, DeviceStatus, DrivingEventType } from '@/features/shared/types'
 
 describe('makeVehicle', () => {
   it('returns a valid Vehicle with all required fields', () => {
@@ -29,10 +30,10 @@ describe('makeVehicle', () => {
   })
 
   it('overrides multiple fields', () => {
-    const v = makeVehicle({ brand: 'Toyota', year: 2025, fuelType: 'ELECTRIC' })
+    const v = makeVehicle({ brand: 'Toyota', year: 2025, fuelType: FuelType.ELECTRIC })
     expect(v.brand).toBe('Toyota')
     expect(v.year).toBe(2025)
-    expect(v.fuelType).toBe('ELECTRIC')
+    expect(v.fuelType).toBe(FuelType.ELECTRIC)
   })
 })
 
@@ -90,13 +91,13 @@ describe('makeDevice', () => {
   })
 
   it('overrides status to ONLINE', () => {
-    const d = makeDevice({ status: 'ONLINE' })
-    expect(d.status).toBe('ONLINE')
+    const d = makeDevice({ status: DeviceStatus.ONLINE })
+    expect(d.status).toBe(DeviceStatus.ONLINE)
   })
 
   it('overrides status to OFFLINE', () => {
-    const d = makeDevice({ status: 'OFFLINE' })
-    expect(d.status).toBe('OFFLINE')
+    const d = makeDevice({ status: DeviceStatus.OFFLINE })
+    expect(d.status).toBe(DeviceStatus.OFFLINE)
   })
 })
 
@@ -125,20 +126,20 @@ describe('makeTelemetryPoint', () => {
 
 describe('makeDrivingEvent', () => {
   it('has negative value for HARD_BRAKE', () => {
-    const e = makeDrivingEvent({ type: 'HARD_BRAKE' })
+    const e = makeDrivingEvent({ type: DrivingEventType.HARD_BRAKE })
     expect(e.value).toBeLessThan(0)
   })
 
   it('has positive value for HARD_ACCELERATION', () => {
-    const e = makeDrivingEvent({ type: 'HARD_ACCELERATION' })
+    const e = makeDrivingEvent({ type: DrivingEventType.HARD_ACCELERATION })
     expect(e.value).toBeGreaterThan(0)
   })
 
   it('has all required fields', () => {
-    const e = makeDrivingEvent({ type: 'HARD_BRAKE' })
+    const e = makeDrivingEvent({ type: DrivingEventType.HARD_BRAKE })
     expect(e.id).toBeTruthy()
     expect(e.tripId).toBeTruthy()
-    expect(e.type).toBe('HARD_BRAKE')
+    expect(e.type).toBe(DrivingEventType.HARD_BRAKE)
     expect(e.threshold).toBe(-0.5)
     expect(e.description).toBeTruthy()
   })

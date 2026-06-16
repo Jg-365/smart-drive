@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { sdVars as SD } from '@/lib/sd-vars';
 
 import { TelemetryProvider } from '@/features/shared/realtime';
+import { QueryProvider } from '@/features/shared/query';
 import { DesktopShell } from '@/features/shell';
 import { DashboardPage } from '@/features/dashboard';
 import { TripReportPage } from '@/features/trips';
@@ -43,6 +44,7 @@ export default function Page() {
   };
 
   return (
+    <QueryProvider>
     <TelemetryProvider tripId={DEV_TRIP_ID}>
     <div style={{ height: '100vh', width: '100vw', overflow: 'hidden', background: SD.bg, position: 'relative' }}>
       {/* Mode switcher */}
@@ -113,6 +115,7 @@ export default function Page() {
       )}
     </div>
     </TelemetryProvider>
+    </QueryProvider>
   );
 }
 
