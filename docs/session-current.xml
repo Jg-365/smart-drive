@@ -17,10 +17,13 @@
   </objective>
 
   <current_focus>
-    EPIC-00, EPIC-01 e EPIC-02 concluídos. EPIC-02 (módulo Vehicles, CRUD + validações) implementado
-    em branch separada (feature/joa-rf-01-02-vehicles-module), conforme nova convenção de
-    branching por épico. Próximo passo: EPIC-03 (camada de dados real-time do frontend —
-    TanStack Query, Zustand, socket.io-client, MapLibre).
+    EPIC-00, EPIC-01, EPIC-02 e EPIC-04 concluídos. EPIC-02 (módulo Vehicles) em main (PR #1
+    mergeado). EPIC-04 (WebSocket Gateway backend, JOA-RF-03 infra) implementado nesta branch
+    (feature/joa-rf-03-websocket-gateway, a partir de origin/main). NOTA: EPIC-03 (camada de dados
+    real-time do frontend, JOA-RNF-01) foi feito EM PARALELO na branch
+    feature/joa-rnf-01-realtime-data-layer (PR #2) — não aparece como done NESTE doc porque esta
+    branch saiu de main antes do merge do PR #2; reconciliar no merge. Próximo: EPIC-05 (ligar o
+    Dashboard ao TelemetryProvider do EPIC-03 + gateway do EPIC-04).
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -97,8 +100,21 @@
       <notes>
         DashboardPage e MobileLivePage existem (features/dashboard) com layout completo
         (Stat, Panel, ScoreMeter equivalentes via primitives.tsx) mas dados 100% hardcoded/mockados.
-        Faltam: TanStack Query, Zustand, socket.io-client (nenhum instalado ainda),
-        useTelemetrySocket, TelemetryProvider, ligação real ao backend/WebSocket.
+        INFRA pronta: frontend TelemetryProvider/useTelemetrySocket (EPIC-03, PR #2) +
+        TelemetryGateway no backend (EPIC-04, esta branch). Falta a ligação visual (EPIC-05):
+        plugar DashboardPage/MobileLivePage no provider/store.
+        EPIC-04 (backend WebSocket Gateway): TelemetryModule deixou de ser placeholder —
+        TelemetryGateway (socket.io via @nestjs/platform-socket.io) com rooms por viagem
+        (subscribe:trip/unsubscribe:trip → room trip:&lt;id&gt;), emite telemetry:new e
+        device:statusChanged só para quem assinou; TelemetryPayloadDto valida o contrato v1.0
+        (deviceId/timestamp obrigatórios, accelX/Y/Z obrigatórios, GPS null aceito, lat/lng em
+        range); telemetry.mapper achata o contrato (gps/imu aninhados) no LiveTelemetryPoint que o
+        front consome (tripId = sessionId); TelemetryController é mock/dev TEMPORÁRIO (POST
+        /telemetry dispara o gateway; POST /telemetry/dev/device-status) até o POST /telemetry real
+        do Pedro (PED-RF-06), que deve chamar gateway.emitTelemetryNew após persistir. 16 testes
+        (DTO 9, gateway unit 5, integração com socket real 2 — cliente recebe telemetry:new após
+        POST, e 400 sem deviceId); suite backend 57/57 (serial). Deps: @nestjs/websockets,
+        @nestjs/platform-socket.io, socket.io (+ socket.io-client dev).
       </notes>
     </req>
 
@@ -235,6 +251,19 @@
       `request.user = { id: string }` (src/auth/request-with-user.ts). Mesmo guard deve ser
       reaproveitado por Devices/Trips/Telemetry quando esses módulos exigirem dono autenticado.
     </debt>
+    <debt priority="medium" created="2026-06-15">
+      Flakiness de isolamento no backend: vehicles.service.integration.spec.ts falha
+      intermitentemente quando o jest roda as suites EM PARALELO contra o mesmo Postgres
+      (o teste "findAll não retorna veículos de outros usuários" sofre corrida de dados entre
+      workers). Passa 100% serial (`jest --runInBand`) e isolado. Corrigir dando isolamento por
+      suite (schema/transação por worker, ou banco dedicado de teste, ou maxWorkers=1 nos
+      integration). Não afeta os testes de telemetry (não usam DB).
+    </debt>
+    <debt priority="low" created="2026-06-15">
+      TelemetryController (POST /telemetry e /telemetry/dev/device-status) é mock/dev TEMPORÁRIO
+      (EPIC-04) só para disparar o gateway sem hardware. Remover quando o POST /telemetry real do
+      Pedro (PED-RF-06) existir; este deve chamar TelemetryGateway.emitTelemetryNew após persistir.
+    </debt>
   </technical_debts>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -321,6 +350,25 @@
       (criação com sanitização de `<Fiat>`→`Fiat`, 401 sem x-user-id, 400 em consumo=0,
       PATCH parcial preservando campos, 404 em acesso cross-user, soft delete via DELETE)
       validado de ponta a ponta contra o Postgres local.
+    </entry>
+    <entry date="2026-06-15" type="implementation">
+      EPIC-04 implementado na branch feature/joa-rf-03-websocket-gateway (a partir de origin/main,
+      que já tem o PR #1/EPIC-02 mergeado). Instaladas @nestjs/websockets, @nestjs/platform-socket.io,
+      socket.io (+ socket.io-client dev). src/telemetry/: telemetry-payload.dto.ts (contrato v1.0
+      com validação aninhada via class-validator/@Type — GpsDto/ImuDto/EventsDto/BatteryDto),
+      device-status.dto.ts, telemetry.events.ts (nomes WS espelhando o front), telemetry.mapper.ts
+      (toLivePoint achata o payload no LiveTelemetryPoint, tripId=sessionId), telemetry.gateway.ts
+      (TelemetryGateway socket.io com rooms trip:<id>, subscribe/unsubscribe, emitTelemetryNew/
+      emitDeviceStatusChanged, CORS de CORS_ORIGIN), telemetry.controller.ts (mock/dev temporário
+      POST /telemetry + /telemetry/dev/device-status), telemetry.module.ts (não-placeholder,
+      exporta o gateway). 16 testes novos (DTO 9, gateway unit 5, integração com socket.io-client
+      real 2 — prova o done_when: cliente que deu subscribe:trip recebe telemetry:new após POST
+      /telemetry, e 400 sem deviceId). Corrigido bug latente de teste: specs de DTO quebravam com
+      "Reflect.getMetadata is not a function" quando rodados sem um spec do Nest carregando
+      reflect-metadata antes (os specs de vehicles passavam só por ordem de execução); adicionado
+      "setupFiles": ["reflect-metadata"] ao jest config. Suite backend 57/57 SERIAL (em paralelo,
+      vehicles integration flakeia por isolamento de Postgres — dívida registrada). nest build e
+      eslint limpos. Próximo: EPIC-05 (Dashboard real, depende de EPIC-03 PR #2 + EPIC-04).
     </entry>
   </history>
 
