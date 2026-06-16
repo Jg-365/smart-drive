@@ -9,3 +9,5 @@ frontend/worktrees/
 
 # Artefatos de build do firmware ESP-IDF (regenerável com idf.py build)
 firmware/build/
+
+/docs

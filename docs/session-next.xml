@@ -25,12 +25,6 @@
        ═══════════════════════════════════════════════════════════ -->
   <epics>
 
-    <epic id="EPIC-03" req="JOA-RNF-01" priority="critical" status="not_started">
-      <title>Frontend: camada de dados real-time (TanStack Query, Zustand, socket.io-client, MapLibre)</title>
-      <summary>Instalar dependências (nenhuma instalada ainda). lib/api/ tipado. TelemetryProvider + useTelemetrySocket com reconexão automática + fallback polling, store Zustand separado da conexão. TDD com mock de socket.</summary>
-      <done_when>Hook testado isoladamente, pronto para plugar nas páginas.</done_when>
-    </epic>
-
     <epic id="EPIC-05" req="JOA-RF-03" priority="critical" status="not_started">
       <title>Dashboard em tempo real</title>
       <depends_on>EPIC-03,EPIC-04</depends_on>
@@ -102,9 +96,10 @@
       Schema Prisma (EPIC-00) implementado e migrado contra Postgres local. Pedro e Nathan já
       podem implementar seus módulos sobre prisma/schema.prisma e PrismaService.
     </bottleneck>
-    <bottleneck id="G02" impact="high" status="active">
-      Frontend não tem nenhuma lib de dados/realtime instalada (TanStack Query, Zustand,
-      socket.io-client, MapLibre) — EPIC-03 é pré-requisito de EPIC-05/06/08/09.
+    <bottleneck id="G02" impact="high" status="resolved" resolved_date="2026-06-15">
+      RESOLVIDO no EPIC-03: instaladas @tanstack/react-query, zustand, socket.io-client e
+      maplibre-gl; lib/api/ e features/shared/realtime/ (store + useTelemetrySocket +
+      TelemetryProvider) prontos e testados. EPIC-05/06/08/09 já podem consumir o provider/store.
     </bottleneck>
     <bottleneck id="G03" impact="medium" status="open">
       MapLibre pode ter conflitos com SSR do Next.js 16/React 19 — usar dynamic import com
@@ -154,6 +149,16 @@
        ITENS CONCLUÍDOS DO PLANO ANTERIOR (plan-001)
        ═══════════════════════════════════════════════════════════ -->
   <completed_from_plan>
+    <item from="plan-002" task="EPIC-03">
+      Camada de dados real-time do frontend (JOA-RNF-01). Instaladas @tanstack/react-query,
+      zustand, socket.io-client, maplibre-gl. lib/api/ (client fetch tipado + ApiError, config,
+      fetchLiveTelemetry/fetchTripTelemetry). features/shared/realtime/ (store Zustand com selectors
+      atômicos, useTelemetrySocket com reconexão 5x + fallback de polling 2s, TelemetryProvider).
+      13 testes novos (socket.io-client e lib/api mockados), suite 106/106. Corrigido bug em
+      setupTests.ts (MSW global desligado por require sem resolução de alias). Branch
+      feature/joa-rnf-01-realtime-data-layer. Concluído em 2026-06-15 — detalhes em
+      session-current.xml. Hook pronto para plugar nas páginas (EPIC-05/06).
+    </item>
     <item from="plan-002" task="EPIC-04">
       Backend WebSocket Gateway (JOA-RF-03 infra). TelemetryGateway (socket.io via
       @nestjs/platform-socket.io) com rooms por viagem (subscribe:trip/unsubscribe:trip), emite
