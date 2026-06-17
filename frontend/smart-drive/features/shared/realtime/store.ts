@@ -34,9 +34,12 @@ export interface TelemetryState {
   /** Rota acumulada da viagem ([lng, lat]); só pontos com coordenada válida. */
   route: LngLat[]
   tripFinished: boolean
+  /** True quando a sessão atual é o Modo Demo (ExpoIOT) — separa demo do fluxo real. */
+  demoMode: boolean
 
   // actions — mutações atômicas, uma por tipo de evento WS
   setConnection: (c: ConnectionState) => void
+  setDemoMode: (v: boolean) => void
   setTrip: (tripId: string | null) => void
   ingestPoint: (p: TelemetryPoint) => void
   addEvent: (e: DrivingEvent) => void
@@ -58,12 +61,14 @@ const initialState = {
   lastPacketAt: null as number | null,
   route: [] as LngLat[],
   tripFinished: false,
+  demoMode: false,
 }
 
 export const useTelemetryStore = create<TelemetryState>()((set) => ({
   ...initialState,
 
   setConnection: (connection) => set({ connection }),
+  setDemoMode: (demoMode) => set({ demoMode }),
   setTrip: (tripId) => set({ tripId }),
   ingestPoint: (lastPoint) =>
     set((s) => {
@@ -96,3 +101,4 @@ export const useDeviceStatus = () => useTelemetryStore((s) => s.deviceStatus)
 export const useTripFinished = () => useTelemetryStore((s) => s.tripFinished)
 export const useLastPacketAt = () => useTelemetryStore((s) => s.lastPacketAt)
 export const useRoute = () => useTelemetryStore((s) => s.route)
+export const useDemoMode = () => useTelemetryStore((s) => s.demoMode)

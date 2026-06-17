@@ -5,6 +5,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { FuelType, type Vehicle } from '@/features/shared/types'
 import { server } from '@/mocks/server'
 import { useTelemetryStore } from '@/features/shared/realtime'
+
+// O mapa MapLibre usa WebGL/canvas (indisponível no jsdom) — stub no teste.
+vi.mock('@/features/map/components/LiveMapContainer', () => ({
+  LiveMapContainer: () => null,
+}))
+
 import { DemoPage } from '../DemoPage'
 
 const vehicle: Vehicle = {
@@ -118,9 +124,10 @@ describe('DemoPage (JOA-RF-05)', () => {
     expect(onMode).toHaveBeenCalledWith('smooth')
   })
 
-  it('mostra "sem GPS → pista virtual" (apresentação não interrompe)', async () => {
+  it('demo ativa sem GPS: aviso honesto de GPS sem fix (não interrompe)', () => {
+    useTelemetryStore.getState().reset()
+    useTelemetryStore.getState().setConnection('live') // demo rodando, sem lastPoint → sem fix
     renderDemo()
-    expect(await screen.findByText(/pista virtual/i)).toBeInTheDocument()
-    expect(screen.getByLabelText('Pista virtual')).toBeInTheDocument()
+    expect(screen.getByText(/GPS sem fix/i)).toBeInTheDocument()
   })
 })
