@@ -1,118 +1,168 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot, Btn, Panel } from '@/features/shared/ui/primitives';
+import { DeviceStatus, type Device } from '@/features/shared/types';
+import { useLastPoint, useLiveStatus, isValidSpeed } from '@/features/shared/realtime';
+import { useDevices } from '../hooks';
+
+type TagTone = 'neutral' | 'cyan' | 'red' | 'green' | 'yellow' | 'blue';
+type DotTone = 'cyan' | 'red' | 'green' | 'yellow' | 'gray';
+const STATUS_META: Record<DeviceStatus, { tag: TagTone; dot: DotTone; label: string }> = {
+  [DeviceStatus.ONLINE]: { tag: 'green', dot: 'green', label: 'ONLINE' },
+  [DeviceStatus.OFFLINE]: { tag: 'neutral', dot: 'gray', label: 'OFFLINE' },
+  [DeviceStatus.PAIRING]: { tag: 'cyan', dot: 'cyan', label: 'PAREANDO' },
+  [DeviceStatus.ERROR]: { tag: 'red', dot: 'red', label: 'ERRO' },
+};
+
+function relativeTime(iso: string): string {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return '—';
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 60) return `há ${s}s`;
+  if (s < 3600) return `há ${Math.round(s / 60)}min`;
+  if (s < 86400) return `há ${Math.round(s / 3600)}h`;
+  return `há ${Math.round(s / 86400)}d`;
+}
 
 export function DevicesPage() {
+  const devices = useDevices();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const list = devices.data ?? [];
+  const selected = list.find((d) => d.id === selectedId) ?? list[0] ?? null;
+
   return (
     <div style={{
       height: '100%', overflow: 'auto', background: SD.bg, padding: 24,
-      display: 'grid', gap: 16, gridTemplateColumns: '320px 1fr', alignContent: 'start',
+      display: 'grid', gap: 16, gridTemplateColumns: '360px 1fr', alignContent: 'start',
     }}>
-      {/* LEFT: Vehicle list */}
+      {/* LEFT: device list */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <span className="sd-display" style={{ fontSize: 18 }}>VEÍCULOS</span>
-          <Btn tone="outline" size="sm" icon={Icon.plus(12)} disabled title="Pareamento de dispositivos (em breve)">NOVO</Btn>
-        </div>
-        <div style={{ display: 'grid', gap: 8 }}>
-          {[
-            { brand: 'CHEVROLET', model: 'Onix LT 1.0', year: '2021', cons: '12.4', tank: '44', dev: 'esp32-demo-001', active: true },
-            { brand: 'FIAT', model: 'Strada Endurance', year: '2023', cons: '10.8', tank: '55', dev: '—', active: false },
-            { brand: 'HONDA', model: 'CG 160 Fan', year: '2022', cons: '38.5', tank: '12', dev: '—', active: false },
-          ].map((v, i) => (
-            <div
-              key={i}
-              className="sd-btn"
-              style={{
-                padding: 14,
-                border: `1.5px solid ${v.active ? SD.primary : SD.border}`,
-                background: v.active ? 'rgba(0,229,255,0.05)' : SD.surface,
-                display: 'grid', gridTemplateColumns: '36px 1fr', gap: 12,
-              }}
-            >
-              <div style={{
-                width: 36, height: 36, background: SD.surface2, border: `1px solid ${SD.border}`,
-                display: 'grid', placeItems: 'center', color: v.active ? SD.primary : SD.textDim,
-              }}>
-                {Icon.car(18)}
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                  <span className="sd-label" style={{ fontSize: 9, color: SD.textDim }}>{v.brand}</span>
-                  {v.active && <Tag tone="cyan">ATIVO</Tag>}
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{v.model}</div>
-                <div className="sd-mono" style={{ fontSize: 10, color: SD.textDim, display: 'flex', gap: 10 }}>
-                  <span>{v.year}</span>
-                  <span>{v.cons} km/L</span>
-                  <span>{v.tank}L</span>
-                </div>
-                <div className="sd-mono" style={{ fontSize: 9, color: v.dev === '—' ? SD.textMute : SD.success, marginTop: 4 }}>
-                  ⓘ {v.dev}
-                </div>
-              </div>
-            </div>
-          ))}
+          <span className="sd-display" style={{ fontSize: 18 }}>DISPOSITIVOS</span>
+          <Btn tone="outline" size="sm" icon={Icon.plus(12)} disabled title="Pareamento de dispositivos — módulo do Pedro (em breve)">PAREAR</Btn>
         </div>
 
-        <div style={{ height: 1, background: SD.border, margin: '20px 0' }} />
+        {devices.isLoading && (
+          <div className="sd-mono" style={{ fontSize: 12, color: SD.textDim, padding: 12 }}>Carregando dispositivos…</div>
+        )}
 
-        <div className="sd-label" style={{ fontSize: 9, marginBottom: 10 }}>DISPOSITIVOS PAREADOS</div>
-        <div style={{ display: 'grid', gap: 8 }}>
-          {[
-            { code: 'esp32-demo-001', status: 'online', fw: '0.4.1', last: 'agora' },
-            { code: 'esp32-demo-002', status: 'offline', fw: '0.4.1', last: 'há 2h' },
-          ].map((d, i) => (
-            <div
-              key={i}
-              style={{
-                padding: 10, background: SD.surface, border: `1px solid ${SD.border}`,
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}
-            >
-              <div>
-                <div className="sd-mono" style={{ fontSize: 11, color: SD.text }}>{d.code}</div>
-                <div className="sd-mono" style={{ fontSize: 9, color: SD.textDim }}>FRT {d.fw} · {d.last}</div>
-              </div>
-              <Tag tone={d.status === 'online' ? 'green' : 'neutral'}>
-                <Dot tone={d.status === 'online' ? 'green' : 'gray'} size={5} pulse={d.status === 'online'} />
-                {d.status === 'online' ? 'ONLINE' : 'OFFLINE'}
-              </Tag>
+        {devices.isError && (
+          <div style={{ padding: 14, border: `1.5px solid ${SD.warning}`, background: SD.warningSoft, color: SD.text }}>
+            <div className="sd-label" style={{ fontSize: 9, color: SD.warning, marginBottom: 4 }}>DEPENDÊNCIA EXTERNA</div>
+            <div style={{ fontSize: 12, lineHeight: 1.5, color: SD.textDim }}>
+              Não foi possível carregar os dispositivos. O módulo de pareamento (ESP32) é
+              do <strong style={{ color: SD.text }}>Pedro</strong> e ainda não está disponível.
             </div>
+          </div>
+        )}
+
+        {!devices.isLoading && !devices.isError && list.length === 0 && (
+          <div className="sd-mono" style={{ fontSize: 12, color: SD.textDim, padding: 12, border: `1px dashed ${SD.border}` }}>
+            Nenhum dispositivo pareado ainda.
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gap: 8 }}>
+          {list.map((d) => (
+            <DeviceCard key={d.id} device={d} active={selected?.id === d.id} onClick={() => setSelectedId(d.id)} />
           ))}
         </div>
       </div>
 
-      {/* RIGHT: Detail form */}
+      {/* RIGHT: detail + live telemetry */}
       <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
-        <Panel
-          title="ONIX LT 1.0 · 2021"
-          kicker="VEÍCULO ATIVO"
-          accent={SD.primary}
-          tools={
-            <div style={{ display: 'flex', gap: 6 }}>
-              <Btn tone="ghost" size="sm" disabled title="Em breve">DUPLICAR</Btn>
-              <Btn tone="ghost" size="sm" disabled title="Em breve" style={{ color: SD.danger, borderColor: 'rgba(255,51,68,0.4)' }}>EXCLUIR</Btn>
+        {selected ? (
+          <Panel
+            title={selected.name}
+            kicker={selected.deviceCode}
+            accent={SD.primary}
+            tools={
+              <Btn tone="ghost" size="sm" disabled title="Vínculo de veículo — módulo do Pedro (em breve)">VINCULAR VEÍCULO</Btn>
+            }
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+              <Field label="STATUS" value={STATUS_META[selected.status].label} accent={SD.primary} />
+              <Field label="FIRMWARE" value={selected.firmwareVersion} />
+              <Field label="ÚLTIMA COMUNICAÇÃO" value={relativeTime(selected.lastSeenAt)} />
+              <Field label="VEÍCULO VINCULADO" value={selected.vehicleId || '— não vinculado'} />
+              <Field label="CÓDIGO" value={selected.deviceCode} />
             </div>
-          }
-        >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
-            <Field label="MARCA" value="Chevrolet" />
-            <Field label="MODELO" value="Onix LT" />
-            <Field label="ANO" value="2021" />
-            <Field label="MOTOR" value="1.0 12V" />
-            <Field label="COMBUSTÍVEL" value="Flex (E)" />
-            <Field label="PESO (kg)" value="1.072" />
-            <Field label="CONSUMO URBANO" value="12.4 km/L" accent={SD.primary} />
-            <Field label="CONSUMO RODOVIÁRIO" value="14.1 km/L" accent={SD.primary} />
-            <Field label="TANQUE" value="44 L" />
-          </div>
-        </Panel>
+          </Panel>
+        ) : (
+          !devices.isLoading && (
+            <div className="sd-mono" style={{ fontSize: 12, color: SD.textDim, padding: 16, border: `1px dashed ${SD.border}` }}>
+              Selecione um dispositivo para ver os detalhes.
+            </div>
+          )
+        )}
+
+        <LiveTelemetryPanel />
       </div>
     </div>
+  );
+}
+
+function DeviceCard({ device, active, onClick }: { device: Device; active: boolean; onClick: () => void }) {
+  const meta = STATUS_META[device.status];
+  const online = device.status === DeviceStatus.ONLINE;
+  return (
+    <div
+      role="button"
+      aria-label={device.deviceCode}
+      onClick={onClick}
+      className="sd-btn"
+      style={{
+        padding: 14, border: `1.5px solid ${active ? SD.primary : SD.border}`,
+        background: active ? 'rgba(0,229,255,0.05)' : SD.surface,
+        display: 'grid', gridTemplateColumns: '36px 1fr auto', gap: 12, alignItems: 'center',
+      }}
+    >
+      <div style={{
+        width: 36, height: 36, background: SD.surface2, border: `1px solid ${SD.border}`,
+        display: 'grid', placeItems: 'center', color: active ? SD.primary : SD.textDim,
+      }}>
+        {Icon.chip(18)}
+      </div>
+      <div>
+        <div className="sd-mono" style={{ fontSize: 12, fontWeight: 700 }}>{device.deviceCode}</div>
+        <div className="sd-mono" style={{ fontSize: 10, color: SD.textDim }}>
+          FW {device.firmwareVersion} · {relativeTime(device.lastSeenAt)}
+        </div>
+      </div>
+      <Tag tone={meta.tag}>
+        <Dot tone={meta.dot} size={5} pulse={online} /> {meta.label}
+      </Tag>
+    </div>
+  );
+}
+
+/** Estado de telemetria AO VIVO do dispositivo que está transmitindo (store real). */
+function LiveTelemetryPanel() {
+  const { online } = useLiveStatus();
+  const point = useLastPoint();
+  const hasFix = point != null && point.lat != null && point.lng != null;
+  const accelG = point ? Math.hypot(point.accelX, point.accelY, point.accelZ) / 9.80665 : null;
+
+  return (
+    <Panel title="TELEMETRIA AO VIVO" kicker={online ? 'TRANSMITINDO' : 'SEM SINAL'} accent={online ? SD.success : SD.textDim}>
+      {!point ? (
+        <div className="sd-mono" style={{ fontSize: 12, color: SD.textDim }}>
+          Nenhum dispositivo transmitindo telemetria no momento.
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+          <Field label="CONEXÃO" value={online ? 'ONLINE' : 'OFFLINE (sem pacote recente)'} accent={online ? SD.success : SD.danger} />
+          <Field label="GPS" value={hasFix ? `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}` : 'sem fix'} />
+          <Field label="SATÉLITES" value={typeof point.satellites === 'number' ? String(point.satellites) : '—'} />
+          <Field label="VELOCIDADE" value={isValidSpeed(point.speedKmh) ? `${Math.round(point.speedKmh)} km/h` : '—'} />
+          <Field label="IMU |a|" value={accelG != null ? `${accelG.toFixed(2)} g` : '—'} accent={SD.primary} />
+        </div>
+      )}
+    </Panel>
   );
 }
 
@@ -123,7 +173,7 @@ function Field({ label, value, accent }: { label: string; value: string; accent?
       <div style={{
         padding: '10px 12px', background: SD.surface2, border: `1px solid ${SD.border}`,
         color: accent || SD.text, fontSize: 13, fontWeight: 500,
-      }} className={accent ? 'sd-mono' : ''}>
+      }} className="sd-mono">
         {value}
       </div>
     </div>
