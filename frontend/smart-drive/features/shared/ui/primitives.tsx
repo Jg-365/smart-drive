@@ -145,9 +145,12 @@ interface BtnProps {
   style?: React.CSSProperties;
   icon?: React.ReactNode;
   full?: boolean;
+  /** Desabilita o botão (sem ação) — usado para placeholders ainda não implementados. */
+  disabled?: boolean;
+  title?: string;
 }
 
-export function Btn({ children, tone = 'ghost', size = 'md', onClick, style = {}, icon, full }: BtnProps) {
+export function Btn({ children, tone = 'ghost', size = 'md', onClick, style = {}, icon, full, disabled = false, title }: BtnProps) {
   const sizes: Record<BtnSize, { p: string; f: number }> = {
     sm: { p: '6px 10px', f: 11 },
     md: { p: '9px 14px', f: 12 },
@@ -165,12 +168,16 @@ export function Btn({ children, tone = 'ghost', size = 'md', onClick, style = {}
   return (
     <button
       className="sd-btn sd-label"
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      aria-disabled={disabled}
+      title={title}
       style={{
         padding: s.p, fontSize: s.f, fontWeight: 700, letterSpacing: '0.12em',
         color: t.fg, background: t.bg, border: `1.5px solid ${t.bd}`,
         display: 'inline-flex', alignItems: 'center', gap: 8,
         ...(full ? { width: '100%', justifyContent: 'center' } : {}),
+        ...(disabled ? { opacity: 0.4, cursor: 'not-allowed', pointerEvents: 'none' } : {}),
         ...style,
       }}
     >

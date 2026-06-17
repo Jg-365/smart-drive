@@ -16,13 +16,15 @@ import {
 } from '@/features/shared/realtime';
 import { EVENT_META, G, SCORE_HINT, isHighSeverity } from '../derive';
 
-export function MobileLivePage() {
+type MobileTab = 'home' | 'live' | 'map' | 'trips' | 'menu';
+
+export function MobileLivePage({ onNavigate }: { onNavigate?: (tab: MobileTab) => void }) {
   const tripId = useTelemetryStore((s) => s.tripId);
 
   return (
     <MobileShell active="live" scroll>
       {!tripId ? (
-        <EmptyState />
+        <EmptyState onNavigate={onNavigate} />
       ) : (
         <div style={{ padding: '8px 18px 100px', display: 'grid', gap: 14 }}>
           <Header />
@@ -49,7 +51,7 @@ function Header() {
         <Tag tone={tone}><Dot tone={tone} size={5} pulse={status !== 'offline'} /> {label}</Tag>
         <div className="sd-mono" style={{ fontSize: 11, color: SD.textDim, marginTop: 4 }}>{tripId}</div>
       </div>
-      <Btn tone="ghost" size="sm" icon={Icon.stop(10)}>PARAR</Btn>
+      <Btn tone="ghost" size="sm" icon={Icon.stop(10)} disabled title="Encerrar viagem (em breve)">PARAR</Btn>
     </div>
   );
 }
@@ -117,7 +119,7 @@ function MiniMap() {
         <span className="sd-mono" style={{ fontSize: 11, color: hasGps ? SD.text : SD.textDim }}>
           {hasGps ? `${point!.lat.toFixed(4)} / ${point!.lng.toFixed(4)}` : 'GPS indisponível'}
         </span>
-        <Btn tone="outline" size="sm">EXPANDIR</Btn>
+        <Btn tone="outline" size="sm" disabled title="Em breve">EXPANDIR</Btn>
       </div>
     </div>
   );
@@ -167,7 +169,7 @@ function LatestEvent() {
   );
 }
 
-function EmptyState() {
+function EmptyState({ onNavigate }: { onNavigate?: (tab: MobileTab) => void }) {
   return (
     <div style={{ padding: '60px 24px', display: 'grid', placeItems: 'center', textAlign: 'center', gap: 16 }}>
       <div style={{ color: SD.textDim }}>{Icon.car(44, SD.textDim)}</div>
@@ -176,8 +178,8 @@ function EmptyState() {
         Inicie uma viagem ou rode o modo demo para ver a telemetria em tempo real.
       </div>
       <div style={{ display: 'grid', gap: 10, width: '100%', maxWidth: 280 }}>
-        <Btn tone="primary" size="lg" icon={Icon.play(14)} full>INICIAR VIAGEM</Btn>
-        <Btn tone="outline" size="lg" full>MODO DEMO</Btn>
+        <Btn tone="primary" size="lg" icon={Icon.play(14)} full onClick={() => onNavigate?.('menu')}>INICIAR VIAGEM</Btn>
+        <Btn tone="outline" size="lg" full onClick={() => onNavigate?.('menu')}>MODO DEMO</Btn>
       </div>
     </div>
   );

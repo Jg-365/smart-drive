@@ -25,12 +25,6 @@
        ═══════════════════════════════════════════════════════════ -->
   <epics>
 
-    <epic id="EPIC-12" req="JOA-RNF-02,JOA-RNF-03,JOA-RNF-04,JOA-RNF-05" priority="medium" status="not_started">
-      <title>Não-funcionais restantes + botões mortos</title>
-      <summary>RNF-02: scripts de subida (backend/frontend/simulador) + dataset gravado fallback. RNF-03: auditoria mobile-first 375px/44px touch targets. RNF-04: performance 500+ pontos/memoização (parcialmente coberto por EPIC-05/06). RNF-05: checklist final de portabilidade (complementa EPIC-01). EXTRA (pedido do João 2026-06-16): tratar BOTÕES MORTOS do protótipo — ligar navegação (INICIAR VIAGEM, MODO DEMO, VOLTAR via callbacks do app/page.tsx) e desabilitar/esconder os cosméticos (CAMADAS, SEGUIR VEÍCULO, EXPANDIR) e os de devices sem ação (NOVO/DUPLICAR/EXCLUIR — domínio do Pedro).</summary>
-      <done_when>Specs RNF-02/03/04/05 passam; nenhum botão visível sem ação (ligado ou desabilitado).</done_when>
-    </epic>
-
     <epic id="EPIC-13" req="JOA-TEC-04" priority="high" status="not_started">
       <title>QA final &amp; apresentação ExpoIOT</title>
       <depends_on>todos</depends_on>
@@ -105,6 +99,14 @@
        ITENS CONCLUÍDOS DO PLANO ANTERIOR (plan-001)
        ═══════════════════════════════════════════════════════════ -->
   <completed_from_plan>
+    <item from="plan-002" task="EPIC-12">
+      Não-funcionais + botões mortos (JOA-RNF-02/03/04/05). Btn com prop disabled; navegação ligada
+      (INICIAR VIAGEM/MODO DEMO → demo; VOLTAR → live) via callbacks do app/page.tsx; cosméticos e
+      devices sem feature desabilitados (nenhum botão morto). scripts/dev-up.sh + dev-down.sh (RNF-02).
+      RNF-04 done (seletores atômicos + downsample). 4 testes novos, suite 216 → 220. Branch
+      feature/joa-rnf-02-05-polish, PR #11. Concluído em 2026-06-16. PENDENTE p/ EPIC-13: auditoria
+      mobile 375px/44px (RNF-03) e checklist de portabilidade (RNF-05).
+    </item>
     <item from="plan-002" task="EPIC-11">
       Firmware ESP32/FreeRTOS (JOA-TEC-02) — IMPLEMENTAÇÃO COMPLETA, build a validar. Pipeline modular
       em firmware/main/: imu_reader (I2C MPU6050), gps_reader (NMEA), sensor_fusion (média móvel),

@@ -12,7 +12,7 @@ const LiveMapContainer = dynamic(
   { ssr: false, loading: () => <div style={{ position: 'absolute', inset: 0, background: SD.bg }} /> },
 );
 
-export function MapPage() {
+export function MapPage({ onBack }: { onBack?: () => void }) {
   return (
     <MobileShell active="map" hideBars>
       <div style={{ position: 'relative', height: '100%' }}>
@@ -20,9 +20,9 @@ export function MapPage() {
 
         {/* Top overlay */}
         <div style={{ position: 'absolute', top: 12, left: 12, right: 12, display: 'flex', gap: 8 }}>
-          <Btn tone="solid" size="sm" icon={Icon.back(12)} style={{ background: SD.bg }}>VOLTAR</Btn>
+          <Btn tone="solid" size="sm" icon={Icon.back(12)} style={{ background: SD.bg }} onClick={onBack} disabled={!onBack}>VOLTAR</Btn>
           <div style={{ flex: 1 }} />
-          <Btn tone="solid" size="sm" style={{ background: SD.bg }}>CAMADAS</Btn>
+          <Btn tone="solid" size="sm" style={{ background: SD.bg }} disabled title="Em breve">CAMADAS</Btn>
         </div>
 
         {/* Live tags */}
