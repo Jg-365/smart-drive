@@ -17,6 +17,8 @@ export interface LiveMapProps {
   events?: LiveMapEvent[];
   /** Override do estilo (URL de style JSON). Default: raster escuro CARTO. */
   styleUrl?: string;
+  /** Se true, recentraliza no veículo a cada novo ponto (modo "seguir"). */
+  follow?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -36,7 +38,7 @@ const eventsGeoJSON = (events: LiveMapEvent[]) => ({
   })),
 });
 
-export function LiveMap({ route, vehicle, events = [], styleUrl, className, style }: LiveMapProps) {
+export function LiveMap({ route, vehicle, events = [], styleUrl, follow = false, className, style }: LiveMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
@@ -121,13 +123,13 @@ export function LiveMap({ route, vehicle, events = [], styleUrl, className, styl
 
     if (vehicle && markerRef.current) {
       markerRef.current.setLngLat(vehicle).addTo(map);
-      // centraliza no primeiro ponto válido recebido (edge JOA-RF-04)
-      if (!centeredRef.current) {
+      // centraliza no primeiro ponto válido; em modo "seguir", recentra sempre.
+      if (follow || !centeredRef.current) {
         map.setCenter(vehicle);
         centeredRef.current = true;
       }
     }
-  }, [route, vehicle, events]);
+  }, [route, vehicle, events, follow]);
 
   return (
     <div className={className} style={{ position: 'relative', ...style }}>

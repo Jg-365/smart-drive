@@ -1,10 +1,17 @@
 'use client';
 
-import type React from 'react';
+import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot, Btn, Stat } from '@/features/shared/ui/primitives';
-import { MapView, Speedometer, ArcGauge, Wave, AxisBars } from '@/features/shared/ui/map-gauges';
+import { Speedometer, ArcGauge, Wave, AxisBars } from '@/features/shared/ui/map-gauges';
+
+// Mapa real (MapLibre) só no cliente — mesmo padrão da tela Mapa (G03).
+const LiveMapContainer = dynamic(
+  () => import('@/features/map/components/LiveMapContainer').then((m) => m.LiveMapContainer),
+  { ssr: false, loading: () => <div style={{ position: 'absolute', inset: 0, background: SD.bg }} /> },
+);
 import {
   useTelemetryStore,
   useLastPoint,
@@ -22,6 +29,7 @@ type DashScreen = 'dashboard' | 'trips' | 'vehicles' | 'devices' | 'demo';
 
 export function DashboardPage({ onNavigate }: { onNavigate?: (s: DashScreen) => void }) {
   const tripId = useTelemetryStore((s) => s.tripId);
+  const [follow, setFollow] = useState(false);
   if (!tripId) return <EmptyState onNavigate={onNavigate} />;
 
   return (
@@ -31,14 +39,14 @@ export function DashboardPage({ onNavigate }: { onNavigate?: (s: DashScreen) => 
     }}>
       {/* Map */}
       <div style={{ gridColumn: 1, gridRow: '1 / 3', position: 'relative', background: SD.bg }}>
-        <MapView width={900} height={760} />
-        <div style={{ position: 'absolute', top: 16, left: 16, display: 'flex', gap: 8 }}>
+        <LiveMapContainer follow={follow} style={{ position: 'absolute', inset: 0 }} />
+        <div style={{ position: 'absolute', top: 16, left: 16, display: 'flex', gap: 8, zIndex: 1 }}>
           <StatusTag />
-          <Tag>FORTALEZA · CE</Tag>
         </div>
-        <div style={{ position: 'absolute', top: 16, right: 80, display: 'flex', gap: 6 }}>
-          <Btn tone="solid" size="sm" disabled title="Em breve">SEGUIR VEÍCULO</Btn>
-          <Btn tone="solid" size="sm" disabled title="Em breve">CAMADAS</Btn>
+        <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 6, zIndex: 1 }}>
+          <Btn tone={follow ? 'primary' : 'solid'} size="sm" onClick={() => setFollow((f) => !f)}>
+            {follow ? 'SEGUINDO ✓' : 'SEGUIR VEÍCULO'}
+          </Btn>
         </div>
         <ReconnectBanner />
         <VehicleInfoCard />
@@ -105,7 +113,7 @@ function VehicleInfoCard() {
   const hasGps = point != null && point.lat != null && point.lng != null;
   return (
     <div style={{
-      position: 'absolute', left: '38%', top: '54%',
+      position: 'absolute', left: 16, bottom: 16, zIndex: 1,
       background: SD.surface, border: `1.5px solid ${SD.primary}`,
       padding: '10px 14px', minWidth: 220,
     }}>
