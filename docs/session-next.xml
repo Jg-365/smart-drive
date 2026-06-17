@@ -25,16 +25,10 @@
        ═══════════════════════════════════════════════════════════ -->
   <epics>
 
-    <epic id="EPIC-11" req="JOA-TEC-02" priority="high" status="not_started">
-      <title>Firmware ESP32 (FreeRTOS)</title>
-      <summary>Drivers I2C (acelerômetro) e NMEA (GPS). Tasks: imu_reader(20-50Hz), gps_reader(1-10Hz), sensor_fusion(10Hz, média móvel), event_detector(10Hz), network(1-5Hz, POST /telemetry com payload contract v1.0), storage, health_monitor(1Hz). idf.py build deve continuar passando. Roda em paralelo, sem dependência de backend (semana 2 do roadmap).</summary>
-      <done_when>Specs JOA-TEC-02 passam.</done_when>
-    </epic>
-
     <epic id="EPIC-12" req="JOA-RNF-02,JOA-RNF-03,JOA-RNF-04,JOA-RNF-05" priority="medium" status="not_started">
-      <title>Não-funcionais restantes</title>
-      <summary>RNF-02: scripts de subida (backend/frontend/simulador) + dataset gravado fallback. RNF-03: auditoria mobile-first 375px/44px touch targets. RNF-04: performance 500+ pontos/memoização (parcialmente coberto por EPIC-05/06). RNF-05: checklist final de portabilidade (complementa EPIC-01).</summary>
-      <done_when>Specs RNF-02/03/04/05 passam.</done_when>
+      <title>Não-funcionais restantes + botões mortos</title>
+      <summary>RNF-02: scripts de subida (backend/frontend/simulador) + dataset gravado fallback. RNF-03: auditoria mobile-first 375px/44px touch targets. RNF-04: performance 500+ pontos/memoização (parcialmente coberto por EPIC-05/06). RNF-05: checklist final de portabilidade (complementa EPIC-01). EXTRA (pedido do João 2026-06-16): tratar BOTÕES MORTOS do protótipo — ligar navegação (INICIAR VIAGEM, MODO DEMO, VOLTAR via callbacks do app/page.tsx) e desabilitar/esconder os cosméticos (CAMADAS, SEGUIR VEÍCULO, EXPANDIR) e os de devices sem ação (NOVO/DUPLICAR/EXCLUIR — domínio do Pedro).</summary>
+      <done_when>Specs RNF-02/03/04/05 passam; nenhum botão visível sem ação (ligado ou desabilitado).</done_when>
     </epic>
 
     <epic id="EPIC-13" req="JOA-TEC-04" priority="high" status="not_started">
@@ -111,6 +105,16 @@
        ITENS CONCLUÍDOS DO PLANO ANTERIOR (plan-001)
        ═══════════════════════════════════════════════════════════ -->
   <completed_from_plan>
+    <item from="plan-002" task="EPIC-11">
+      Firmware ESP32/FreeRTOS (JOA-TEC-02) — IMPLEMENTAÇÃO COMPLETA, build a validar. Pipeline modular
+      em firmware/main/: imu_reader (I2C MPU6050), gps_reader (NMEA), sensor_fusion (média móvel),
+      event_detector (limiares; event_detector_eval puro), net_client (Wi-Fi + POST contrato v1.0 via
+      cJSON), health_monitor; estado por mutex + filas; sd_config.h centraliza tudo; README do firmware.
+      Branch firmware/joa-tec-02-esp32, PR #10. Concluído (código) em 2026-06-16. BLOQUEIO B02: sem
+      toolchain ESP-IDF no ambiente do Claude → João precisa rodar `idf.py build` (ESP-IDF >= 5.0) +
+      validar com hardware (MPU6050 + NEO-6M) para fechar o done_when. JOA-TEC-02 segue in_progress
+      até o build passar.
+    </item>
     <item from="plan-002" task="EPIC-10">
       Tema &amp; design system: polimento final (JOA-RF-06/07). useTheme com localStorage seguro
       (modo privado) + DARK default real (sem prefers-color-scheme) + lazy init (corrige lint) +
