@@ -17,14 +17,15 @@
   </objective>
 
   <current_focus>
-    EPIC-00 a EPIC-10 concluídos. EPIC-02..09 em main (PRs #1..#8 mergeados; EPIC-09=PR#8 935afa0).
-    EPIC-10 (Tema/design polish, JOA-RF-06/07) na branch feature/joa-rf-06-07-theme-polish, PR #9:
-    useTheme com localStorage seguro (modo privado) e DARK como default real (sem prefers-color-scheme),
-    script anti-flicker no layout, auditoria WCAG AA (contrast.ts + testes, dark e light), MapLibre
-    tema-aware (basemap.ts), e LOGOS oficiais (favicon=preto sem fundo/Vector; apple-icon=thumb PWA;
-    BrandLogo no header = branca no dark / completo no light). 19 testes novos. 216/216 testes, tsc/build
-    limpos. Sessão João: finalizar os épicos hoje, um por vez em sequência.
-    Próximo: EPIC-11 (firmware ESP32/FreeRTOS), EPIC-12 (RNFs), EPIC-13 (QA final). Ver session-next.xml.
+    EPIC-00 a EPIC-11 concluídos (EPIC-11 com build a validar). EPIC-02..10 em main (PRs #1..#9
+    mergeados; EPIC-10=PR#9 0ba9c60). EPIC-11 (Firmware ESP32/FreeRTOS, JOA-TEC-02) na branch
+    firmware/joa-tec-02-esp32, PR #10: firmware modular ESP-IDF — tasks imu_reader (I2C MPU6050 50Hz),
+    gps_reader (NMEA UART), sensor_fusion (média móvel 10Hz), event_detector (limiares), net_client
+    (Wi-Fi + POST contrato v1.0 via cJSON), health_monitor; estado por mutex + filas; sd_config.h
+    centraliza pinos/taxas/limiares. ATENÇÃO: ambiente sem toolchain ESP-IDF → 'idf.py build' (done_when)
+    PENDENTE de validação na máquina do João. Sessão João: finalizar os épicos hoje, um por vez.
+    Próximo: EPIC-12 (RNFs + ligar/desabilitar botões mortos — ver nota), EPIC-13 (QA final).
+    Ver session-next.xml.
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -49,9 +50,20 @@
 
     <req id="JOA-TEC-02" title="Firmware e hardware" status="in_progress">
       <notes>
-        Projeto ESP-IDF inicializado: firmware/main/main.c e CMakeLists.txt existem,
-        firmware/build/ presente (já compilado ao menos uma vez). Nenhuma FreeRTOS task,
-        driver de IMU/GPS ou lógica de sensor_fusion implementada ainda.
+        EPIC-11 (branch firmware/joa-tec-02-esp32, PR #10): firmware ESP-IDF/FreeRTOS COMPLETO e
+        modular em firmware/main/ (+ include/). Tasks: imu_reader (driver I2C MPU6050, 50Hz),
+        gps_reader (parser NMEA GGA/RMC na UART), sensor_fusion (média móvel 10Hz), event_detector
+        (event_detector_eval puro: hardAccel/hardBrake/sharpTurn/impact por limiares em g),
+        net_client (Wi-Fi STA + esp_http_client + cJSON, monta o contrato v1.0 e faz POST /telemetry,
+        drena p/ amostra mais recente; gps null quando sem fix), health_monitor (heap/uptime 1Hz).
+        Estado compartilhado por mutex (último IMU/GPS) + filas (fusão→eventos→rede, descartam o mais
+        antigo sob pressão). sd_config.h centraliza pinos/taxas/limiares/Wi-Fi/endpoint. CMakeLists
+        atualizado (REQUIRES driver/esp_wifi/esp_netif/esp_event/esp_http_client/json/nvs_flash/
+        esp_timer). README do firmware documenta arquitetura/build/flash/contrato.
+        BLOQUEIO p/ done_when: este ambiente NÃO tem o toolchain ESP-IDF — 'idf.py build' precisa ser
+        rodado pelo João (ESP-IDF >= 5.0) para fechar JOA-TEC-02. Por isso status segue in_progress
+        (implementação 100%, validação de build pendente). Drivers reais dependem do hardware (MPU6050
+        + NEO-6M) na bancada.
       </notes>
     </req>
 
@@ -419,6 +431,12 @@
       (importável via PrismaModule, @Global). Ler as "NOTAS PARA O TIME" no topo do
       schema.prisma antes de começar.
     </blocker>
+    <blocker id="B02" status="open" severity="medium" created="2026-06-16">
+      EPIC-11 (JOA-TEC-02): firmware implementado, mas o ambiente do Claude não tem o toolchain
+      ESP-IDF. João precisa rodar `cd firmware && idf.py set-target esp32 && idf.py build` (ESP-IDF
+      >= 5.0) para fechar o done_when, e validar com o hardware (MPU6050 + NEO-6M). Ajustar pinos/
+      Wi-Fi/endpoint em firmware/main/include/sd_config.h antes.
+    </blocker>
   </blockers>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -648,6 +666,19 @@
       novos (contraste 9, basemap 6, tema +4); suite 197 → 216, todos verdes; tsc/build limpos.
       Restam 3 erros de ESLint PRÉ-EXISTENTES em map-gauges.tsx (não introduzidos aqui). Commits 4e87bee
       (+ assets + fix dark default), push, PR #9. Fluxo: implementar → commit → push → revisar → docs.
+    </entry>
+    <entry date="2026-06-16" type="implementation">
+      EPIC-11 (JOA-TEC-02) na branch firmware/joa-tec-02-esp32. Firmware ESP-IDF/FreeRTOS modular:
+      substituído o main.c de teste de GPS por um pipeline completo — imu_reader (I2C MPU6050 50Hz),
+      gps_reader (NMEA GGA/RMC), sensor_fusion (média móvel 10Hz), event_detector (limiares accel/
+      freada/curva/impacto; event_detector_eval puro), net_client (Wi-Fi STA + esp_http_client + cJSON,
+      contrato v1.0, POST /telemetry, drena p/ a amostra mais recente), health_monitor (heap/uptime).
+      sd_shared (mutex + filas). sd_config.h centraliza config. CMakeLists com REQUIRES. README do
+      firmware. Commit 7d17ef8, PR #10. BLOQUEIO B02: sem toolchain ESP-IDF aqui — idf.py build fica
+      pendente p/ o João (done_when). Em paralelo: João reportou bug de tema (fundo claro em SO claro)
+      durante o EPIC-10 — corrigido (dark default real). João apontou botões mortos no app — decidido
+      tratar no EPIC-12 (ligar navegação INICIAR VIAGEM/MODO DEMO/VOLTAR; desabilitar cosméticos e
+      devices sem ação).
     </entry>
   </history>
 
