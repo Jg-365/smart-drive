@@ -90,6 +90,46 @@ describe('ThemeProvider', () => {
     expect(screen.getByTestId('theme').textContent).toBe('light');
     expect(document.documentElement.dataset.theme).toBe('light');
   });
+
+  it('EDGE: localStorage indisponível (modo privado) → fallback dark sem erro', async () => {
+    const getSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError: storage indisponível');
+    });
+    const setSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('SecurityError: storage indisponível');
+    });
+
+    const { ThemeProvider, useThemeContext } = await import('../ThemeProvider');
+    function Toggler() {
+      const { theme, toggleTheme } = useThemeContext();
+      return <button data-testid="t" onClick={toggleTheme}>{theme}</button>;
+    }
+
+    expect(() => render(<ThemeProvider><Toggler /></ThemeProvider>)).not.toThrow();
+    expect(screen.getByTestId('t').textContent).toBe('dark');
+    await act(async () => { await userEvent.click(screen.getByTestId('t')); });
+    expect(screen.getByTestId('t').textContent).toBe('light');
+
+    getSpy.mockRestore();
+    setSpy.mockRestore();
+  });
+
+  it('EDGE: alternância rápida consecutiva não trava nem perde sincronia', async () => {
+    const { ThemeProvider, useThemeContext } = await import('../ThemeProvider');
+    function Toggler() {
+      const { theme, toggleTheme } = useThemeContext();
+      return <button data-testid="t" onClick={toggleTheme}>{theme}</button>;
+    }
+    render(<ThemeProvider><Toggler /></ThemeProvider>);
+    const btn = screen.getByTestId('t');
+    await act(async () => {
+      await userEvent.click(btn);
+      await userEvent.click(btn);
+      await userEvent.click(btn);
+    });
+    expect(btn.textContent).toBe('light'); // 3 toggles a partir de dark
+    expect(document.documentElement.dataset.theme).toBe('light');
+  });
 });
 
 describe('ThemeToggle', () => {
