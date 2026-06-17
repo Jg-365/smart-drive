@@ -17,9 +17,25 @@ export interface RoutePoint {
   lng: number
 }
 
+/** Campos para iniciar uma viagem (PED-RF-05). O servidor define id/horários/score. */
+export interface StartTripInput {
+  vehicleId: string
+  deviceId?: string
+}
+
 /** Histórico de viagens do usuário (para seleção/última viagem). */
 export function fetchTrips(options?: { signal?: AbortSignal }): Promise<Trip[]> {
   return api.get<Trip[]>(TRIPS_PATH, { signal: options?.signal })
+}
+
+/** Inicia uma viagem (status ACTIVE). Backend do Pedro (PED-RF-05). */
+export function startTrip(input: StartTripInput): Promise<Trip> {
+  return api.post<Trip>(`${TRIPS_PATH}/start`, input)
+}
+
+/** Encerra a viagem ativa, consolidando distância/score/consumo. */
+export function finishTrip(id: string): Promise<Trip> {
+  return api.post<Trip>(`${TRIPS_PATH}/${id}/finish`)
 }
 
 /** Resumo consolidado de uma viagem encerrada (distância/score/consumo/eventos). */
