@@ -8,3 +8,8 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? ''
 
 export const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? ''
+
+// Identidade de DEV enquanto o auth JWT do Pedro (PED-RF-02) não existe: casa com
+// o header `x-user-id` do TempUserGuard do backend. Quando houver login real, o
+// token JWT do auth store tem prioridade sobre isto (ver lib/api/client.ts).
+export const DEV_USER_ID = process.env.NEXT_PUBLIC_DEV_USER_ID ?? ''

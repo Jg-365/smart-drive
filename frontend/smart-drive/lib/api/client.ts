@@ -1,4 +1,5 @@
-import { API_BASE_URL } from './config'
+import { authHeaders } from '@/features/shared/auth'
+import { API_BASE_URL, DEV_USER_ID } from './config'
 
 /** Erro lançado quando a resposta HTTP não é 2xx. Carrega status e corpo parseado. */
 export class ApiError extends Error {
@@ -24,6 +25,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     ...rest,
     headers: {
       'Content-Type': 'application/json',
+      // Auth: JWT real (auth store) ou fallback x-user-id de DEV. Pode ser
+      // sobrescrito por `headers` explícito na chamada.
+      ...authHeaders(DEV_USER_ID),
       ...headers,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
