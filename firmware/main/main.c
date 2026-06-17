@@ -1,71 +1,62 @@
-#include <stdio.h>
+// SmartDrive ESP32 — ponto de entrada. Orquestra os drivers e as tasks FreeRTOS.
+// JOA-TEC-02. Pipeline:
+//   imu_reader (50Hz) ─┐
+//                      ├─► sensor_fusion (10Hz) ─► event_detector (10Hz) ─► net_client (POST /telemetry)
+//   gps_reader (NMEA) ─┘
+//   health_monitor (1Hz) observa heap/uptime.
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "driver/uart.h"
 #include "esp_log.h"
+#include "nvs_flash.h"
 
-#define GPS_UART UART_NUM_2
+#include "sd_shared.h"
+#include "imu_reader.h"
+#include "gps_reader.h"
+#include "sensor_fusion.h"
+#include "event_detector.h"
+#include "net_client.h"
+#include "health_monitor.h"
 
-// Na sua placa:
-// RX2 normalmente é GPIO16
-// TX2 normalmente é GPIO17
-#define GPS_RX_PIN 16
-#define GPS_TX_PIN 17
+static const char *TAG = "smartdrive";
 
-#define GPS_BAUD_RATE 9600
+void app_main(void) {
+  ESP_LOGI(TAG, "SmartDrive firmware iniciando…");
 
-static const char *TAG = "GPS_TEST";
+  // NVS é exigido pelo Wi-Fi.
+  esp_err_t nvs = nvs_flash_init();
+  if (nvs == ESP_ERR_NVS_NO_FREE_PAGES || nvs == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    ESP_ERROR_CHECK(nvs_flash_init());
+  }
 
-void app_main(void)
-{
-    ESP_LOGI(TAG, "Iniciando teste do GPS NEO-6M...");
+  if (!sd_shared_init()) {
+    ESP_LOGE(TAG, "falha ao alocar estado/filas — abortando");
+    return;
+  }
 
-    uart_config_t uart_config = {
-        .baud_rate = GPS_BAUD_RATE,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .source_clk = UART_SCLK_DEFAULT,
-    };
+  // Sensores (continuam mesmo sem rede — o pipeline bufferiza).
+  if (imu_reader_init()) {
+    imu_reader_start();
+  } else {
+    ESP_LOGE(TAG, "IMU indisponível — seguindo só com GPS/zeros");
+  }
+  if (gps_reader_init()) {
+    gps_reader_start();
+  } else {
+    ESP_LOGE(TAG, "GPS indisponível — seguindo sem fix");
+  }
 
-    ESP_ERROR_CHECK(uart_param_config(GPS_UART, &uart_config));
+  sensor_fusion_start();
+  event_detector_start();
+  health_monitor_start();
 
-    ESP_ERROR_CHECK(uart_set_pin(
-        GPS_UART,
-        GPS_TX_PIN,              // TX da ESP32
-        GPS_RX_PIN,              // RX da ESP32
-        UART_PIN_NO_CHANGE,
-        UART_PIN_NO_CHANGE
-    ));
+  // Rede por último: conecta o Wi-Fi e só então sobe a task de envio.
+  if (net_client_wifi_connect()) {
+    ESP_LOGI(TAG, "Wi-Fi conectado — iniciando envio de telemetria");
+    net_client_start();
+  } else {
+    ESP_LOGE(TAG, "Wi-Fi indisponível — coletando localmente, sem envio");
+  }
 
-    ESP_ERROR_CHECK(uart_driver_install(
-        GPS_UART,
-        2048,
-        0,
-        0,
-        NULL,
-        0
-    ));
-
-    ESP_LOGI(TAG, "GPS configurado na UART2.");
-    ESP_LOGI(TAG, "Aguardando frases NMEA...");
-
-    uint8_t data[256];
-
-    while (1) {
-        int len = uart_read_bytes(
-            GPS_UART,
-            data,
-            sizeof(data) - 1,
-            pdMS_TO_TICKS(1000)
-        );
-
-        if (len > 0) {
-            data[len] = '\0';
-            printf("%s", (char *)data);
-        } else {
-            ESP_LOGW(TAG, "Nenhum dado recebido ainda...");
-        }
-    }
+  ESP_LOGI(TAG, "SmartDrive firmware operacional.");
 }
