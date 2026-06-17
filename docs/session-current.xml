@@ -33,6 +33,10 @@
     (auth JWT/login, devices, trips, ingestão real) e Nathan (score/consumo/eventos via WS, simulador).
     Pendências do João (menores): scrub de textos na MobileDemoPage (CHK-08), RNF-03 (44px), RNF-05
     (portabilidade). Ver QA-CHECKLIST.md e docs/bloqueios-equipe-001.xml.
+    NOVA DIREÇÃO (ADR-001, docs/arquitetura-nuvem-001.md, 2026-06-17): backend+Postgres vão p/ a NUVEM e
+    o frontend vira PWA; ESP32 posta via Wi-Fi (hotspot) → nuvem (HTTPS), PWA lê por WSS (BLE descartado
+    por causa do iOS). PRÓXIMA FRENTE DO JOÃO = firmware p/ nuvem (URL HTTPS + TLS via cert bundle + auth
+    de device + SNTP p/ epoch). Usuário continua depois.
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -779,6 +783,20 @@
       PENDÊNCIAS: CHK-08 parcial (scrub de textos na MobileDemoPage); tudo que é de Pedro/Nathan agora
       rastreado em docs/bloqueios-equipe-001.xml. Decisões do João: layout auto por viewport, demo ao vivo
       no ESP32, toggle dark/light, frontend pré-pronto com MSW.
+    </entry>
+    <entry date="2026-06-17" type="architecture">
+      Decisão de arquitetura (ADR-001, doc docs/arquitetura-nuvem-001.md): tirar o gargalo de a ESP32
+      depender da LAN local do backend. Backend + Postgres vão para a NUVEM e o frontend vira PWA no
+      celular. Transporte escolhido = CAMINHO A: ESP32 → Wi-Fi (hotspot do celular ou qualquer AP com
+      internet) → backend na nuvem via HTTPS; a PWA lê da nuvem por WSS. BLE foi REJEITADO porque Web
+      Bluetooth não existe no iOS/Safari (mataria a PWA no iPhone) e exigiria reescrever o net_client.
+      Contrato de telemetria v1.0 NÃO muda — muda o transporte (URL HTTPS + TLS + auth de device).
+      Mudanças de firmware mapeadas (frente do João, a fazer): SD_TELEMETRY_URL → https da nuvem; TLS no
+      esp_http_client via cert bundle do IDF (CONFIG_MBEDTLS_CERTIFICATE_BUNDLE); header de auth do device
+      (SD_DEVICE_TOKEN); Wi-Fi = hotspot; e BÔNUS: SNTP no boot resolve a dívida do timestamp
+      (epoch real em vez de tempo-desde-boot). Backend/deploy/HTTPS/CORS/auth de device = Pedro. Próximo
+      passo do João será mexer no firmware (o usuário continua depois). Itens cross-time e decisões em
+      aberto (provedor de nuvem, esquema de auth de device, provisionamento de Wi-Fi) no ADR.
     </entry>
   </history>
 
