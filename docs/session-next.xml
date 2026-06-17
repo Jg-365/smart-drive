@@ -25,13 +25,6 @@
        ═══════════════════════════════════════════════════════════ -->
   <epics>
 
-    <epic id="EPIC-09" req="JOA-RF-05" priority="high" status="not_started">
-      <title>Modo Demo ExpoIOT</title>
-      <depends_on>EPIC-05,EPIC-06</depends_on>
-      <summary>Backend: completar DemoModule (/demo/start,/reset,/current,/telemetry/simulate). Frontend: DemoControlPanel real, início &lt;3 cliques, reset idempotente, integração com simulador do Nathan (NAT-RF-07) como fallback, pista virtual sem GPS.</summary>
-      <done_when>Specs JOA-RF-05 passam.</done_when>
-    </epic>
-
     <epic id="EPIC-10" req="JOA-RF-06,JOA-RF-07" priority="medium" status="not_started">
       <title>Tema &amp; design system: polimento final</title>
       <depends_on>EPIC-06</depends_on>
@@ -125,6 +118,16 @@
        ITENS CONCLUÍDOS DO PLANO ANTERIOR (plan-001)
        ═══════════════════════════════════════════════════════════ -->
   <completed_from_plan>
+    <item from="plan-002" task="EPIC-09">
+      Modo Demo ExpoIOT (JOA-RF-05) — frontend. lib/api/demo.ts (startDemo/resetDemo/fetchCurrentDemo),
+      features/demo/hooks.ts (React Query), DemoPage/MobileDemoPage como painel de controle real
+      (iniciar 1 clique, reset idempotente, trava contra sessão dupla, veículo padrão/seleção, perfil,
+      stage ao vivo via store, pista virtual p/ GPS ausente). 7 testes novos, suite 190 → 197. Branch
+      feature/joa-rf-05-demo-mode, PR #8. Concluído em 2026-06-16. PENDÊNCIAS: (1) provider não
+      re-assina o tripId da demo (telemetria demo ao vivo não flui até elevar o tripId ao
+      TelemetryProvider); (2) backend DemoModule real e integração com simulador do Nathan (NAT-RF-07)
+      / carrinho RC ficam para QA/integração (EPIC-13).
+    </item>
     <item from="plan-002" task="EPIC-08">
       Relatório de viagem (JOA-RF-08). lib/api/trips.ts (fetchTrips/fetchTripSummary/fetchTripRoute),
       features/trips/derive.ts (formatDuration hh:mm:ss, classifyScore, formatDistance sem-GPS,

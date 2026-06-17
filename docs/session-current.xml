@@ -17,15 +17,14 @@
   </objective>
 
   <current_focus>
-    EPIC-00 a EPIC-08 concluídos. EPIC-02..07 em main (PRs #1..#6 mergeados; EPIC-07 = PR #6, 9dae44e).
-    EPIC-08 (Relatório de viagem, JOA-RF-08) implementado na branch feature/joa-rf-08-trip-report,
-    PR #7 ABERTO (a revisar/mergear): lib/api/trips.ts (fetchTrips/fetchTripSummary/fetchTripRoute),
-    features/trips/derive.ts (formatDuration hh:mm:ss, classifyScore, formatDistance sem-GPS,
-    buildRecommendations), hooks React Query (useTrips/useTripSummary/useTripRoute) e
-    TripReportPage/MobileTripReportPage reescritas com dados reais (distância/duração/vel/score/
-    consumo/eventos/trajeto/recomendações + estados loading/erro/vazio). 22 testes novos.
-    190/190 testes frontend, tsc limpo, build OK.
-    Próximo: EPIC-09 (modo demo ExpoIOT), EPIC-10/11/12/13. Ver session-next.xml.
+    EPIC-00 a EPIC-09 concluídos. EPIC-02..08 em main (PRs #1..#7 mergeados; EPIC-07=PR#6 9dae44e,
+    EPIC-08=PR#7 d0aa6bf). EPIC-09 (Modo Demo ExpoIOT, JOA-RF-05) na branch feature/joa-rf-05-demo-mode,
+    PR #8: lib/api/demo.ts (startDemo/resetDemo/fetchCurrentDemo), features/demo/hooks.ts (React Query)
+    e DemoPage/MobileDemoPage reescritas como painel de controle real (iniciar 1 clique, reset
+    idempotente, trava contra sessão dupla, veículo padrão/seleção, perfil, stage ao vivo via store,
+    pista virtual p/ GPS ausente). 7 testes novos. 197/197 testes frontend, tsc limpo, build OK.
+    Sessão João: finalizar os épicos hoje. Próximo: EPIC-10 (tema/design), EPIC-11 (firmware),
+    EPIC-12 (RNFs), EPIC-13 (QA final). Ver session-next.xml.
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -169,11 +168,23 @@
       </notes>
     </req>
 
-    <req id="JOA-RF-05" title="Modo demo ExpoIOT" status="in_progress">
+    <req id="JOA-RF-05" title="Modo demo ExpoIOT" status="done">
       <notes>
-        DemoPage e MobileDemoPage existem como protótipo visual (modos smooth/normal/aggressive
-        no app/page.tsx). Sem módulo /demo no backend, sem integração com simulador do Nathan,
-        sem lógica real de iniciar/resetar sessão demo.
+        EPIC-09 (branch feature/joa-rf-05-demo-mode, PR #8): DemoPage e MobileDemoPage reescritas
+        como painel de controle real. lib/api/demo.ts (startDemo/resetDemo/fetchCurrentDemo em
+        /api/demo/*) + features/demo/hooks.ts (useDemoSession/useStartDemo/useResetDemo via React
+        Query). SPECs cobertos no front: iniciar sessão (1 clique → <3 cliques), reset limpa a
+        sessão e é idempotente, reset durante sessão ativa sem erro, múltiplos resets sem corromper
+        estado; edges: clique duplo rápido → 1 sessão (trava síncrona useRef), GPS ausente → pista
+        virtual (SVG + store.route ignora coord inválida do EPIC-06), veículo ausente → "veículo demo
+        padrão". O start liga o tripId no store (setTrip+setConnection live); reset chama store.reset().
+        Removidos os números de comparação 100% hardcoded (mostravam resultado fake como real);
+        mantida a explicação do modelo + notas de estimativa honesta e de GPS/pista virtual.
+        7 testes novos. NOTA/DÍVIDA: o TelemetryProvider em app/page.tsx ainda assina DEV_TRIP_ID fixo
+        — o store ganha o tripId da demo mas o socket NÃO re-assina a sala da viagem demo; para a
+        telemetria demo ao vivo fluir de fato, elevar o tripId da demo ao provider. Backend /demo/*
+        real (DemoModule) e integração com o simulador do Nathan (NAT-RF-07) / carrinho RC ficam para
+        a fase de QA/integração; aqui o contrato /api/demo/* é exercido pelos MSW handlers.
       </notes>
     </req>
 
@@ -351,6 +362,14 @@
       O schema Zod do frontend (features/vehicles/schema.ts) DUPLICA as regras do CreateVehicleDto do
       backend. Mudanças no contrato do veículo exigem atualizar os dois lados. Considerar gerar/derivar
       um do outro no futuro (ex: tipos compartilhados) — ver dívida de tipos compartilhados.
+    </debt>
+    <debt priority="medium" created="2026-06-16">
+      EPIC-09: o modo demo liga o tripId da sessão no store (setTrip), mas o TelemetryProvider em
+      app/page.tsx assina um DEV_TRIP_ID fixo via prop — o socket NÃO re-assina a sala trip:<id> da
+      demo, então a telemetria demo ao vivo (carrinho RC / simulador do Nathan) não chega ao store.
+      Corrigir elevando o tripId ativo (demo ou viagem real) a um estado em app/page.tsx e passando
+      ao TelemetryProvider (ou fazer o provider ler o tripId do store). Necessário para o smoke test
+      do EPIC-13.
     </debt>
     <debt priority="low" created="2026-06-16">
       ESLint acusa 4 erros PRÉ-EXISTENTES (não introduzidos pelo EPIC-07) em arquivos de sprints
@@ -589,6 +608,20 @@
       TripReportPage 8, MobileTripReportPage 3); suite frontend 168 → 190, todos verdes; tsc limpo; build
       OK; eslint limpo nos arquivos novos. Commit 7c9333e, push, PR #7 ABERTO (a revisar/mergear — NÃO
       mergeado ainda, diferente do EPIC-07 que era dependência). Docs atualizados após a revisão.
+      [Atualização: PR #7 mergeado em main, d0aa6bf.]
+    </entry>
+    <entry date="2026-06-16" type="implementation">
+      EPIC-09 implementado (JOA-RF-05) na branch feature/joa-rf-05-demo-mode (a partir de main com
+      EPIC-08). João: "vamos finalizar os épicos hoje". Para manter o pipeline limpo (evitar conflito
+      de docs entre branches paralelas como em 03/04/05), os PRs verdes/revisados estão sendo mergeados
+      em sequência. Criados: lib/api/demo.ts (startDemo/resetDemo/fetchCurrentDemo) + exports;
+      features/demo/hooks.ts (useDemoSession/useStartDemo/useResetDemo). DemoPage (desktop) e
+      MobileDemoPage reescritas como painel de controle: iniciar 1 clique, reset idempotente, trava
+      useRef contra sessão dupla, veículo demo padrão/seleção (de useVehicles), perfil de condução,
+      stage ao vivo via store (score/velocidade), pista virtual p/ GPS ausente. Start liga o tripId no
+      store; reset chama store.reset(). 7 testes novos (DemoPage); suite 190 → 197, todos verdes; tsc
+      limpo; build OK; lint limpo nos arquivos novos. Fluxo seguido: implementar → commit (4054f0c) →
+      push → revisar → docs. PR #8 aberto. DÍVIDA registrada: provider não re-assina o tripId da demo.
     </entry>
   </history>
 
