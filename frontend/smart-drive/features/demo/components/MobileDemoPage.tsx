@@ -1,54 +1,66 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot, Btn } from '@/features/shared/ui/primitives';
 import { MobileShell } from '@/features/shell/components/MobileShell';
+import {
+  useConnection, useDrivingScore, useLastPoint, useTelemetryStore, isValidSpeed,
+} from '@/features/shared/realtime';
+import { useStartDemo, useResetDemo } from '../hooks';
 
-function TrackViewMobile() {
-  return (
-    <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" width="100%" height="100%">
-      <rect width="800" height="500" fill="#0E0E16" />
-      {Array.from({ length: 16 }).map((_, i) => (
-        <line key={'h' + i} x1="0" y1={i * 32} x2="800" y2={i * 32} stroke="#1A1A26" strokeWidth="1" />
-      ))}
-      {Array.from({ length: 26 }).map((_, i) => (
-        <line key={'v' + i} x1={i * 32} y1="0" x2={i * 32} y2="500" stroke="#1A1A26" strokeWidth="1" />
-      ))}
-      <path
-        d="M 120 250 C 120 120, 280 80, 400 130 C 520 180, 520 320, 640 320 C 760 320, 760 180, 640 180 C 520 180, 520 380, 400 380 C 280 380, 120 380, 120 250 Z"
-        fill="none" stroke="#1F1F2D" strokeWidth="56"
-      />
-      <path
-        d="M 120 250 C 120 120, 280 80, 400 130 C 520 180, 520 320, 640 320 C 760 320, 760 180, 640 180 C 520 180, 520 380, 400 380 C 280 380, 120 380, 120 250 Z"
-        fill="none" stroke="#2A2A38" strokeWidth="40"
-      />
-      <path
-        d="M 120 250 C 120 120, 280 80, 400 130 C 520 180, 520 320, 640 320 C 760 320, 760 180, 640 180 C 520 180, 520 380, 400 380 C 280 380, 120 380, 120 250 Z"
-        fill="none" stroke={SD.primary} strokeWidth="2" strokeDasharray="6 4" opacity="0.6"
-      />
-      <g transform="translate(540 350) rotate(-25)">
-        <circle r="22" fill={SD.primary} opacity="0.18" className="sd-pulse" />
-        <rect x="-10" y="-6" width="20" height="12" fill={SD.primary} stroke={SD.bg} strokeWidth="2" />
-        <path d="M 14 0 L 4 -3 L 4 3 Z" fill={SD.danger} />
-      </g>
-    </svg>
-  );
-}
+type DemoMode = 'smooth' | 'normal' | 'aggressive';
+
+const PROFILES: { id: DemoMode; label: string; tone: string }[] = [
+  { id: 'smooth', label: 'SUAVE', tone: SD.success },
+  { id: 'normal', label: 'NORMAL', tone: SD.primary },
+  { id: 'aggressive', label: 'AGRESSIVA', tone: SD.danger },
+];
 
 export function MobileDemoPage() {
+  const startM = useStartDemo();
+  const resetM = useResetDemo();
+  const connection = useConnection();
+  const score = useDrivingScore();
+  const lastPoint = useLastPoint();
+
+  const [mode, setMode] = useState<DemoMode>('normal');
+  const startingRef = useRef(false);
+  const isRunning = connection === 'live';
+  const speed = lastPoint && isValidSpeed(lastPoint.speedKmh) ? lastPoint.speedKmh : null;
+
+  const handleStart = () => {
+    if (startingRef.current || isRunning) return;
+    startingRef.current = true;
+    startM.mutate(
+      { scenario: mode },
+      {
+        onSuccess: (s) => {
+          const store = useTelemetryStore.getState();
+          store.setTrip(s.tripId);
+          store.setConnection('live');
+        },
+        onSettled: () => { startingRef.current = false; },
+      },
+    );
+  };
+
+  const handleReset = () => {
+    resetM.mutate(undefined, { onSuccess: () => useTelemetryStore.getState().reset() });
+  };
+
   return (
     <MobileShell active="menu" hideBars>
       <div style={{ height: '100%', position: 'relative', background: SD.bg, overflow: 'auto' }}>
-        {/* Header */}
         <div style={{
           padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           borderBottom: `1px solid ${SD.border}`,
         }}>
-          <span className="sd-btn" style={{ color: SD.textDim }}>{Icon.back(18)}</span>
           <Tag tone="cyan"><Dot tone="cyan" size={5} /> EXPOIOT</Tag>
-          <span className="sd-btn" style={{ color: SD.textDim }}>{Icon.reset(18)}</span>
+          {isRunning
+            ? <Tag tone="red"><Dot tone="red" size={5} /> AO VIVO</Tag>
+            : <Tag tone="neutral">PARADO</Tag>}
         </div>
 
         <div style={{ padding: 18, display: 'grid', gap: 14 }}>
@@ -57,65 +69,61 @@ export function MobileDemoPage() {
             <div className="sd-display" style={{ fontSize: 22, lineHeight: 1 }}>CARRINHO RC<br />NA PISTA</div>
           </div>
 
-          {/* Big readouts */}
+          {/* Live readouts */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: SD.border, border: `2px solid ${SD.danger}` }}>
             <div style={{ background: SD.bg, padding: 16 }}>
               <div className="sd-label" style={{ fontSize: 9, color: SD.danger, marginBottom: 4 }}>SCORE</div>
-              <div className="sd-mono" style={{ fontSize: 56, color: SD.danger, lineHeight: 1, fontWeight: 700 }}>42</div>
-              <div className="sd-label" style={{ fontSize: 9, color: SD.danger, marginTop: 4 }}>AGRESSIVA</div>
+              <div className="sd-mono" style={{ fontSize: 48, color: SD.danger, lineHeight: 1, fontWeight: 700 }}>
+                {score ? Math.round(score.value) : '—'}
+              </div>
             </div>
             <div style={{ background: SD.bg, padding: 16 }}>
               <div className="sd-label" style={{ fontSize: 9, color: SD.primary, marginBottom: 4 }}>VEL.</div>
-              <div className="sd-mono" style={{ fontSize: 56, color: SD.text, lineHeight: 1, fontWeight: 700 }}>3.8</div>
-              <div className="sd-label" style={{ fontSize: 9, color: SD.textDim, marginTop: 4 }}>KM/H · 1:18</div>
-            </div>
-          </div>
-
-          {/* Track */}
-          <div style={{ background: SD.surface, border: `1.5px solid ${SD.border}`, height: 200, position: 'relative', overflow: 'hidden' }}>
-            <TrackViewMobile />
-            <div style={{ position: 'absolute', bottom: 8, right: 8 }}>
-              <div className="sd-burst" style={{
-                width: 64, height: 64, background: SD.warning, display: 'grid', placeItems: 'center',
-                transform: 'rotate(-6deg)',
-              }}>
-                <div style={{ color: SD.bg, fontFamily: SD.fontDisplay, fontWeight: 900, fontSize: 12, textAlign: 'center', lineHeight: 1 }}>
-                  WHAM!<br /><span style={{ fontSize: 8 }}>CURVA</span>
-                </div>
+              <div className="sd-mono" style={{ fontSize: 48, color: SD.text, lineHeight: 1, fontWeight: 700 }}>
+                {speed != null ? speed : '—'}
               </div>
+              <div className="sd-label" style={{ fontSize: 9, color: SD.textDim, marginTop: 4 }}>KM/H</div>
             </div>
           </div>
 
           {/* Profile selector */}
           <div className="sd-label" style={{ fontSize: 9 }}>PERFIL DE CONDUÇÃO</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
-            {[
-              { l: 'SUAVE', c: SD.success, active: false },
-              { l: 'NORMAL', c: SD.primary, active: false },
-              { l: 'AGRESSIVA', c: SD.danger, active: true },
-            ].map((m, i) => (
-              <div
-                key={i}
-                className="sd-btn"
-                style={{
-                  padding: '12px 8px', textAlign: 'center',
-                  border: `1.5px solid ${m.active ? m.c : SD.border}`,
-                  background: m.active ? `${m.c}15` : SD.surface,
-                }}
-              >
-                <span className="sd-label" style={{ fontSize: 10, color: m.active ? m.c : SD.text }}>{m.l}</span>
-              </div>
-            ))}
+            {PROFILES.map((m) => {
+              const active = mode === m.id;
+              return (
+                <div
+                  key={m.id}
+                  role="button"
+                  aria-label={`Perfil ${m.label}`}
+                  onClick={() => setMode(m.id)}
+                  className="sd-btn"
+                  style={{
+                    padding: '12px 8px', textAlign: 'center',
+                    border: `1.5px solid ${active ? m.tone : SD.border}`,
+                    background: active ? `${m.tone}15` : SD.surface,
+                  }}
+                >
+                  <span className="sd-label" style={{ fontSize: 10, color: active ? m.tone : SD.text }}>{m.label}</span>
+                </div>
+              );
+            })}
           </div>
 
           {/* Controls */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
-            <Btn tone="primary" size="lg" full icon={Icon.play(14)}>PAUSAR DEMO</Btn>
-            <Btn tone="ghost" size="lg" full icon={Icon.reset(12)}>RESET</Btn>
+            <Btn
+              tone="primary" size="lg" full icon={Icon.play(14)}
+              onClick={handleStart}
+              style={isRunning || startM.isPending ? { opacity: 0.5, pointerEvents: 'none' } : undefined}
+            >
+              {isRunning ? 'EM ANDAMENTO' : startM.isPending ? 'INICIANDO…' : 'INICIAR DEMO'}
+            </Btn>
+            <Btn tone="ghost" size="lg" full icon={Icon.reset(12)} onClick={handleReset}>RESET</Btn>
           </div>
 
           <div style={{ padding: 12, background: 'rgba(255,176,32,0.08)', border: `1px solid ${SD.warning}`, fontSize: 11, color: SD.textDim }}>
-            <strong style={{ color: SD.warning }}>ⓘ</strong> O carrinho coleta telemetria real. O consumo exibido é proporcional ao comportamento, usando o perfil do veículo simulado.
+            <strong style={{ color: SD.warning }}>ⓘ</strong> Sem GPS, a posição usa a pista virtual. O consumo é proporcional ao comportamento (IMU + GPS), usando o perfil do veículo.
           </div>
         </div>
       </div>

@@ -13,3 +13,5 @@ export {
 export type { CreateVehicleInput, UpdateVehicleInput } from './vehicles'
 export { fetchTrips, fetchTripSummary, fetchTripRoute } from './trips'
 export type { TripSummaryResponse, RoutePoint } from './trips'
+export { startDemo, resetDemo, fetchCurrentDemo } from './demo'
+export type { DemoProfile, DemoStartInput, DemoSession, DemoCurrent } from './demo'
