@@ -1,15 +1,23 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
-import { Tag, Dot, Btn } from '@/features/shared/ui/primitives';
+import { Tag, Dot, Btn, Stat } from '@/features/shared/ui/primitives';
 import { useVehicles } from '@/features/vehicles';
 import {
-  useConnection, useDrivingScore, useLastPoint, useTelemetryStore,
+  useConnection, useDrivingScore, useFuelEstimate, useLastPoint, useTelemetryStore,
+  isValidSpeed,
 } from '@/features/shared/realtime';
-import { isValidSpeed } from '@/features/shared/realtime';
 import { useStartDemo, useResetDemo } from '../hooks';
+
+// Mapa real (MapLibre) só no cliente — o carrinho é o marcador do veículo, que se
+// move com o GPS ao vivo do ESP32 (decisão: demo ao vivo). Sem retângulo verde.
+const LiveMapContainer = dynamic(
+  () => import('@/features/map/components/LiveMapContainer').then((m) => m.LiveMapContainer),
+  { ssr: false, loading: () => <div style={{ position: 'absolute', inset: 0, background: SD.bg }} /> },
+);
 
 type DemoMode = 'smooth' | 'normal' | 'aggressive';
 
@@ -31,15 +39,17 @@ export function DemoPage({ mode = 'normal', onMode }: DemoPageProps) {
 
   const connection = useConnection();
   const score = useDrivingScore();
+  const fuel = useFuelEstimate();
   const lastPoint = useLastPoint();
 
   const [vehicleId, setVehicleId] = useState<string | undefined>(undefined);
   const startingRef = useRef(false);
 
   const isRunning = connection === 'live';
+  const hasFix = lastPoint != null && lastPoint.lat != null && lastPoint.lng != null;
+  const speed = lastPoint && isValidSpeed(lastPoint.speedKmh) ? lastPoint.speedKmh : null;
 
   const handleStart = () => {
-    // Trava síncrona: evita criar duas sessões em cliques rápidos (JOA-RF-05 edge).
     if (startingRef.current || isRunning) return;
     startingRef.current = true;
     startM.mutate(
@@ -49,6 +59,7 @@ export function DemoPage({ mode = 'normal', onMode }: DemoPageProps) {
           const store = useTelemetryStore.getState();
           store.setTrip(s.tripId);
           store.setConnection('live');
+          store.setDemoMode(true); // marca a sessão como demo (separa do fluxo real)
         },
         onSettled: () => { startingRef.current = false; },
       },
@@ -61,23 +72,18 @@ export function DemoPage({ mode = 'normal', onMode }: DemoPageProps) {
     });
   };
 
-  const speed = lastPoint && isValidSpeed(lastPoint.speedKmh) ? lastPoint.speedKmh : null;
-
   return (
     <div style={{
       height: '100%', overflow: 'hidden', background: SD.bg,
-      display: 'grid', gridTemplateColumns: '320px 1fr 320px', gap: 1,
+      display: 'grid', gridTemplateColumns: '320px 1fr 300px', gap: 1,
     }}>
       {/* LEFT: control panel */}
       <div style={{ background: SD.surface, borderRight: `1px solid ${SD.border}`, padding: 20, overflow: 'auto' }}>
         <Tag tone="cyan" style={{ marginBottom: 10 }}><Dot tone="cyan" size={5} /> EXPOIOT 2026</Tag>
         <div className="sd-display" style={{ fontSize: 22, lineHeight: 1, marginTop: 10 }}>MODO<br />APRESENTAÇÃO</div>
-        <div className="sd-mono" style={{ fontSize: 11, color: SD.textDim, marginTop: 8, lineHeight: 1.5 }}>
-          Pista física + carrinho RC com ESP32. O modelo trata o comportamento como se viesse de um veículo real.
-        </div>
 
         {/* Vehicle select */}
-        <div className="sd-label" style={{ fontSize: 9, margin: '18px 0 8px' }}>VEÍCULO SIMULADO</div>
+        <div className="sd-label" style={{ fontSize: 9, margin: '18px 0 8px' }}>VEÍCULO</div>
         <div style={{ display: 'grid', gap: 8 }}>
           <SelectableCard
             active={vehicleId === undefined}
@@ -147,81 +153,71 @@ export function DemoPage({ mode = 'normal', onMode }: DemoPageProps) {
         </div>
       </div>
 
-      {/* CENTER: stage */}
+      {/* CENTER: live map stage (o carrinho é o marcador que se move com o GPS) */}
       <div style={{ background: SD.bg, position: 'relative', overflow: 'hidden' }}>
-        <div style={{ padding: '24px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-              {isRunning
-                ? <Tag tone="red"><Dot tone="red" size={5} /> AO VIVO</Tag>
-                : <Tag tone="neutral">PARADO</Tag>}
-              <Tag tone="cyan">CARRINHO RC · esp32-demo-001</Tag>
-              <Tag>PERFIL: {mode.toUpperCase()}</Tag>
-            </div>
-            <div className="sd-display" style={{ fontSize: 26 }}>PISTA · CIRCUITO URBANO</div>
+        <LiveMapContainer follow style={{ position: 'absolute', inset: 0 }} />
+
+        {/* Header overlay */}
+        <div style={{ position: 'absolute', top: 16, left: 16, display: 'flex', gap: 8, zIndex: 1 }}>
+          {isRunning
+            ? <Tag tone="red"><Dot tone="red" size={5} /> AO VIVO</Tag>
+            : <Tag tone="neutral">PARADO</Tag>}
+          <Tag tone="cyan">MODO DEMO</Tag>
+          <Tag>PERFIL: {mode.toUpperCase()}</Tag>
+        </div>
+
+        {/* Score overlay (ao vivo via store) */}
+        <div style={{ position: 'absolute', top: 16, right: 16, padding: 14, background: SD.bg, border: `2px solid ${SD.danger}`, zIndex: 1 }}>
+          <div className="sd-label" style={{ fontSize: 9, color: SD.danger, marginBottom: 4 }}>SCORE AO VIVO</div>
+          <div className="sd-mono" style={{ fontSize: 44, color: SD.danger, lineHeight: 1, fontWeight: 700 }}>
+            {score ? Math.round(score.value) : '—'}
           </div>
         </div>
 
-        <div style={{ padding: 24, height: 'calc(100% - 96px)' }}>
-          <div style={{ background: SD.surface, border: `1.5px solid ${SD.border}`, height: '100%', position: 'relative', overflow: 'hidden' }}>
-            <TrackView />
-            {/* Score overlay (ao vivo via store) */}
-            <div style={{ position: 'absolute', top: 20, left: 20, padding: 16, background: SD.bg, border: `2px solid ${SD.danger}` }}>
-              <div className="sd-label" style={{ fontSize: 9, color: SD.danger, marginBottom: 4 }}>SCORE AO VIVO</div>
-              <div className="sd-mono" style={{ fontSize: 56, color: SD.danger, lineHeight: 1, fontWeight: 700 }}>
-                {score ? Math.round(score.value) : '—'}
-              </div>
-            </div>
-            {/* Speed overlay */}
-            <div style={{ position: 'absolute', top: 20, right: 20, padding: 16, background: SD.bg, border: `2px solid ${SD.primary}` }}>
-              <div className="sd-label" style={{ fontSize: 9, color: SD.primary, marginBottom: 4 }}>VELOCIDADE</div>
-              <div className="sd-mono" style={{ fontSize: 56, color: SD.text, lineHeight: 1, fontWeight: 700 }}>
-                {speed != null ? speed : '—'}
-              </div>
-              <div className="sd-label" style={{ fontSize: 9, color: SD.textDim, marginTop: 4 }}>KM/H</div>
-            </div>
+        {/* Speed overlay */}
+        <div style={{ position: 'absolute', bottom: 16, right: 16, padding: 14, background: SD.bg, border: `2px solid ${SD.primary}`, zIndex: 1 }}>
+          <div className="sd-label" style={{ fontSize: 9, color: SD.primary, marginBottom: 4 }}>VELOCIDADE</div>
+          <div className="sd-mono" style={{ fontSize: 44, color: SD.text, lineHeight: 1, fontWeight: 700 }}>
+            {speed != null ? speed : '—'} <span style={{ fontSize: 14, color: SD.textDim }}>km/h</span>
           </div>
         </div>
+
+        {/* GPS ausente: aviso honesto (sem forjar posição) */}
+        {isRunning && !hasFix && (
+          <div style={{
+            position: 'absolute', bottom: 16, left: 16, zIndex: 1,
+            background: SD.warningSoft, border: `1.5px solid ${SD.warning}`, color: SD.warning,
+            padding: '6px 12px', fontFamily: SD.fontMono, fontSize: 11,
+          }}>
+            ⚠ GPS sem fix — aguardando posição (céu aberto). A telemetria do IMU continua.
+          </div>
+        )}
       </div>
 
-      {/* RIGHT: model explanation */}
-      <div style={{ background: SD.surface, borderLeft: `1px solid ${SD.border}`, padding: 20, overflow: 'auto' }}>
-        <div className="sd-label" style={{ fontSize: 9, marginBottom: 8, color: SD.primary }}>EXPLICAÇÃO DO MODELO</div>
-        <div style={{ fontSize: 12, lineHeight: 1.6, color: SD.textDim, marginBottom: 12 }}>
-          O carrinho demonstra a coleta de telemetria. O modelo aplica o consumo base do perfil cadastrado:
+      {/* RIGHT: estado real consolidado (sem textões) */}
+      <div style={{ background: SD.surface, borderLeft: `1px solid ${SD.border}`, padding: 20, overflow: 'auto', display: 'grid', gap: 14, alignContent: 'start' }}>
+        <div className="sd-label" style={{ fontSize: 9, color: SD.primary }}>CONSUMO ESTIMADO</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <Stat label="CONSUMO" value={fuel ? fuel.adjustedConsumptionKmL.toFixed(1) : '—'} unit="km/L" accent={SD.success} />
+          <Stat label="GASTO" value={fuel ? fuel.estimatedLitersSpent.toFixed(2) : '—'} unit="L" />
         </div>
-        <div style={{
-          background: SD.bg, border: `1px solid ${SD.border}`,
-          padding: 12, fontFamily: SD.fontMono, fontSize: 10, color: SD.textDim, lineHeight: 1.7,
-        }}>
-          <span style={{ color: SD.primary }}>consumo</span> = <span style={{ color: SD.text }}>baseKmL</span>
-          <br />&nbsp;&nbsp;× fatorVelocidade × fatorAceleracao
-          <br />&nbsp;&nbsp;× fatorFrenagem × <span style={{ color: SD.warning }}>fatorRota</span>
-          <br />&nbsp;&nbsp;× <span style={{ color: SD.success }}>fatorCalibracao</span>
+        <div className="sd-mono" style={{ fontSize: 10, color: SD.textMute, lineHeight: 1.5 }}>
+          Estimativa proporcional ao comportamento (IMU + GPS), não medição de tanque.
         </div>
 
-        <div style={{
-          marginTop: 14, padding: 12,
-          background: 'rgba(0,229,255,0.06)', border: `1px solid ${SD.primary}`,
-          fontSize: 11, color: SD.text, lineHeight: 1.5,
-        }}>
-          <strong style={{ color: SD.primary }}>ⓘ SEM GPS?</strong>
-          <div style={{ marginTop: 4, color: SD.textDim }}>
-            Se o GPS cair, a posição usa a <strong>pista virtual</strong> e o trajeto continua sem
-            interromper a apresentação (coordenadas inválidas são ignoradas no traçado).
-          </div>
-        </div>
+        <div style={{ height: 1, background: SD.border }} />
 
-        <div style={{
-          marginTop: 14, padding: 12,
-          background: 'rgba(255,176,32,0.08)', border: `1px solid ${SD.warning}`,
-          fontSize: 11, color: SD.text, lineHeight: 1.5,
-        }}>
-          <strong style={{ color: SD.warning }}>ⓘ ESTIMATIVA HONESTA</strong>
-          <div style={{ marginTop: 4, color: SD.textDim }}>
-            Não medimos combustível no tanque. O número é proporcional ao comportamento detectado pelo IMU + GPS.
-          </div>
+        <div className="sd-label" style={{ fontSize: 9, color: SD.primary }}>EVENTOS (SCORE)</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: SD.textDim }} className="sd-mono">
+          <span>{score?.penalties.hardBrakes ?? 0} FREADAS</span>
+          <span>{score?.penalties.sharpTurns ?? 0} CURVAS</span>
+          <span>{score?.penalties.speedInstability ?? 0} VEL</span>
         </div>
+        {!score && (
+          <div className="sd-mono" style={{ fontSize: 10, color: SD.textMute }}>
+            Score e eventos chegam via WebSocket (análise do Nathan).
+          </div>
+        )}
       </div>
     </div>
   );
@@ -242,31 +238,5 @@ function SelectableCard({ active, onClick, title, sub }: { active: boolean; onCl
       <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{title}</div>
       <div className="sd-mono" style={{ fontSize: 10, color: active ? SD.primary : SD.textDim }}>{sub}</div>
     </div>
-  );
-}
-
-function TrackView() {
-  return (
-    <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" width="100%" height="100%" aria-label="Pista virtual">
-      <rect width="800" height="500" fill="#0E0E16" />
-      {Array.from({ length: 16 }).map((_, i) => (
-        <line key={'h' + i} x1="0" y1={i * 32} x2="800" y2={i * 32} stroke="#1A1A26" strokeWidth="1" />
-      ))}
-      {Array.from({ length: 26 }).map((_, i) => (
-        <line key={'v' + i} x1={i * 32} y1="0" x2={i * 32} y2="500" stroke="#1A1A26" strokeWidth="1" />
-      ))}
-      <path
-        d="M 120 250 C 120 120, 280 80, 400 130 C 520 180, 520 320, 640 320 C 760 320, 760 180, 640 180 C 520 180, 520 380, 400 380 C 280 380, 120 380, 120 250 Z"
-        fill="none" stroke="#2A2A38" strokeWidth="40"
-      />
-      <path
-        d="M 120 250 C 120 120, 280 80, 400 130 C 520 180, 520 320, 640 320 C 760 320, 760 180, 640 180 C 520 180, 520 380, 400 380 C 280 380, 120 380, 120 250 Z"
-        fill="none" stroke={SD.primary} strokeWidth="2" strokeDasharray="6 4" opacity="0.6"
-      />
-      <g transform="translate(120 250)">
-        <rect x="-4" y="-30" width="8" height="60" fill={SD.success} />
-        <text x="14" y="-32" fill={SD.textDim} fontSize="10" fontFamily={SD.fontMono}>START</text>
-      </g>
-    </svg>
   );
 }

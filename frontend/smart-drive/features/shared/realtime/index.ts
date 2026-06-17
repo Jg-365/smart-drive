@@ -9,6 +9,7 @@ export {
   useTripFinished,
   useLastPacketAt,
   useRoute,
+  useDemoMode,
   MAX_EVENTS,
 } from './store'
 export type { ConnectionState, TelemetryState } from './store'
