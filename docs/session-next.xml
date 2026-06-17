@@ -24,16 +24,18 @@
        session-current.xml.
        ═══════════════════════════════════════════════════════════ -->
   <epics>
-    <!-- TODOS os épicos do plan-002 (EPIC-00..13) foram implementados nesta sessão (2026-06-16).
-         Nenhum épico do João pendente. O fechamento "100% pronto" do JOA-TEC-04 depende de itens
-         de hardware/Pedro/Nathan rastreados em QA-CHECKLIST.md e nas dívidas/B02 do session-current.
+    <!-- TODOS os épicos do plan-002 (EPIC-00..13) foram implementados. Nenhum épico do João pendente.
+         JOA-TEC-02 FECHADO na bancada (2026-06-17, ESP-IDF 6.0, PR #13) → B02 resolvido. Tela MAPA do
+         desktop e indicadores reais do shell entregues (PR #14, JOA-RF-04). O "100% pronto" do
+         JOA-TEC-04 ainda depende de itens de Pedro/Nathan rastreados em QA-CHECKLIST.md.
          Próximas frentes do João são de INTEGRAÇÃO (não novos épicos):
-           - validar idf.py build do firmware na bancada (B02);
            - quando Pedro entregar auth/endpoints: trocar TempUserGuard, alinhar setGlobalPrefix('api'),
              remover o controller mock de telemetria;
            - quando Nathan emitir score/consumo/eventos via WS: validar no dashboard/relatório;
            - elevar o tripId da demo ao TelemetryProvider (telemetria demo ao vivo);
-           - auditoria RNF-03 (44px) e RNF-05 (rodar do zero noutra máquina). -->
+           - auditoria RNF-03 (44px) e RNF-05 (rodar do zero noutra máquina);
+           - dívidas do firmware: migrar driver I2C legado p/ driver/i2c_master.h (EOL no ESP-IDF 7.0)
+             e resolver o timestamp tempo-desde-boot (SNTP ou carimbo no backend — alinhar contrato c/ Pedro). -->
   </epics>
 
   <!-- ═══════════════════════════════════════════════════════════

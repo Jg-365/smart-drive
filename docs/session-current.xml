@@ -22,10 +22,13 @@
     QA-CHECKLIST.md + APRESENTACAO-EXPOIOT.md. Smoke automatizado nesta sessão: FRONTEND 220 testes +
     tsc + build OK; BACKEND 57 testes (DTO + integração c/ Postgres real + gateway WS) serial; banco
     migra. Sessão João (2026-06-16): finalizados todos os épicos, um por vez, em sequência.
-    PENDÊNCIAS p/ "100% pronto" (fora do controle do João sozinho): (1) idf.py build do firmware na
-    bancada (B02); (2) Nathan emitir score/consumo/eventos via WS (NAT-RF-04/05/07); (3) Pedro: auth
-    JWT real + setGlobalPrefix('api') + endpoints reais + POST /telemetry; (4) elevar tripId da demo
-    ao TelemetryProvider; (5) RNF-03 (44px) e RNF-05 (portabilidade noutra máquina). Ver QA-CHECKLIST.md.
+    Sessão de bancada (2026-06-17): JOA-TEC-02 FECHADO — firmware buildou no ESP-IDF 6.0 e validou
+    ponta-a-ponta na ESP32 real (IMU no dashboard + GPS no mapa); B02 resolvido (PR #13). Também tapada
+    a lacuna do mapa no desktop (não existia tela MAPA) e indicadores do shell desktop ligados ao estado
+    real (PR #14, JOA-RF-04). PENDÊNCIAS p/ "100% pronto" (fora do controle do João sozinho):
+    (1) Nathan emitir score/consumo/eventos via WS (NAT-RF-04/05/07); (2) Pedro: auth JWT real +
+    setGlobalPrefix('api') + endpoints reais + POST /telemetry; (3) elevar tripId da demo ao
+    TelemetryProvider; (4) RNF-03 (44px) e RNF-05 (portabilidade noutra máquina). Ver QA-CHECKLIST.md.
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -48,7 +51,7 @@
       </notes>
     </req>
 
-    <req id="JOA-TEC-02" title="Firmware e hardware" status="in_progress">
+    <req id="JOA-TEC-02" title="Firmware e hardware" status="done">
       <notes>
         EPIC-11 (branch firmware/joa-tec-02-esp32, PR #10): firmware ESP-IDF/FreeRTOS COMPLETO e
         modular em firmware/main/ (+ include/). Tasks: imu_reader (driver I2C MPU6050, 50Hz),
@@ -60,10 +63,19 @@
         antigo sob pressão). sd_config.h centraliza pinos/taxas/limiares/Wi-Fi/endpoint. CMakeLists
         atualizado (REQUIRES driver/esp_wifi/esp_netif/esp_event/esp_http_client/json/nvs_flash/
         esp_timer). README do firmware documenta arquitetura/build/flash/contrato.
-        BLOQUEIO p/ done_when: este ambiente NÃO tem o toolchain ESP-IDF — 'idf.py build' precisa ser
-        rodado pelo João (ESP-IDF >= 5.0) para fechar JOA-TEC-02. Por isso status segue in_progress
-        (implementação 100%, validação de build pendente). Drivers reais dependem do hardware (MPU6050
-        + NEO-6M) na bancada.
+        DONE em 2026-06-17 (sessão de bancada do João, ESP-IDF 6.0.1, PR #13
+        firmware/joa-tec-02-espidf6-build): `idf.py build` passou (Project build complete) e o firmware
+        rodou na ESP32 real com MPU6050 + NEO-6M. Validação ponta-a-ponta: WHO_AM_I=0x68 (IMU), Wi-Fi
+        STA conectado, 14 tasks, heap estável; POST /telemetry → 202 (contrato v1.0, gps:null sem fix);
+        IMU ao vivo no dashboard e fix de GPS desenhado no mapa. CORREÇÕES p/ ESP-IDF 6.0 (quebrou o 5.x):
+        (a) o componente embutido `json` (cJSON) foi REMOVIDO → agora vem do registro de componentes via
+        main/idf_component.yml + dependencies.lock (espressif/cjson), removido `json` do REQUIRES;
+        (b) o componente monolítico `driver` foi dividido → adicionado `esp_driver_uart` ao REQUIRES
+        (gps_reader usa driver/uart.h); (c) SD_TELEMETRY_URL corrigido p/ porta 3001 (PORT do backend/.env).
+        DÍVIDAS: o driver I2C legado (driver/i2c.h) segue só com warning de deprecação (EOL no ESP-IDF 7.0)
+        → migrar p/ driver/i2c_master.h; timestamp do firmware é tempo-desde-boot (ESP32 sem RTC) → horário
+        absoluto no relatório depende de SNTP ou carimbo do backend (alinhar com Pedro, mexe no contrato);
+        credenciais de Wi-Fi seguem em sd_config.h com placeholders CHANGE_ME_* (migrar p/ Kconfig/NVS).
       </notes>
     </req>
 
@@ -451,11 +463,12 @@
       (importável via PrismaModule, @Global). Ler as "NOTAS PARA O TIME" no topo do
       schema.prisma antes de começar.
     </blocker>
-    <blocker id="B02" status="open" severity="medium" created="2026-06-16">
-      EPIC-11 (JOA-TEC-02): firmware implementado, mas o ambiente do Claude não tem o toolchain
-      ESP-IDF. João precisa rodar `cd firmware && idf.py set-target esp32 && idf.py build` (ESP-IDF
-      >= 5.0) para fechar o done_when, e validar com o hardware (MPU6050 + NEO-6M). Ajustar pinos/
-      Wi-Fi/endpoint em firmware/main/include/sd_config.h antes.
+    <blocker id="B02" status="resolved" severity="medium" created="2026-06-16" resolved_date="2026-06-17">
+      RESOLVIDO na sessão de bancada do João (ESP-IDF 6.0.1, PR #13). `idf.py set-target esp32 &&
+      idf.py build` passou e o firmware rodou na ESP32 real (MPU6050 + NEO-6M): IMU ao vivo no dashboard
+      e fix de GPS no mapa, POST /telemetry → 202. Exigiu correções p/ ESP-IDF 6.0: cJSON via componente
+      gerenciado (espressif/cjson) no lugar do `json` removido, e `esp_driver_uart` no REQUIRES (driver
+      monolítico foi dividido). Detalhes na nota do req JOA-TEC-02.
     </blocker>
   </blockers>
 
@@ -720,6 +733,26 @@
       sessão "finalizar todos os épicos hoje": EPIC-00..13 implementados (12 PRs). Restam para o
       "100% pronto" itens que dependem de hardware/Nathan/Pedro — todos rastreados em QA-CHECKLIST.md
       e nas dívidas/B02.
+    </entry>
+    <entry date="2026-06-17" type="bench">
+      Sessão de bancada do João: validação de hardware do firmware + dois ajustes no frontend.
+      FIRMWARE (PR #13, firmware/joa-tec-02-espidf6-build): `idf.py build` passou no ESP-IDF 6.0.1 e o
+      firmware rodou na ESP32 real com MPU6050 (I2C, GPIO21/22) + NEO-6M (UART2, RX2=GPIO16/TX2=GPIO17,
+      9600). Logs confirmaram WHO_AM_I=0x68, Wi-Fi STA, 14 tasks, heap estável; POST /telemetry → 202.
+      Correções p/ ESP-IDF 6.0 (que quebrou o 5.x): cJSON via componente gerenciado (espressif/cjson em
+      main/idf_component.yml + dependencies.lock; `json` embutido foi removido) e `esp_driver_uart` no
+      REQUIRES (driver monolítico dividido). Porta do SD_TELEMETRY_URL corrigida p/ 3001. .gitignore do
+      firmware (build/, managed_components/). FECHA JOA-TEC-02 e o B02. Aprendizados de bancada: (1) o
+      chip vinha com um firmware GPS_TEST antigo — "Checksum mismatch" no monitor denuncia app gravado ≠
+      buildado, precisa `flash`, não só `monitor`; (2) NMEA cru no monitor = GPS na UART do console, não
+      na UART2; (3) GPS só pega fix com céu/janela (indoor fica quality=0/gps:null, aceito pelo backend).
+      FRONTEND (PR #14, feature/joa-rf-04-desktop-map, JOA-RF-04): o mapa MapLibre real só estava ligado
+      no layout MOBILE — adicionada a tela MAPA no desktop (DesktopMapPage + LiveMapContainer + item na
+      sidebar do DesktopShell). LiveMap: handler de erro de tiles deixou de ser fatal (só mostra "Mapa
+      indisponível" se NENHUM tile carregar; erro transitório de pan/zoom não esconde mais; +1 teste).
+      DesktopShell: topo/rodapé ligados ao store real (sessão/tripId, satélites, estado WS, online/offline
+      por staleness, idade do pacote, pontos/eventos, relógio UTC, WS_URL) no lugar dos valores hardcoded.
+      tsc + 221 testes + next build verdes. Os dois PRs mergeados no main (merges d51d1ef, 30457fb).
     </entry>
   </history>
 
