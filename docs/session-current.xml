@@ -17,14 +17,15 @@
   </objective>
 
   <current_focus>
-    EPIC-00 a EPIC-12 concluídos (EPIC-11 com build ESP-IDF a validar — B02). EPIC-02..11 em main
-    (PRs #1..#10 mergeados; EPIC-11=PR#10 a19f0df). EPIC-12 (RNFs + botões mortos, JOA-RNF-02/03/04/05)
-    na branch feature/joa-rnf-02-05-polish, PR #11: Btn ganhou prop disabled; navegação ligada
-    (INICIAR VIAGEM/MODO DEMO → demo; VOLTAR → volta) via callbacks do app/page.tsx; cosméticos e
-    devices sem feature ficaram desabilitados (nenhum botão "morto"); scripts/dev-up.sh|dev-down.sh
-    (RNF-02). 4 testes novos. 220/220 testes, tsc/build limpos. RNF-04 já coberto (seletores+downsample);
-    RNF-03/05 a consolidar no QA. Sessão João: finalizar os épicos hoje, um por vez.
-    Próximo (ÚLTIMO): EPIC-13 (QA final & checklist ExpoIOT). Ver session-next.xml.
+    TODOS os 13 épicos do plano (EPIC-00..13) IMPLEMENTADOS. EPIC-02..12 em main (PRs #1..#11;
+    EPIC-12=PR#11 24afbf9). EPIC-13 (QA final, JOA-TEC-04) na branch test/joa-tec-04-qa-final, PR #12:
+    QA-CHECKLIST.md + APRESENTACAO-EXPOIOT.md. Smoke automatizado nesta sessão: FRONTEND 220 testes +
+    tsc + build OK; BACKEND 57 testes (DTO + integração c/ Postgres real + gateway WS) serial; banco
+    migra. Sessão João (2026-06-16): finalizados todos os épicos, um por vez, em sequência.
+    PENDÊNCIAS p/ "100% pronto" (fora do controle do João sozinho): (1) idf.py build do firmware na
+    bancada (B02); (2) Nathan emitir score/consumo/eventos via WS (NAT-RF-04/05/07); (3) Pedro: auth
+    JWT real + setGlobalPrefix('api') + endpoints reais + POST /telemetry; (4) elevar tripId da demo
+    ao TelemetryProvider; (5) RNF-03 (44px) e RNF-05 (portabilidade noutra máquina). Ver QA-CHECKLIST.md.
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -78,8 +79,15 @@
       </notes>
     </req>
 
-    <req id="JOA-TEC-04" title="QA e testes finais" status="not_started">
-      <notes>Depende de TEC-01 a TEC-03 e dos módulos de Pedro/Nathan. Nada a testar ainda em integração.</notes>
+    <req id="JOA-TEC-04" title="QA e testes finais" status="in_progress">
+      <notes>EPIC-13 (branch test/joa-tec-04-qa-final, PR #12): QA-CHECKLIST.md (cada SPEC mapeado a
+        automatizado/parcial/manual + dependências dos times + roteiro de smoke) e APRESENTACAO-EXPOIOT.md
+        (roteiro de palco). Smoke AUTOMATIZADO validado: frontend 220 testes + tsc + build; backend 57
+        testes (DTO + integração c/ Postgres real + gateway WS com socket real) serial; docker compose +
+        prisma migrate deploy OK. Checklist (parte do done_when) PRONTO. Segue in_progress porque o
+        done_when também exige o e2e ao vivo e as integrações de Nathan (score/consumo/eventos via WS) e
+        Pedro (auth + prefixo /api + endpoints + POST /telemetry real) + idf.py build do firmware (B02).
+        Tudo rastreado em QA-CHECKLIST.md.</notes>
     </req>
 
     <req id="JOA-RF-01" title="Cadastro de veículo" status="done">
@@ -702,6 +710,16 @@
       portabilidade no EPIC-13). 4 testes novos (Btn disabled, navegação); suite 216 → 220; tsc/build
       limpos; restam 3 erros eslint pré-existentes em map-gauges.tsx. Commit 7e476cf, PR #11. Build teve
       1 falha flaky do Turbopack (next/font) que sumiu na re-execução.
+    </entry>
+    <entry date="2026-06-16" type="qa">
+      EPIC-13 (JOA-TEC-04) na branch test/joa-tec-04-qa-final. Criados QA-CHECKLIST.md (mapeia os 7
+      SPECs + RNFs + dependências de Pedro/Nathan/firmware ao status, com roteiro de smoke manual) e
+      APRESENTACAO-EXPOIOT.md (roteiro de ~6–8 min). Smoke automatizado RODADO E VERDE: frontend 220
+      testes + tsc + build; backend 57 testes serial (DTO + integração c/ Postgres real + gateway WS),
+      após docker compose up + prisma migrate deploy. Commit 4569bb1, PR #12. Com isso, encerra a
+      sessão "finalizar todos os épicos hoje": EPIC-00..13 implementados (12 PRs). Restam para o
+      "100% pronto" itens que dependem de hardware/Nathan/Pedro — todos rastreados em QA-CHECKLIST.md
+      e nas dívidas/B02.
     </entry>
   </history>
 
