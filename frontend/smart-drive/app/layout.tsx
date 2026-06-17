@@ -44,8 +44,8 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html:
               "(function(){try{var t=localStorage.getItem('sd-theme');" +
-              "if(t!=='dark'&&t!=='light'){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';}" +
-              "document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='dark';}})();",
+              "document.documentElement.dataset.theme=(t==='light')?'light':'dark';}" +
+              "catch(e){document.documentElement.dataset.theme='dark';}})();",
           }}
         />
       </head>

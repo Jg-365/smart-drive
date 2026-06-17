@@ -27,23 +27,15 @@ function writeStoredTheme(theme: Theme): void {
 
 /**
  * Resolve o tema inicial: respeita o data-theme já aplicado pelo script anti-flicker,
- * depois o localStorage, depois a preferência do SO; padrão dark (JOA-RF-06).
+ * depois o localStorage; padrão DARK (JOA-RF-06 — dark é o default, independente da
+ * preferência do SO; só uma escolha explícita persistida muda isso).
  */
 function getInitialTheme(): Theme {
   if (typeof document !== 'undefined') {
     const applied = document.documentElement.dataset.theme;
     if (applied === 'dark' || applied === 'light') return applied;
   }
-  const stored = readStoredTheme();
-  if (stored) return stored;
-  if (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-color-scheme: light)').matches
-  ) {
-    return 'light';
-  }
-  return 'dark';
+  return readStoredTheme() ?? 'dark';
 }
 
 export function useTheme() {
