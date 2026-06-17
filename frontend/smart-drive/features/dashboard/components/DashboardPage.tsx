@@ -18,9 +18,11 @@ import type { DrivingEvent } from '@/features/shared/types';
 import { EVENT_META, G, SCORE_HINT, isHighSeverity } from '../derive';
 
 /** Top-level: empty state sem viagem ativa, senão o dashboard ligado ao store. */
-export function DashboardPage() {
+type DashScreen = 'dashboard' | 'trips' | 'vehicles' | 'devices' | 'demo';
+
+export function DashboardPage({ onNavigate }: { onNavigate?: (s: DashScreen) => void }) {
   const tripId = useTelemetryStore((s) => s.tripId);
-  if (!tripId) return <EmptyState />;
+  if (!tripId) return <EmptyState onNavigate={onNavigate} />;
 
   return (
     <div style={{
@@ -35,8 +37,8 @@ export function DashboardPage() {
           <Tag>FORTALEZA · CE</Tag>
         </div>
         <div style={{ position: 'absolute', top: 16, right: 80, display: 'flex', gap: 6 }}>
-          <Btn tone="solid" size="sm">SEGUIR VEÍCULO</Btn>
-          <Btn tone="solid" size="sm">CAMADAS</Btn>
+          <Btn tone="solid" size="sm" disabled title="Em breve">SEGUIR VEÍCULO</Btn>
+          <Btn tone="solid" size="sm" disabled title="Em breve">CAMADAS</Btn>
         </div>
         <ReconnectBanner />
         <VehicleInfoCard />
@@ -259,7 +261,7 @@ function EventList() {
 }
 
 // ── Estado vazio ──────────────────────────────────────────────────────
-function EmptyState() {
+function EmptyState({ onNavigate }: { onNavigate?: (s: DashScreen) => void }) {
   return (
     <div style={{ height: '100%', display: 'grid', placeItems: 'center', background: SD.bg, padding: 24 }}>
       <div style={{ textAlign: 'center', maxWidth: 420 }}>
@@ -271,8 +273,8 @@ function EmptyState() {
           Inicie uma viagem ou rode o modo demo para ver a telemetria em tempo real.
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-          <Btn tone="primary" size="lg" icon={Icon.play(14)}>INICIAR VIAGEM</Btn>
-          <Btn tone="outline" size="lg">MODO DEMO</Btn>
+          <Btn tone="primary" size="lg" icon={Icon.play(14)} onClick={() => onNavigate?.('demo')}>INICIAR VIAGEM</Btn>
+          <Btn tone="outline" size="lg" onClick={() => onNavigate?.('demo')}>MODO DEMO</Btn>
         </div>
       </div>
     </div>

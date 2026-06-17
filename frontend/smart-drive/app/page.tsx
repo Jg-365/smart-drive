@@ -35,7 +35,7 @@ export default function Page() {
 
   const renderDesktopScreen = () => {
     switch (desktopScreen) {
-      case 'dashboard': return <DashboardPage />;
+      case 'dashboard': return <DashboardPage onNavigate={setDesktopScreen} />;
       case 'trips': return <TripReportPage />;
       case 'vehicles': return <VehiclesPage />;
       case 'devices': return <DevicesPage />;
@@ -127,11 +127,11 @@ function MobileScreenWrapper({
   onNav: (t: MobileTab) => void;
 }) {
   switch (tab) {
-    case 'home': return <MobileHomePage />;
-    case 'live': return <MobileLivePage />;
-    case 'map': return <MapPage />;
+    case 'home': return <MobileHomePage onNavigate={onNav} />;
+    case 'live': return <MobileLivePage onNavigate={onNav} />;
+    case 'map': return <MapPage onBack={() => onNav('live')} />;
     case 'trips': return <MobileTripReportPage />;
     case 'menu': return <MobileDemoPage />;
-    default: return <MobileLivePage />;
+    default: return <MobileLivePage onNavigate={onNav} />;
   }
 }

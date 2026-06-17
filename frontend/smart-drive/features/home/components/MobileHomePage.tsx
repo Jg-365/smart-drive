@@ -8,7 +8,9 @@ import { MapView } from '@/features/shared/ui/map-gauges';
 import { MobileShell } from '@/features/shell/components/MobileShell';
 import { BrandLogo } from '@/features/shared/ui/BrandLogo';
 
-export function MobileHomePage() {
+type MobileTab = 'home' | 'live' | 'map' | 'trips' | 'menu';
+
+export function MobileHomePage({ onNavigate }: { onNavigate?: (tab: MobileTab) => void }) {
   return (
     <MobileShell active="home">
       <div style={{ padding: '20px 18px 100px', display: 'grid', gap: 18 }}>
@@ -37,7 +39,7 @@ export function MobileHomePage() {
           <Tag tone="cyan" style={{ marginBottom: 10 }}><Dot tone="cyan" size={5} /> DISPOSITIVO ONLINE</Tag>
           <div className="sd-display" style={{ fontSize: 22, lineHeight: 1.05, marginBottom: 4 }}>PRONTO PARA RODAR?</div>
           <div style={{ fontSize: 12, color: SD.textDim, marginBottom: 14 }}>esp32-demo-001 · Onix LT 1.0</div>
-          <Btn tone="primary" size="lg" full icon={Icon.play(14)}>INICIAR VIAGEM</Btn>
+          <Btn tone="primary" size="lg" full icon={Icon.play(14)} onClick={() => onNavigate?.('menu')}>INICIAR VIAGEM</Btn>
         </div>
 
         {/* Last trip */}

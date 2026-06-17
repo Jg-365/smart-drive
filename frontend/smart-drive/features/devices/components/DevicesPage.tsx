@@ -15,7 +15,7 @@ export function DevicesPage() {
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <span className="sd-display" style={{ fontSize: 18 }}>VEÍCULOS</span>
-          <Btn tone="outline" size="sm" icon={Icon.plus(12)}>NOVO</Btn>
+          <Btn tone="outline" size="sm" icon={Icon.plus(12)} disabled title="Pareamento de dispositivos (em breve)">NOVO</Btn>
         </div>
         <div style={{ display: 'grid', gap: 8 }}>
           {[
@@ -94,8 +94,8 @@ export function DevicesPage() {
           accent={SD.primary}
           tools={
             <div style={{ display: 'flex', gap: 6 }}>
-              <Btn tone="ghost" size="sm">DUPLICAR</Btn>
-              <Btn tone="ghost" size="sm" style={{ color: SD.danger, borderColor: 'rgba(255,51,68,0.4)' }}>EXCLUIR</Btn>
+              <Btn tone="ghost" size="sm" disabled title="Em breve">DUPLICAR</Btn>
+              <Btn tone="ghost" size="sm" disabled title="Em breve" style={{ color: SD.danger, borderColor: 'rgba(255,51,68,0.4)' }}>EXCLUIR</Btn>
             </div>
           }
         >
