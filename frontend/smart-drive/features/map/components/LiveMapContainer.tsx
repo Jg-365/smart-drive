@@ -9,7 +9,7 @@ import { LiveMap, type LiveMapEvent, type LiveMapProps } from './LiveMap';
  * Liga o store ao LiveMap: a rota acumulada, o marcador do veículo (último ponto
  * válido — congela se o GPS some) e os marcadores de evento com coordenada.
  */
-export function LiveMapContainer(props: Pick<LiveMapProps, 'className' | 'style' | 'styleUrl'>) {
+export function LiveMapContainer(props: Pick<LiveMapProps, 'className' | 'style' | 'styleUrl' | 'follow'>) {
   const route = useRoute();
   const events = useDrivingEvents();
 

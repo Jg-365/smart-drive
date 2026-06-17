@@ -77,6 +77,14 @@ describe('LiveMap', () => {
     expect(h.map.setCenter).toHaveBeenCalledWith(B);
   });
 
+  it('follow=true recentra no veículo a cada novo ponto', () => {
+    const { rerender } = render(<LiveMap route={[A]} vehicle={A} follow />);
+    act(() => h.map.fire('load'));
+    h.map.setCenter.mockClear();
+    rerender(<LiveMap route={[A, B]} vehicle={B} follow />);
+    expect(h.map.setCenter).toHaveBeenCalledWith(B);
+  });
+
   it('exibe fallback quando o tile server falha (nenhum tile carregou)', () => {
     render(<LiveMap route={[A]} vehicle={A} />);
     act(() => h.map.fire('error'));
