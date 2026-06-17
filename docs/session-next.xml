@@ -24,14 +24,16 @@
        session-current.xml.
        ═══════════════════════════════════════════════════════════ -->
   <epics>
-
-    <epic id="EPIC-13" req="JOA-TEC-04" priority="high" status="not_started">
-      <title>QA final &amp; apresentação ExpoIOT</title>
-      <depends_on>todos</depends_on>
-      <summary>Smoke test fluxo completo (ESP32/simulador→telemetry→backend→WS→dashboard), demo com GPS ausente e fallback do simulador, validação score/consumo do Nathan e endpoints do Pedro, checklist + roteiro de apresentação.</summary>
-      <done_when>Specs JOA-TEC-04 passam; checklist pronto.</done_when>
-    </epic>
-
+    <!-- TODOS os épicos do plan-002 (EPIC-00..13) foram implementados nesta sessão (2026-06-16).
+         Nenhum épico do João pendente. O fechamento "100% pronto" do JOA-TEC-04 depende de itens
+         de hardware/Pedro/Nathan rastreados em QA-CHECKLIST.md e nas dívidas/B02 do session-current.
+         Próximas frentes do João são de INTEGRAÇÃO (não novos épicos):
+           - validar idf.py build do firmware na bancada (B02);
+           - quando Pedro entregar auth/endpoints: trocar TempUserGuard, alinhar setGlobalPrefix('api'),
+             remover o controller mock de telemetria;
+           - quando Nathan emitir score/consumo/eventos via WS: validar no dashboard/relatório;
+           - elevar o tripId da demo ao TelemetryProvider (telemetria demo ao vivo);
+           - auditoria RNF-03 (44px) e RNF-05 (rodar do zero noutra máquina). -->
   </epics>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -99,6 +101,14 @@
        ITENS CONCLUÍDOS DO PLANO ANTERIOR (plan-001)
        ═══════════════════════════════════════════════════════════ -->
   <completed_from_plan>
+    <item from="plan-002" task="EPIC-13">
+      QA final &amp; apresentação ExpoIOT (JOA-TEC-04). QA-CHECKLIST.md (7 SPECs + RNFs + dependências
+      mapeados a status, + roteiro de smoke) e APRESENTACAO-EXPOIOT.md (roteiro de palco). Smoke
+      automatizado verde: frontend 220 testes + tsc + build; backend 57 testes serial (DTO + integração
+      Postgres + gateway WS); docker + migrate OK. Branch test/joa-tec-04-qa-final, PR #12. Concluído
+      (entregáveis) em 2026-06-16. JOA-TEC-04 segue in_progress até o e2e + integrações dos times +
+      build do firmware — tudo em QA-CHECKLIST.md.
+    </item>
     <item from="plan-002" task="EPIC-12">
       Não-funcionais + botões mortos (JOA-RNF-02/03/04/05). Btn com prop disabled; navegação ligada
       (INICIAR VIAGEM/MODO DEMO → demo; VOLTAR → live) via callbacks do app/page.tsx; cosméticos e
