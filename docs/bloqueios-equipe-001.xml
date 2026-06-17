@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Bloqueios da equipe que afetam a parte do João (frontend + módulos vehicles/demo + gateway).
+  Gerado em 2026-06-17 a partir da auditoria-001.xml e da implementação dos épicos de correção
+  FIX-01..07. Para cada bloqueio: o que NÃO é do João, o CONTRATO esperado, o que o João já deixou
+  PRÉ-PRONTO (frontend contra contrato + mock MSW + estado vazio), o estado atual e o que desbloqueia.
+
+  Princípio: o frontend já consome os contratos abaixo via lib/api/* e features/shared/realtime
+  (eventos WS). Hoje são atendidos pelos handlers MSW de dev (mocks/handlers) e pelo guard
+  placeholder do backend. Quando Pedro/Nathan entregarem o real, basta apontar/emitir — sem reescrever UI.
+-->
+<bloqueios id="bloqueios-001" sistema="SmartDrive" data="2026-06-17" relacionado="auditoria-001">
+
+  <contexto>
+    Divisão de responsabilidade (docs/CLAUDE.json + team): João é dono de TODO o frontend, dos módulos
+    backend `vehicles` e `demo`, do gateway WebSocket e da integração/bootstrap. Pedro é dono de
+    auth/users, `devices`, `trips` e ingestão real de telemetria. Nathan é dono de score, consumo,
+    detecção de eventos e simulador. Os itens abaixo bloqueiam o "100% real" mas o João já entregou o
+    frontend pré-pronto para cada um.
+  </contexto>
+
+  <!-- ═══════════════════════════ PEDRO (backend estrutural) ═══════════════════════════ -->
+  <bloqueio id="BL-PEDRO-AUTH" dono="Pedro" prioridade="critica">
+    <oQueEleEntrega>Autenticação real (JWT): login, emissão/validação de token, guard que popula request.user.id.</oQueEleEntrega>
+    <contratoEsperado>
+      POST /api/auth/login { email, password } → { token, user: { id, name, email } }.
+      Token enviado em Authorization: Bearer &lt;token&gt; nas requisições autenticadas.
+    </contratoEsperado>
+    <preProntoDoJoao>
+      Auth store (features/shared/auth/store.ts) já modela { token, user }. O cliente HTTP
+      (lib/api/client.ts) injeta Authorization: Bearer quando há token; sem token, cai no
+      x-user-id de DEV (NEXT_PUBLIC_DEV_USER_ID, casa com o TempUserGuard). Falta só a TELA DE LOGIN
+      chamando setAuth({token,user}) — quando o endpoint do Pedro existir, plugar é trivial.
+    </preProntoDoJoao>
+    <estadoAtual>TempUserGuard (header x-user-id) no backend; frontend manda x-user-id de DEV. Sem login real.</estadoAtual>
+    <oQueDesbloqueia>Todo dado autenticado por usuário (veículos, viagens, dispositivos) e a tela de login.</oQueDesbloqueia>
+  </bloqueio>
+
+  <bloqueio id="BL-PEDRO-DEVICES" dono="Pedro" prioridade="alta">
+    <oQueEleEntrega>Módulo de dispositivos (pareamento ESP32): CRUD + vínculo com veículo + status.</oQueEleEntrega>
+    <contratoEsperado>
+      GET /api/devices → Device[]; GET /api/devices/:id; POST /api/devices/:id/pair { vehicleId };
+      Device = { id, deviceCode, name, vehicleId, firmwareVersion, lastSeenAt, status }.
+      status ∈ ONLINE|OFFLINE|PAIRING|ERROR. Mudanças de status emitidas via WS device:statusChanged
+      (o gateway é do João — já emite esse evento).
+    </contratoEsperado>
+    <preProntoDoJoao>
+      lib/api/devices.ts + features/devices (DevicesPage + useDevices) prontos (FIX-02), contra os
+      handlers MSW de dev. Tela mostra dispositivos (não veículos), status com pulse só no online,
+      e painel de telemetria ao vivo do store. Estado "dependência externa (Pedro)" no erro.
+    </preProntoDoJoao>
+    <estadoAtual>Atendido por mocks MSW; sem backend real de devices.</estadoAtual>
+    <oQueDesbloqueia>Lista/pareamento real de dispositivos e status online de verdade.</oQueDesbloqueia>
+  </bloqueio>
+
+  <bloqueio id="BL-PEDRO-TRIPS" dono="Pedro" prioridade="critica">
+    <oQueEleEntrega>Módulo de viagens: iniciar, encerrar, listar, resumo e trajeto (persistência).</oQueEleEntrega>
+    <contratoEsperado>
+      POST /api/trips/start { vehicleId, deviceId? } → Trip (status ACTIVE);
+      POST /api/trips/:id/finish → Trip (status FINISHED);
+      GET /api/trips → Trip[]; GET /api/trips/:id/summary → { trip, events, fuelEstimate };
+      GET /api/trips/:id/route → { lat, lng }[].
+    </contratoEsperado>
+    <preProntoDoJoao>
+      lib/api/trips.ts (startTrip/finishTrip/fetchTrips/summary/route) + features/trips (TripsPage:
+      iniciar/em-andamento/encerrar/listar + relatório) prontos (FIX-03), contra MSW. Estados distintos:
+      sem veículos, sem viagens, erro de veículos, dependência externa.
+    </preProntoDoJoao>
+    <estadoAtual>Atendido por mocks MSW; sem persistência real.</estadoAtual>
+    <oQueDesbloqueia>Histórico real de viagens + KPIs distância/tempo do dashboard.</oQueDesbloqueia>
+  </bloqueio>
+
+  <bloqueio id="BL-PEDRO-INGEST" dono="Pedro" prioridade="alta">
+    <oQueEleEntrega>Ingestão real de telemetria: POST /telemetry que PERSISTE e dispara o gateway.</oQueEleEntrega>
+    <contratoEsperado>
+      POST /telemetry (contrato v1.0, docs/CLAUDE.json) → persiste e chama
+      TelemetryGateway.emitTelemetryNew(point). Definir caminho final (/telemetry vs /api/telemetry).
+    </contratoEsperado>
+    <preProntoDoJoao>
+      Gateway WebSocket (do João) já emite telemetry:new para a sala da viagem. Há um controller MOCK
+      (TelemetryController) que valida o contrato e dispara o gateway, usado pelo firmware e pelo feeder.
+    </preProntoDoJoao>
+    <estadoAtual>Controller mock do João ativo; /telemetry fica SEM o prefixo /api (exclusão no setGlobalPrefix) p/ não quebrar o firmware gravado.</estadoAtual>
+    <oQueDesbloqueia>Telemetria persistida/histórico. Ao chegar: remover o mock e revisar a exclusão do prefixo (FIX-01).</oQueDesbloqueia>
+  </bloqueio>
+
+  <!-- ═══════════════════════════ NATHAN (analytics) ═══════════════════════════ -->
+  <bloqueio id="BL-NATHAN-SCORE" dono="Nathan" prioridade="alta">
+    <oQueEleEntrega>Driving score em tempo real.</oQueEleEntrega>
+    <contratoEsperado>WS trip:scoreUpdated → DrivingScore { value, classification, penalties{hardBrakes,sharpTurns,speedInstability} } → store.score.</contratoEsperado>
+    <preProntoDoJoao>UI pronta: card de SCORE no dashboard e overlay "SCORE AO VIVO" na demo. Mostra "—"/AGUARDANDO até o evento chegar.</preProntoDoJoao>
+    <estadoAtual>Sem emissor; o feeder só dispara telemetry:new.</estadoAtual>
+    <oQueDesbloqueia>Score real no dashboard/demo/relatório.</oQueDesbloqueia>
+  </bloqueio>
+
+  <bloqueio id="BL-NATHAN-FUEL" dono="Nathan" prioridade="alta">
+    <oQueEleEntrega>Estimativa de consumo de combustível.</oQueEleEntrega>
+    <contratoEsperado>WS trip:fuelEstimateUpdated → FuelEstimate { adjustedConsumptionKmL, estimatedLitersSpent, confidenceLevel, estimatedCost? } → store.fuelEstimate.</contratoEsperado>
+    <preProntoDoJoao>UI pronta: KPIs do dashboard e painel de consumo da demo (com aviso de que é estimativa, não medição de tanque). Mostra "—" até chegar.</preProntoDoJoao>
+    <estadoAtual>Sem emissor.</estadoAtual>
+    <oQueDesbloqueia>Consumo real no dashboard/demo/relatório.</oQueDesbloqueia>
+  </bloqueio>
+
+  <bloqueio id="BL-NATHAN-EVENTS" dono="Nathan" prioridade="media">
+    <oQueEleEntrega>Detecção de eventos de condução (freada/aceleração/curva/impacto).</oQueEleEntrega>
+    <contratoEsperado>WS trip:eventDetected → DrivingEvent { id, type, severity, timestamp, value, description } → store.events.</contratoEsperado>
+    <preProntoDoJoao>UI pronta: feed "EVENTOS RECENTES" no dashboard + marcadores no mapa (LiveMap). Estado vazio honesto.</preProntoDoJoao>
+    <estadoAtual>O firmware já marca flags de evento no pacote, mas o evento rico (severity/descrição) é do detector do Nathan.</estadoAtual>
+    <oQueDesbloqueia>Eventos reais no feed e no mapa.</oQueDesbloqueia>
+  </bloqueio>
+
+  <bloqueio id="BL-NATHAN-SIM" dono="Nathan" prioridade="media">
+    <oQueEleEntrega>Simulador de telemetria parametrizado por cenário/perfil (NAT-RF-07).</oQueEleEntrega>
+    <contratoEsperado>O Modo Demo envia scenario ∈ smooth|normal|aggressive ao iniciar; o simulador deve produzir telemetria coerente com o perfil (consumo base, tolerância de aceleração/frenagem/score).</contratoEsperado>
+    <preProntoDoJoao>DemoPage já manda o scenario via startDemo e mostra os perfis. Sem o simulador, o perfil não muda o comportamento observável.</preProntoDoJoao>
+    <estadoAtual>Demo roda com telemetria ao vivo do ESP32 (decisão) ou com o feeder de fallback; perfis sem efeito até o simulador.</estadoAtual>
+    <oQueDesbloqueia>Perfis com efeito observável na demo (auditoria DEMO-04).</oQueDesbloqueia>
+  </bloqueio>
+
+  <!-- ═══════════════════════════ DECISÕES PENDENTES (marco 19/06) ═══════════════════════════ -->
+  <decisoesPendentes>
+    <decisao id="DEC-01" donos="time">Regra mínima de calibragem da pista física (origem lat/lng, escala, orientação) p/ a demo — quem define e qual.</decisao>
+    <decisao id="DEC-02" donos="time">Priorização obrigatório/desejável/futuro por módulo, antes do congelamento de escopo.</decisao>
+    <decisao id="DEC-03" donos="João+Pedro">Caminho final do POST /telemetry (com/sem /api) e momento de remover o controller mock.</decisao>
+  </decisoesPendentes>
+
+</bloqueios>
