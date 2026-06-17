@@ -25,13 +25,6 @@
        ═══════════════════════════════════════════════════════════ -->
   <epics>
 
-    <epic id="EPIC-10" req="JOA-RF-06,JOA-RF-07" priority="medium" status="not_started">
-      <title>Tema &amp; design system: polimento final</title>
-      <depends_on>EPIC-06</depends_on>
-      <summary>Tema dark/light já implementado (done). Falta: auditoria WCAG AA, fallback localStorage indisponível, tema do MapLibre, revisão pós-mudanças de dados reais, sem flicker na alternância.</summary>
-      <done_when>Specs JOA-RF-06/07 passam, incluindo auditoria de contraste.</done_when>
-    </epic>
-
     <epic id="EPIC-11" req="JOA-TEC-02" priority="high" status="not_started">
       <title>Firmware ESP32 (FreeRTOS)</title>
       <summary>Drivers I2C (acelerômetro) e NMEA (GPS). Tasks: imu_reader(20-50Hz), gps_reader(1-10Hz), sensor_fusion(10Hz, média móvel), event_detector(10Hz), network(1-5Hz, POST /telemetry com payload contract v1.0), storage, health_monitor(1Hz). idf.py build deve continuar passando. Roda em paralelo, sem dependência de backend (semana 2 do roadmap).</summary>
@@ -118,6 +111,15 @@
        ITENS CONCLUÍDOS DO PLANO ANTERIOR (plan-001)
        ═══════════════════════════════════════════════════════════ -->
   <completed_from_plan>
+    <item from="plan-002" task="EPIC-10">
+      Tema &amp; design system: polimento final (JOA-RF-06/07). useTheme com localStorage seguro
+      (modo privado) + DARK default real (sem prefers-color-scheme) + lazy init (corrige lint) +
+      script anti-flicker no layout. Auditoria WCAG AA (contrast.ts + testes, dark e light). MapLibre
+      tema-aware (basemap.ts). Logos oficiais: favicon=preto sem fundo (Vector), apple-icon=thumb (PWA),
+      BrandLogo no header (branca no dark / completo no light); logos-fonte versionados em /assets.
+      19 testes novos, suite 197 → 216. Branch feature/joa-rf-06-07-theme-polish, PR #9. Concluído em
+      2026-06-16. NOTA: 3 erros de ESLint pré-existentes em map-gauges.tsx (refatoração à parte).
+    </item>
     <item from="plan-002" task="EPIC-09">
       Modo Demo ExpoIOT (JOA-RF-05) — frontend. lib/api/demo.ts (startDemo/resetDemo/fetchCurrentDemo),
       features/demo/hooks.ts (React Query), DemoPage/MobileDemoPage como painel de controle real

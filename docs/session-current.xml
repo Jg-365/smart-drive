@@ -17,14 +17,14 @@
   </objective>
 
   <current_focus>
-    EPIC-00 a EPIC-09 concluídos. EPIC-02..08 em main (PRs #1..#7 mergeados; EPIC-07=PR#6 9dae44e,
-    EPIC-08=PR#7 d0aa6bf). EPIC-09 (Modo Demo ExpoIOT, JOA-RF-05) na branch feature/joa-rf-05-demo-mode,
-    PR #8: lib/api/demo.ts (startDemo/resetDemo/fetchCurrentDemo), features/demo/hooks.ts (React Query)
-    e DemoPage/MobileDemoPage reescritas como painel de controle real (iniciar 1 clique, reset
-    idempotente, trava contra sessão dupla, veículo padrão/seleção, perfil, stage ao vivo via store,
-    pista virtual p/ GPS ausente). 7 testes novos. 197/197 testes frontend, tsc limpo, build OK.
-    Sessão João: finalizar os épicos hoje. Próximo: EPIC-10 (tema/design), EPIC-11 (firmware),
-    EPIC-12 (RNFs), EPIC-13 (QA final). Ver session-next.xml.
+    EPIC-00 a EPIC-10 concluídos. EPIC-02..09 em main (PRs #1..#8 mergeados; EPIC-09=PR#8 935afa0).
+    EPIC-10 (Tema/design polish, JOA-RF-06/07) na branch feature/joa-rf-06-07-theme-polish, PR #9:
+    useTheme com localStorage seguro (modo privado) e DARK como default real (sem prefers-color-scheme),
+    script anti-flicker no layout, auditoria WCAG AA (contrast.ts + testes, dark e light), MapLibre
+    tema-aware (basemap.ts), e LOGOS oficiais (favicon=preto sem fundo/Vector; apple-icon=thumb PWA;
+    BrandLogo no header = branca no dark / completo no light). 19 testes novos. 216/216 testes, tsc/build
+    limpos. Sessão João: finalizar os épicos hoje, um por vez em sequência.
+    Próximo: EPIC-11 (firmware ESP32/FreeRTOS), EPIC-12 (RNFs), EPIC-13 (QA final). Ver session-next.xml.
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -190,19 +190,29 @@
 
     <req id="JOA-RF-06" title="Tema dark/light" status="done">
       <notes>
-        Implementado em features/shared/theme/ (ThemeProvider, useTheme, ThemeToggle) com
-        CSS custom properties (lib/sd-vars.ts) e testes (theme.test.tsx). Tema dark é o default.
-        Persistência em localStorage a confirmar contra os SPECs de JOA-RF-06.
+        EPIC-10 (branch feature/joa-rf-06-07-theme-polish, PR #9): tema endurecido.
+        useTheme agora lê/escreve localStorage com try/catch (modo privado/SecurityError → fallback
+        sem erro) e usa DARK como default REAL — removido o prefers-color-scheme que abria em light
+        em SO claro (corrigido após o João reportar fundo claro). Lazy init (corrige o erro de lint
+        setState-em-effect) + script inline em app/layout.tsx aplica data-theme antes da 1ª pintura
+        (sem flicker). Persistência em localStorage('sd-theme') confirmada por teste. Edges cobertos:
+        localStorage indisponível, alternância rápida, e MapLibre seguindo o tema (basemap dark_all/
+        light_all). Tokens dark/light em globals.css. 13 testes de tema (5 originais + edges + toggle).
       </notes>
     </req>
 
-    <req id="JOA-RF-07" title="Estilo visual HQ dark" status="in_progress">
+    <req id="JOA-RF-07" title="Estilo visual HQ dark" status="done">
       <notes>
-        Design system implementado via lib/sd-tokens.ts / lib/sd-vars.ts (cores grafite,
-        ciano/azul elétrico, vermelho de alerta) e componentes primitivos (Stat, Panel, Tag,
-        Dot, Btn). Aplicado consistentemente nas telas existentes. Falta auditoria formal de
-        contraste WCAG AA e revisão em todos os componentes finais (alguns ainda não migrados
-        de dados hardcoded para dados reais, o que pode mudar layout).
+        EPIC-10: auditoria formal de contraste WCAG AA implementada — features/shared/theme/contrast.ts
+        (luminância relativa + razão de contraste) + contrast.test.ts auditam dark e light: texto
+        principal ≥ 4.5:1 sobre bg/surface, texto dim ≥ 4.5:1, cores de ação/estado (primary/danger/
+        success/warning) ≥ 3:1; + identidade HQ-dark (bg grafite muito escuro, primária ciano #00E5FF,
+        alerta vermelho). LOGOS oficiais integrados (assets versionados): favicon app/icon.svg = logo
+        preto sem fundo (Vector.svg); app/apple-icon.svg = thumb (PWA); features/shared/ui/BrandLogo.tsx
+        no header (DesktopShell + MobileHomePage) escolhe pelo tema: branca (logo-white) no dark,
+        completo (logo-smartdrive) no light. 9 testes de contraste + 6 de basemap. NOTA: restam 3 erros
+        de ESLint pré-existentes em features/shared/ui/map-gauges.tsx ("Cannot create components during
+        render") — não introduzidos aqui; refatoração à parte (ver dívida).
       </notes>
     </req>
 
@@ -372,7 +382,8 @@
       do EPIC-13.
     </debt>
     <debt priority="low" created="2026-06-16">
-      ESLint acusa 4 erros PRÉ-EXISTENTES (não introduzidos pelo EPIC-07) em arquivos de sprints
+      [Atualização EPIC-10: o erro de useTheme.ts foi CORRIGIDO (lazy init). Restam 3 em
+      map-gauges.tsx.] ESLint acusava 4 erros PRÉ-EXISTENTES (não introduzidos pelo EPIC-07) em sprints
       anteriores: features/shared/theme/useTheme.ts (setState síncrono dentro de effect) e
       features/shared/ui/map-gauges.tsx (cria componentes durante o render, 3x). Provavelmente
       regras mais novas do eslint-plugin-react-hooks. Avaliar correção isolada — fora do escopo do EPIC-07.
@@ -622,6 +633,21 @@
       store; reset chama store.reset(). 7 testes novos (DemoPage); suite 190 → 197, todos verdes; tsc
       limpo; build OK; lint limpo nos arquivos novos. Fluxo seguido: implementar → commit (4054f0c) →
       push → revisar → docs. PR #8 aberto. DÍVIDA registrada: provider não re-assina o tripId da demo.
+      [Atualização: PR #8 mergeado em main, 935afa0.]
+    </entry>
+    <entry date="2026-06-16" type="implementation">
+      EPIC-10 implementado (JOA-RF-06/07) na branch feature/joa-rf-06-07-theme-polish. useTheme:
+      localStorage com try/catch (modo privado) + lazy init (corrige lint setState-em-effect, sem
+      flicker); script anti-flicker em app/layout.tsx. Auditoria WCAG AA: features/shared/theme/contrast.ts
+      + contrast.test.ts (dark e light). MapLibre tema-aware: features/map/basemap.ts (dark_all/light_all)
+      consumido pelo LiveMap. LOGOS oficiais (João forneceu em /assets e corrigiu o uso): favicon
+      app/icon.svg = preto sem fundo (Vector); app/apple-icon.svg = thumb (PWA); BrandLogo no header
+      (branca no dark / completo no light). Logos-fonte versionados em /assets. BUG corrigido durante o
+      épico: o app abria em LIGHT em SO claro (prefers-color-scheme) — João reportou "fundo claro";
+      removido o prefers-color-scheme, DARK é o default real (só localStorage='light' muda). 19 testes
+      novos (contraste 9, basemap 6, tema +4); suite 197 → 216, todos verdes; tsc/build limpos.
+      Restam 3 erros de ESLint PRÉ-EXISTENTES em map-gauges.tsx (não introduzidos aqui). Commits 4e87bee
+      (+ assets + fix dark default), push, PR #9. Fluxo: implementar → commit → push → revisar → docs.
     </entry>
   </history>
 
