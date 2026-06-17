@@ -7,7 +7,7 @@ import { TelemetryProvider } from '@/features/shared/realtime';
 import { QueryProvider } from '@/features/shared/query';
 import { DesktopShell } from '@/features/shell';
 import { DashboardPage } from '@/features/dashboard';
-import { TripReportPage } from '@/features/trips';
+import { TripsPage } from '@/features/trips';
 import { VehiclesPage } from '@/features/vehicles';
 import { DevicesPage } from '@/features/devices';
 import { DemoPage } from '@/features/demo';
@@ -37,7 +37,7 @@ export default function Page() {
     switch (desktopScreen) {
       case 'dashboard': return <DashboardPage onNavigate={setDesktopScreen} />;
       case 'map': return <DesktopMapPage />;
-      case 'trips': return <TripReportPage />;
+      case 'trips': return <TripsPage />;
       case 'vehicles': return <VehiclesPage />;
       case 'devices': return <DevicesPage />;
       case 'demo': return <DemoPage mode={demoMode} onMode={setDemoMode} />;
