@@ -27,12 +27,16 @@
     <!-- TODOS os épicos do plan-002 (EPIC-00..13) foram implementados. Nenhum épico do João pendente.
          JOA-TEC-02 FECHADO na bancada (2026-06-17, ESP-IDF 6.0, PR #13) → B02 resolvido. Tela MAPA do
          desktop e indicadores reais do shell entregues (PR #14, JOA-RF-04). O "100% pronto" do
-         JOA-TEC-04 ainda depende de itens de Pedro/Nathan rastreados em QA-CHECKLIST.md.
+         JOA-TEC-04 ainda depende de itens de Pedro/Nathan. Sprint de correção da auditoria-001
+         (2026-06-17, FIX-01..07, PRs #16..#22) já corrigiu a parte do João; setGlobalPrefix('api')
+         aplicado. Tudo que é de Pedro/Nathan está agora com CONTRATO + pré-pronto em
+         docs/bloqueios-equipe-001.xml.
          Próximas frentes do João são de INTEGRAÇÃO (não novos épicos):
-           - quando Pedro entregar auth/endpoints: trocar TempUserGuard, alinhar setGlobalPrefix('api'),
-             remover o controller mock de telemetria;
-           - quando Nathan emitir score/consumo/eventos via WS: validar no dashboard/relatório;
-           - elevar o tripId da demo ao TelemetryProvider (telemetria demo ao vivo);
+           - quando Pedro entregar auth/login + endpoints reais (devices/trips/ingestão): preencher o
+             auth store (token), apontar lib/api do MSW p/ o backend, remover o controller mock de
+             telemetria (ver docs/bloqueios-equipe-001.xml);
+           - quando Nathan emitir score/consumo/eventos via WS: validar no dashboard/relatório/demo;
+           - scrub de textos longos na MobileDemoPage (CHK-08, secundário);
            - auditoria RNF-03 (44px) e RNF-05 (rodar do zero noutra máquina);
            - dívidas do firmware: migrar driver I2C legado p/ driver/i2c_master.h (EOL no ESP-IDF 7.0)
              e resolver o timestamp tempo-desde-boot (SNTP ou carimbo no backend — alinhar contrato c/ Pedro). -->

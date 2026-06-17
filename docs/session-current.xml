@@ -25,10 +25,14 @@
     Sessão de bancada (2026-06-17): JOA-TEC-02 FECHADO — firmware buildou no ESP-IDF 6.0 e validou
     ponta-a-ponta na ESP32 real (IMU no dashboard + GPS no mapa); B02 resolvido (PR #13). Também tapada
     a lacuna do mapa no desktop (não existia tela MAPA) e indicadores do shell desktop ligados ao estado
-    real (PR #14, JOA-RF-04). PENDÊNCIAS p/ "100% pronto" (fora do controle do João sozinho):
-    (1) Nathan emitir score/consumo/eventos via WS (NAT-RF-04/05/07); (2) Pedro: auth JWT real +
-    setGlobalPrefix('api') + endpoints reais + POST /telemetry; (3) elevar tripId da demo ao
-    TelemetryProvider; (4) RNF-03 (44px) e RNF-05 (portabilidade noutra máquina). Ver QA-CHECKLIST.md.
+    real (PR #14, JOA-RF-04). Sprint de correção da auditoria-001 (2026-06-17): 7 épicos FIX-01..07
+    (PRs #16..#22) corrigindo a parte do João — auth+prefixo /api, Dispositivos=entidade dispositivo,
+    fluxo de Viagens, Dashboard com mapa real, Demo honesta (carrinho no mapa, sem textões), logo/tema/
+    auto-layout, e QA+contingência. setGlobalPrefix('api') JÁ aplicado. PENDÊNCIAS p/ "100% pronto"
+    (fora do controle do João sozinho) agora rastreadas em docs/bloqueios-equipe-001.xml: Pedro
+    (auth JWT/login, devices, trips, ingestão real) e Nathan (score/consumo/eventos via WS, simulador).
+    Pendências do João (menores): scrub de textos na MobileDemoPage (CHK-08), RNF-03 (44px), RNF-05
+    (portabilidade). Ver QA-CHECKLIST.md e docs/bloqueios-equipe-001.xml.
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -753,6 +757,28 @@
       DesktopShell: topo/rodapé ligados ao store real (sessão/tripId, satélites, estado WS, online/offline
       por staleness, idade do pacote, pontos/eventos, relógio UTC, WS_URL) no lugar dos valores hardcoded.
       tsc + 221 testes + next build verdes. Os dois PRs mergeados no main (merges d51d1ef, 30457fb).
+    </entry>
+    <entry date="2026-06-17" type="implementation">
+      Sprint de correção da auditoria-001.xml (problemas reais encontrados pelo João): 7 épicos de
+      correção da PARTE DO JOÃO (frontend + módulos vehicles/demo + gateway + integração), cada um em
+      branch/PR próprio, todos mergeados. FIX-01 (PR#16): cliente HTTP envia auth (auth store
+      features/shared/auth; x-user-id de DEV via NEXT_PUBLIC_DEV_USER_ID, pronto p/ Bearer) +
+      app.setGlobalPrefix('api', exclude POST /telemetry) — resolve a "falha ao carregar veículos".
+      FIX-02 (PR#17): DevicesPage reescrita p/ ENTIDADE DISPOSITIVO (não veículos) + lib/api/devices.ts +
+      useDevices + painel de telemetria ao vivo; estados honestos. FIX-03 (PR#18): TripsPage com fluxo
+      iniciar/encerrar/listar + startTrip/finishTrip + estados de dependência. FIX-04 (PR#19): dashboard
+      troca o MapView SVG decorativo pelo LiveMapContainer real + SEGUIR VEÍCULO funcional (prop follow no
+      LiveMap); removidos CAMADAS e "FORTALEZA·CE". FIX-05 (PR#20): Demo honesta — carrinho no mapa real
+      (fim do retângulo verde), flag demoMode no store, removidos os blocos de texto longos (EXPLICAÇÃO/
+      fórmula/SEM GPS/ESTIMATIVA), consumo do Nathan via store. FIX-06 (PR#21): logo sem "TELEMETRY
+      v0.4.1", ThemeToggle dark/light no header, layout AUTO por viewport (hook useIsMobile; removidos o
+      switch manual e a moldura de celular do protótipo). FIX-07 (PR#22): QA-CHECKLIST com status CHK-01..10
+      + contingência (feeder como fallback) e docs/bloqueios-equipe-001.xml (force-add; /docs é gitignored)
+      com os contratos e o pré-pronto p/ Pedro (auth/devices/trips/ingestão) e Nathan (score/consumo/
+      eventos/simulador). Suíte frontend 220 → 232; tsc + build verdes em cada PR; backend 57 serial.
+      PENDÊNCIAS: CHK-08 parcial (scrub de textos na MobileDemoPage); tudo que é de Pedro/Nathan agora
+      rastreado em docs/bloqueios-equipe-001.xml. Decisões do João: layout auto por viewport, demo ao vivo
+      no ESP32, toggle dark/light, frontend pré-pronto com MSW.
     </entry>
   </history>
 
