@@ -77,9 +77,18 @@ describe('LiveMap', () => {
     expect(h.map.setCenter).toHaveBeenCalledWith(B);
   });
 
-  it('exibe fallback quando o tile server falha', () => {
+  it('exibe fallback quando o tile server falha (nenhum tile carregou)', () => {
     render(<LiveMap route={[A]} vehicle={A} />);
     act(() => h.map.fire('error'));
     expect(screen.getByText(/Mapa indisponível/)).toBeInTheDocument();
+  });
+
+  it('NÃO mostra fallback se um tile do basemap já carregou (erro transitório de pan/zoom)', () => {
+    render(<LiveMap route={[A]} vehicle={A} />);
+    // um tile do basemap carrega com sucesso…
+    act(() => h.map.fire('data', { sourceId: 'basemap', dataType: 'source', tile: {} }));
+    // …depois um erro transitório (abort de tile) não deve esconder o mapa
+    act(() => h.map.fire('error'));
+    expect(screen.queryByText(/Mapa indisponível/)).not.toBeInTheDocument();
   });
 });

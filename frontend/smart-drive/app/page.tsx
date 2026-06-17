@@ -14,12 +14,12 @@ import { DemoPage } from '@/features/demo';
 
 import { MobileHomePage } from '@/features/home';
 import { MobileLivePage } from '@/features/dashboard';
-import { MapPage } from '@/features/map';
+import { MapPage, DesktopMapPage } from '@/features/map';
 import { MobileTripReportPage } from '@/features/trips';
 import { MobileDemoPage } from '@/features/demo';
 
 type AppMode = 'desktop' | 'mobile';
-type DesktopScreen = 'dashboard' | 'trips' | 'vehicles' | 'devices' | 'demo';
+type DesktopScreen = 'dashboard' | 'map' | 'trips' | 'vehicles' | 'devices' | 'demo';
 type MobileTab = 'home' | 'live' | 'map' | 'trips' | 'menu';
 
 // Viagem assinada em dev (casa com o sessionId do tools/telemetry-feeder). Sem a
@@ -36,6 +36,7 @@ export default function Page() {
   const renderDesktopScreen = () => {
     switch (desktopScreen) {
       case 'dashboard': return <DashboardPage onNavigate={setDesktopScreen} />;
+      case 'map': return <DesktopMapPage />;
       case 'trips': return <TripReportPage />;
       case 'vehicles': return <VehiclesPage />;
       case 'devices': return <DevicesPage />;

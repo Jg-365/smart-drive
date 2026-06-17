@@ -42,6 +42,7 @@ export function LiveMap({ route, vehicle, events = [], styleUrl, className, styl
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const loadedRef = useRef(false);
   const centeredRef = useRef(false);
+  const sawTileRef = useRef(false);
   const [tileError, setTileError] = useState(false);
 
   // init (uma vez)
@@ -56,7 +57,19 @@ export function LiveMap({ route, vehicle, events = [], styleUrl, className, styl
     });
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-    map.on('error', () => setTileError(true));
+
+    // Marca sucesso assim que QUALQUER tile do basemap carrega — e limpa o aviso.
+    map.on('data', (e: maplibregl.MapSourceDataEvent) => {
+      if (e.sourceId === 'basemap' && e.dataType === 'source' && e.tile) {
+        sawTileRef.current = true;
+        setTileError(false);
+      }
+    });
+    // Só mostra o fallback se NENHUM tile carregou (servidor inalcançável) — ignora
+    // erros transitórios (abort de tile em pan/zoom) depois que o mapa já renderizou.
+    map.on('error', () => {
+      if (!sawTileRef.current) setTileError(true);
+    });
 
     map.on('load', () => {
       loadedRef.current = true;
@@ -89,6 +102,7 @@ export function LiveMap({ route, vehicle, events = [], styleUrl, className, styl
       markerRef.current = null;
       loadedRef.current = false;
       centeredRef.current = false;
+      sawTileRef.current = false;
     };
     // init só na montagem; updates abaixo
     // eslint-disable-next-line react-hooks/exhaustive-deps
