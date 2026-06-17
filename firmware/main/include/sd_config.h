@@ -13,7 +13,7 @@
 #define SD_WIFI_MAX_RETRY 8
 
 // ── Endpoint de ingestão (POST /telemetry) ──────────────────────────────────
-#define SD_TELEMETRY_URL "http://192.168.0.10:3000/telemetry"
+#define SD_TELEMETRY_URL "http://192.168.0.10:3001/telemetry" // troque pelo IP do host do backend na LAN (não localhost); porta = PORT do backend/.env (padrão 3001)
 #define SD_HTTP_TIMEOUT_MS 4000
 
 // ── I2C (acelerômetro/giroscópio MPU6050) ────────────────────────────────────
