@@ -1,24 +1,71 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot } from '@/features/shared/ui/primitives';
 import { BrandLogo } from '@/features/shared/ui/BrandLogo';
+import {
+  useConnection,
+  useDrivingEvents,
+  useLastPacketAt,
+  useLastPoint,
+  useLiveStatus,
+  useRoute,
+  useTelemetryStore,
+  type ConnectionState,
+} from '@/features/shared/realtime';
+import { WS_URL } from '@/lib/api/config';
 
-type NavId = 'dashboard' | 'trips' | 'vehicles' | 'devices' | 'demo';
+type NavId = 'dashboard' | 'map' | 'trips' | 'vehicles' | 'devices' | 'demo';
 
 interface DesktopShellProps {
   active?: NavId;
   onNav?: (id: NavId) => void;
   children: React.ReactNode;
-  deviceOnline?: boolean;
 }
 
-export function DesktopShell({ active = 'dashboard', onNav, children, deviceOnline = true }: DesktopShellProps) {
+/** Rótulo + cor do estado da conexão WebSocket. */
+function connInfo(c: ConnectionState): { label: string; tone: string } {
+  switch (c) {
+    case 'live': return { label: 'LIVE', tone: SD.success };
+    case 'reconnecting': return { label: 'RECONECTANDO', tone: SD.warning };
+    case 'polling': return { label: 'POLLING', tone: SD.warning };
+    case 'connecting': return { label: 'CONECTANDO', tone: SD.textDim };
+    default: return { label: 'OFFLINE', tone: SD.danger };
+  }
+}
+
+export function DesktopShell({ active = 'dashboard', onNav, children }: DesktopShellProps) {
+  const tripId = useTelemetryStore((s) => s.tripId);
+  const last = useLastPoint();
+  const connection = useConnection();
+  const { online } = useLiveStatus();
+  const events = useDrivingEvents();
+  const route = useRoute();
+  const lastPacketAt = useLastPacketAt();
+
+  const conn = connInfo(connection);
+  const sat = last?.satellites;
+
+  // Relógio UTC ao vivo + idade do último pacote. Começa vazio para não divergir
+  // entre SSR e cliente (hidratação); tica a cada 1s no cliente.
+  const [clock, setClock] = useState('');
+  const [packetAge, setPacketAge] = useState<string>('—');
+  useEffect(() => {
+    const tick = () => {
+      setClock(new Date().toISOString().slice(11, 19));
+      setPacketAge(lastPacketAt ? `${((Date.now() - lastPacketAt) / 1000).toFixed(1)}s` : '—');
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lastPacketAt]);
+
   const navItems: { id: NavId; label: string; icon: (s?: number) => React.ReactElement }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: Icon.pulse },
-    { id: 'trips', label: 'Viagens', icon: Icon.map },
+    { id: 'map', label: 'Mapa', icon: Icon.map },
+    { id: 'trips', label: 'Viagens', icon: Icon.arrow },
     { id: 'vehicles', label: 'Veículos', icon: Icon.car },
     { id: 'devices', label: 'Dispositivos', icon: Icon.chip },
     { id: 'demo', label: 'Demo ExpoIOT', icon: Icon.flag },
@@ -43,23 +90,31 @@ export function DesktopShell({ active = 'dashboard', onNav, children, deviceOnli
         </div>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <Tag tone="cyan"><Dot tone="cyan" size={6} /> SESSÃO ATIVA · TRIP-2026-031</Tag>
+            <Tag tone={online ? 'cyan' : 'neutral'}>
+              <Dot tone={online ? 'cyan' : 'gray'} size={6} /> {tripId ? `SESSÃO · ${tripId}` : 'SEM SESSÃO'}
+            </Tag>
             <span className="sd-mono" style={{ fontSize: 11, color: SD.textDim }}>
-              esp32-demo-001 <span style={{ color: SD.textMute }}>·</span> FRT v0.4.1
+              {route.length} pts <span style={{ color: SD.textMute }}>·</span> {events.length} eventos
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-            <StatusItem icon={Icon.sat(13)} value="8 SAT" tone={SD.success} />
-            <StatusItem icon={Icon.wifi(13)} value="WS · 42 ms" tone={SD.success} />
+            <StatusItem
+              icon={Icon.sat(13)}
+              value={typeof sat === 'number' ? `${sat} SAT` : '— SAT'}
+              tone={typeof sat === 'number' && sat > 0 ? SD.success : SD.textDim}
+            />
+            <StatusItem icon={Icon.wifi(13)} value={`WS · ${conn.label}`} tone={conn.tone} />
             <StatusItem
               icon={Icon.chip(13)}
-              value={deviceOnline ? 'ONLINE' : 'OFFLINE'}
-              tone={deviceOnline ? SD.success : SD.danger}
+              value={online ? 'ONLINE' : 'OFFLINE'}
+              tone={online ? SD.success : SD.danger}
             />
             <div style={{ width: 1, height: 22, background: SD.border }} />
             <div style={{ position: 'relative' }}>
               {Icon.bell(16, SD.textDim)}
-              <span style={{ position: 'absolute', top: -3, right: -4, width: 7, height: 7, background: SD.danger, borderRadius: 999 }} />
+              {events.length > 0 && (
+                <span style={{ position: 'absolute', top: -3, right: -4, width: 7, height: 7, background: SD.danger, borderRadius: 999 }} />
+              )}
             </div>
             <Avatar />
           </div>
@@ -124,14 +179,13 @@ export function DesktopShell({ active = 'dashboard', onNav, children, deviceOnli
         }}
         className="sd-mono"
       >
-        <span><Dot tone="green" size={6} pulse={false} /> WSS://API.SMARTDRIVE.LOCAL/REALTIME</span>
-        <span>RX 1.4 KB/S · TX 0.3 KB/S</span>
-        <span>BUFFER 24/128</span>
-        <span>DROP 0.00%</span>
-        <span>QUEUE Q0:0 Q1:2 Q2:0</span>
-        <span>WD HEALTHY</span>
-        <span style={{ marginLeft: 'auto' }}>v0.4.1-mvp · build 2026.05.07</span>
-        <span>UTC 17:42:03</span>
+        <span><Dot tone={online ? 'green' : 'gray'} size={6} pulse={false} /> {(WS_URL || 'ws://—').toUpperCase()}</span>
+        <span>CONEXÃO {conn.label}</span>
+        <span>ÚLT. PACOTE {packetAge}</span>
+        <span>PONTOS {route.length}</span>
+        <span>EVENTOS {events.length}</span>
+        <span style={{ marginLeft: 'auto' }}>v0.4.1-mvp</span>
+        <span>UTC {clock || '--:--:--'}</span>
       </div>
     </div>
   );
