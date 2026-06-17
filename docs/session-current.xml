@@ -17,15 +17,14 @@
   </objective>
 
   <current_focus>
-    EPIC-00 a EPIC-11 concluídos (EPIC-11 com build a validar). EPIC-02..10 em main (PRs #1..#9
-    mergeados; EPIC-10=PR#9 0ba9c60). EPIC-11 (Firmware ESP32/FreeRTOS, JOA-TEC-02) na branch
-    firmware/joa-tec-02-esp32, PR #10: firmware modular ESP-IDF — tasks imu_reader (I2C MPU6050 50Hz),
-    gps_reader (NMEA UART), sensor_fusion (média móvel 10Hz), event_detector (limiares), net_client
-    (Wi-Fi + POST contrato v1.0 via cJSON), health_monitor; estado por mutex + filas; sd_config.h
-    centraliza pinos/taxas/limiares. ATENÇÃO: ambiente sem toolchain ESP-IDF → 'idf.py build' (done_when)
-    PENDENTE de validação na máquina do João. Sessão João: finalizar os épicos hoje, um por vez.
-    Próximo: EPIC-12 (RNFs + ligar/desabilitar botões mortos — ver nota), EPIC-13 (QA final).
-    Ver session-next.xml.
+    EPIC-00 a EPIC-12 concluídos (EPIC-11 com build ESP-IDF a validar — B02). EPIC-02..11 em main
+    (PRs #1..#10 mergeados; EPIC-11=PR#10 a19f0df). EPIC-12 (RNFs + botões mortos, JOA-RNF-02/03/04/05)
+    na branch feature/joa-rnf-02-05-polish, PR #11: Btn ganhou prop disabled; navegação ligada
+    (INICIAR VIAGEM/MODO DEMO → demo; VOLTAR → volta) via callbacks do app/page.tsx; cosméticos e
+    devices sem feature ficaram desabilitados (nenhum botão "morto"); scripts/dev-up.sh|dev-down.sh
+    (RNF-02). 4 testes novos. 220/220 testes, tsc/build limpos. RNF-04 já coberto (seletores+downsample);
+    RNF-03/05 a consolidar no QA. Sessão João: finalizar os épicos hoje, um por vez.
+    Próximo (ÚLTIMO): EPIC-13 (QA final & checklist ExpoIOT). Ver session-next.xml.
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -267,12 +266,25 @@
         estava desligado em toda a suite) trocando por import estático.
       </notes>
     </req>
-    <req id="JOA-RNF-02" title="Disponibilidade na demo" status="not_started" />
-    <req id="JOA-RNF-03" title="Mobile-first" status="in_progress">
-      <notes>Layout mobile (402x780 simulado) e desktop já existem nas telas protótipo, mas não validados contra os SPECs formais (375px, áreas de toque 44x44px).</notes>
+    <req id="JOA-RNF-02" title="Disponibilidade na demo" status="done">
+      <notes>EPIC-12: scripts/dev-up.sh (sobe Postgres via docker + prisma migrate deploy + instruções)
+        e scripts/dev-down.sh. Fallback sem hardware via tools/telemetry-feeder (replay POST /telemetry).
+        Modo demo (EPIC-09) cobre a apresentação. Validação final do fluxo fica no EPIC-13.</notes>
     </req>
-    <req id="JOA-RNF-04" title="Performance" status="not_started" />
-    <req id="JOA-RNF-05" title="Portabilidade" status="not_started" />
+    <req id="JOA-RNF-03" title="Mobile-first" status="in_progress">
+      <notes>EPIC-12: botões mortos eliminados (Btn disabled + navegação ligada). Layout mobile
+        (402x780) e desktop existem. Auditoria formal 375px / áreas de toque 44x44px a consolidar
+        no EPIC-13 (checklist QA).</notes>
+    </req>
+    <req id="JOA-RNF-04" title="Performance" status="done">
+      <notes>Coberto: seletores atômicos do store (EPIC-03 — re-render só do que muda) + downsampling
+        da polyline do mapa (MAX_POLYLINE_POINTS=500, EPIC-06) + cap de eventos (MAX_EVENTS). 500+
+        pontos não re-renderizam tudo. Revalidar com carga real no EPIC-13.</notes>
+    </req>
+    <req id="JOA-RNF-05" title="Portabilidade" status="in_progress">
+      <notes>README raiz com setup passo a passo (EPIC-01) + scripts/dev-up|down (EPIC-12). Checklist
+        final de portabilidade (Node/Docker/SO) no EPIC-13.</notes>
+    </req>
 
   </requirements_status>
 
@@ -679,6 +691,17 @@
       durante o EPIC-10 — corrigido (dark default real). João apontou botões mortos no app — decidido
       tratar no EPIC-12 (ligar navegação INICIAR VIAGEM/MODO DEMO/VOLTAR; desabilitar cosméticos e
       devices sem ação).
+    </entry>
+    <entry date="2026-06-16" type="implementation">
+      EPIC-12 (JOA-RNF-02/03/04/05 + botões mortos) na branch feature/joa-rnf-02-05-polish. Resposta ao
+      João ("botões não fazem nada?"): Btn ganhou prop disabled; navegação ligada via callbacks do
+      app/page.tsx — INICIAR VIAGEM/MODO DEMO (Dashboard/MobileLive/MobileHome) → demo; VOLTAR (MapPage)
+      → live; cosméticos (SEGUIR VEÍCULO/CAMADAS/EXPANDIR/PARAR) e devices (NOVO/DUPLICAR/EXCLUIR) ficaram
+      desabilitados com title. RNF-02: scripts/dev-up.sh + dev-down.sh. RNF-04 marcado done (seletores +
+      downsample já cobrem). RNF-03/05 seguem in_progress (auditoria 375px/44px e checklist de
+      portabilidade no EPIC-13). 4 testes novos (Btn disabled, navegação); suite 216 → 220; tsc/build
+      limpos; restam 3 erros eslint pré-existentes em map-gauges.tsx. Commit 7e476cf, PR #11. Build teve
+      1 falha flaky do Turbopack (next/font) que sumiu na re-execução.
     </entry>
   </history>
 
