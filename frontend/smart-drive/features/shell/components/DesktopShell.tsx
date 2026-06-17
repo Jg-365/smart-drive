@@ -5,6 +5,7 @@ import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot } from '@/features/shared/ui/primitives';
 import { BrandLogo } from '@/features/shared/ui/BrandLogo';
+import { ThemeToggle } from '@/features/shared/theme';
 import {
   useConnection,
   useDrivingEvents,
@@ -110,6 +111,7 @@ export function DesktopShell({ active = 'dashboard', onNav, children }: DesktopS
               tone={online ? SD.success : SD.danger}
             />
             <div style={{ width: 1, height: 22, background: SD.border }} />
+            <ThemeToggle size="sm" />
             <div style={{ position: 'relative' }}>
               {Icon.bell(16, SD.textDim)}
               {events.length > 0 && (
@@ -196,7 +198,6 @@ function Logo() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       <BrandLogo height={26} />
-      <div className="sd-label" style={{ fontSize: 8, color: SD.textMute }}>TELEMETRY · v0.4.1</div>
     </div>
   );
 }
