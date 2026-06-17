@@ -43,7 +43,7 @@ firmware/
 
 Ajuste `main/include/sd_config.h`:
 - Wi-Fi: `SD_WIFI_SSID` / `SD_WIFI_PASS`.
-- Endpoint: `SD_TELEMETRY_URL` (ex.: `http://<ip-backend>:3000/telemetry`).
+- Endpoint: `SD_TELEMETRY_URL` (ex.: `http://<ip-backend>:3001/telemetry`; porta = `PORT` do backend `.env`, padrão 3001 — use o **IP do host na rede**, nunca `localhost`).
 - Identidade: `SD_DEVICE_ID` / `SD_VEHICLE_ID` / `SD_SESSION_ID`.
 - Pinos I2C (`SD_I2C_SDA_GPIO`/`SCL`) e UART do GPS (`SD_GPS_RX/TX_GPIO`).
 - Taxas das tasks e limiares de eventos (em g).

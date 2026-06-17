@@ -1,0 +1,8 @@
+# Artefatos de build do ESP-IDF
+/build/
+
+# Componentes gerenciados baixados do registro (recriados a partir de
+# main/idf_component.yml + dependencies.lock via `idf.py reconfigure`).
+/managed_components/
+
+sdkconfig.old
