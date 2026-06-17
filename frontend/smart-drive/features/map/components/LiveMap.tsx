@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
-import type { StyleSpecification } from 'maplibre-gl';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { type LngLat, MAX_POLYLINE_POINTS, downsample } from '@/features/shared/geo';
+import { currentBasemapStyle } from '../basemap';
 
 export interface LiveMapEvent {
   lngLat: LngLat;
@@ -20,24 +20,6 @@ export interface LiveMapProps {
   className?: string;
   style?: React.CSSProperties;
 }
-
-// Estilo raster escuro self-contained (não depende de um vector tile server).
-const DARK_RASTER_STYLE: StyleSpecification = {
-  version: 8,
-  sources: {
-    basemap: {
-      type: 'raster',
-      tiles: [
-        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-      ],
-      tileSize: 256,
-      attribution: '© OpenStreetMap © CARTO',
-    },
-  },
-  layers: [{ id: 'basemap', type: 'raster', source: 'basemap' }],
-};
 
 const DEFAULT_CENTER: LngLat = [-38.52674, -3.73192]; // Fortaleza/CE
 const lineGeoJSON = (coords: LngLat[]) => ({
@@ -67,7 +49,7 @@ export function LiveMap({ route, vehicle, events = [], styleUrl, className, styl
     if (!containerRef.current) return;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: styleUrl ?? DARK_RASTER_STYLE,
+      style: styleUrl ?? currentBasemapStyle(),
       center: vehicle ?? route[0] ?? DEFAULT_CENTER,
       zoom: 14,
       attributionControl: false,

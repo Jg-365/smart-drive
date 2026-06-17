@@ -37,6 +37,18 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${archivo.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} h-full`}
     >
+      <head>
+        {/* Aplica o tema ANTES da primeira pintura para não piscar (JOA-RF-06).
+            try/catch cobre localStorage indisponível (modo privado) → fallback dark. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var t=localStorage.getItem('sd-theme');" +
+              "document.documentElement.dataset.theme=(t==='light')?'light':'dark';}" +
+              "catch(e){document.documentElement.dataset.theme='dark';}})();",
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>{children}</ThemeProvider>
       </body>

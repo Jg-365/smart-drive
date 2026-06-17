@@ -6,18 +6,23 @@ import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot, Btn, Stat } from '@/features/shared/ui/primitives';
 import { MapView } from '@/features/shared/ui/map-gauges';
 import { MobileShell } from '@/features/shell/components/MobileShell';
+import { BrandLogo } from '@/features/shared/ui/BrandLogo';
 
 export function MobileHomePage() {
   return (
     <MobileShell active="home">
       <div style={{ padding: '20px 18px 100px', display: 'grid', gap: 18 }}>
         {/* Greeting */}
-        <div>
-          <div className="sd-label" style={{ fontSize: 9, color: SD.textDim }}>OLÁ,</div>
-          <div className="sd-display" style={{ fontSize: 30, lineHeight: 1 }}>LUCAS.</div>
-          <div className="sd-mono" style={{ fontSize: 11, color: SD.textDim, marginTop: 6 }}>
-            7 viagens · 168 km · esta semana
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div>
+            <div className="sd-label" style={{ fontSize: 9, color: SD.textDim }}>OLÁ,</div>
+            <div className="sd-display" style={{ fontSize: 30, lineHeight: 1 }}>LUCAS.</div>
+            <div className="sd-mono" style={{ fontSize: 11, color: SD.textDim, marginTop: 6 }}>
+              7 viagens · 168 km · esta semana
+            </div>
           </div>
+          {/* Marca oficial conforme o tema (branca no dark, completa no light). */}
+          <BrandLogo height={30} />
         </div>
 
         {/* CTA card */}

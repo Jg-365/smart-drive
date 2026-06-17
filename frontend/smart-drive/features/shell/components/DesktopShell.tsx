@@ -4,6 +4,7 @@ import React from 'react';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot } from '@/features/shared/ui/primitives';
+import { BrandLogo } from '@/features/shared/ui/BrandLogo';
 
 type NavId = 'dashboard' | 'trips' | 'vehicles' | 'devices' | 'demo';
 
@@ -137,18 +138,11 @@ export function DesktopShell({ active = 'dashboard', onNav, children, deviceOnli
 }
 
 function Logo() {
+  // Marca oficial conforme o tema (branca no dark, completa no light).
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ position: 'relative', width: 26, height: 26 }}>
-        <svg viewBox="0 0 26 26" width="26" height="26">
-          <rect x="1" y="1" width="24" height="24" fill={SD.bg} stroke={SD.primary} strokeWidth="2" />
-          <path d="M5 13 L11 8 L11 11 L21 11 L21 15 L11 15 L11 18 Z" fill={SD.primary} />
-        </svg>
-      </div>
-      <div>
-        <div className="sd-display" style={{ fontSize: 15, letterSpacing: '-0.01em' }}>SMARTDRIVE</div>
-        <div className="sd-label" style={{ fontSize: 8, color: SD.textMute, marginTop: -2 }}>TELEMETRY · v0.4.1</div>
-      </div>
+      <BrandLogo height={26} />
+      <div className="sd-label" style={{ fontSize: 8, color: SD.textMute }}>TELEMETRY · v0.4.1</div>
     </div>
   );
 }
