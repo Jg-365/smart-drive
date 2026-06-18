@@ -4,13 +4,19 @@ import { DrivingEventDetectorService } from '../../driving-analysis/services/dri
 import { DrivingScoreService } from '../../driving-score/driving-score.service';
 import { DrivingEventType } from '../../driving-analysis/enums/driving-event-type.enum';
 import type { DrivingEvent } from '../../driving-analysis/interfaces/driving-event.interface';
+import {
+  DrivingScore,
+  ScoreClassification,
+} from '../../driving-score/interfaces/driving-score.interface';
 import type { LiveTelemetryPoint } from '../telemetry.mapper';
 import { TelemetryGateway } from '../telemetry.gateway';
 import { toSimPayload } from './input.mapper';
 import {
   WsDrivingEvent,
   WsDrivingEventType,
+  WsDrivingScore,
   WsEventSeverity,
+  WsScoreClassification,
 } from './ws-contracts';
 
 /**
@@ -55,6 +61,18 @@ function toSeverityBucket(severity: number): WsEventSeverity {
   return WsEventSeverity.LOW;
 }
 
+/** Severidade numérica atribuída ao impacto sintetizado (→ faixa CRITICAL). */
+const IMPACT_SEVERITY = 4;
+
+/** Classificação do score (Nathan) → classificação do contrato WS (front). */
+const SCORE_CLASS_MAP: Record<ScoreClassification, WsScoreClassification> = {
+  [ScoreClassification.EXCELLENT]: WsScoreClassification.EXCELLENT,
+  [ScoreClassification.GOOD]: WsScoreClassification.GOOD,
+  [ScoreClassification.MODERATE]: WsScoreClassification.MODERATE,
+  [ScoreClassification.AGGRESSIVE]: WsScoreClassification.AGGRESSIVE,
+  [ScoreClassification.CRITICAL]: WsScoreClassification.CRITICAL,
+};
+
 /**
  * Orquestra a análise de telemetria por viagem: mapeia o ponto do contrato v1.0
  * para o shape dos detectores do Nathan, roda detecção com estado isolado por
@@ -83,24 +101,29 @@ export class AnalysisOrchestratorService {
 
   /**
    * Processa um ponto de telemetria de uma viagem: roda os detectores com o
-   * estado isolado dessa viagem, enriquece os eventos para o contrato WS,
-   * sintetiza IMPACT_SUSPECTED a partir da flag do firmware e os emite.
-   * Retorna os eventos emitidos (útil para testes/score).
+   * estado isolado dessa viagem, sintetiza IMPACT_SUSPECTED a partir da flag do
+   * firmware, emite cada evento (trip:eventDetected) e o score acumulado
+   * (trip:scoreUpdated). Retorna os eventos emitidos (útil para testes).
    */
   process(tripId: string, point: LiveTelemetryPoint): WsDrivingEvent[] {
-    const { detector } = this.getOrCreate(tripId);
+    const { detector, score } = this.getOrCreate(tripId);
+
     const raw = detector.detect(toSimPayload(point));
-
-    const events = raw.map((e) => this.enrich(tripId, point, e));
-
     // Não há detector de impacto; o firmware marca a flag no pacote (v1.0).
     if (point.impactSuspected) {
-      events.push(this.impactEvent(tripId, point));
+      raw.push(this.rawImpactEvent(point));
     }
 
+    const events = raw.map((e) => this.enrich(tripId, point, e));
     for (const event of events) {
       this.gateway.emitEventDetected(event);
     }
+
+    // O score consome os MESMOS eventos crus (inclui o impacto sintetizado) e
+    // acumula por viagem; sem eventos, recupera gradualmente.
+    const scoreResult = score.calculate(raw);
+    this.gateway.emitScoreUpdated(tripId, this.toWsScore(scoreResult));
+
     return events;
   }
 
@@ -136,22 +159,22 @@ export class AnalysisOrchestratorService {
     };
   }
 
-  private impactEvent(
-    tripId: string,
-    point: LiveTelemetryPoint,
-  ): WsDrivingEvent {
-    const magnitude = Math.hypot(point.accelX, point.accelY, point.accelZ);
+  /** Evento cru de impacto a partir da flag do firmware (alimenta score+emit). */
+  private rawImpactEvent(point: LiveTelemetryPoint): DrivingEvent {
     return {
-      id: randomUUID(),
-      tripId,
-      type: WsDrivingEventType.IMPACT_SUSPECTED,
-      severity: WsEventSeverity.CRITICAL,
-      timestamp: new Date(point.timestamp).toISOString(),
-      lat: point.lat ?? undefined,
-      lng: point.lng ?? undefined,
-      value: magnitude,
+      type: DrivingEventType.IMPACT_SUSPECTED,
+      measuredValue: Math.hypot(point.accelX, point.accelY, point.accelZ),
       threshold: 0,
-      description: EVENT_DESCRIPTION[WsDrivingEventType.IMPACT_SUSPECTED],
+      timestamp: point.timestamp,
+      severity: IMPACT_SEVERITY,
+    };
+  }
+
+  private toWsScore(score: DrivingScore): WsDrivingScore {
+    return {
+      value: score.value,
+      classification: SCORE_CLASS_MAP[score.classification],
+      penalties: { ...score.penalties },
     };
   }
 }
