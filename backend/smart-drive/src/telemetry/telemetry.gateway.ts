@@ -11,6 +11,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import type { DeviceStatus } from '../../generated/prisma/client';
 import type { LiveTelemetryPoint } from './telemetry.mapper';
+import type { WsDrivingEvent, WsDrivingScore } from './analysis/ws-contracts';
 import {
   WS_CLIENT_EVENTS,
   WS_SERVER_EVENTS,
@@ -74,5 +75,19 @@ export class TelemetryGateway
     this.server
       .to(tripRoom(tripId))
       .emit(WS_SERVER_EVENTS.deviceStatusChanged, change);
+  }
+
+  /** Emite um evento de condução detectado para quem assina a viagem. */
+  emitEventDetected(event: WsDrivingEvent): void {
+    this.server
+      .to(tripRoom(event.tripId))
+      .emit(WS_SERVER_EVENTS.eventDetected, event);
+  }
+
+  /** Emite o score de condução atualizado para quem assina a viagem. */
+  emitScoreUpdated(tripId: string, score: WsDrivingScore): void {
+    this.server
+      .to(tripRoom(tripId))
+      .emit(WS_SERVER_EVENTS.scoreUpdated, score);
   }
 }

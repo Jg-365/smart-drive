@@ -9,6 +9,10 @@ import { TripsModule } from './trips/trips.module';
 import { TelemetryModule } from './telemetry/telemetry.module';
 import { DemoModule } from './demo/demo.module';
 import { AnalysisModule } from './analysis/analysis.module';
+import { DrivingAnalysisModule } from './driving-analysis/driving-analysis.module';
+import { DrivingScoreModule } from './driving-score/driving-score.module';
+import { FuelEstimationModule } from './fuel-estimation/fuel-estimation.module';
+import { TelemetrySimulatorModule } from './telemetry-simulator/telemetry-simulator.module';
 
 @Module({
   imports: [
@@ -20,6 +24,13 @@ import { AnalysisModule } from './analysis/analysis.module';
     TelemetryModule,
     DemoModule,
     AnalysisModule,
+    // Analytics do Nathan (score/consumo/eventos) + simulador. Registrados aqui
+    // para deixarem de ser código morto; a integração ao gateway é feita pelo
+    // AnalysisOrchestratorService no TelemetryModule (EPIC-INT-00..03).
+    DrivingAnalysisModule,
+    DrivingScoreModule,
+    FuelEstimationModule,
+    TelemetrySimulatorModule,
   ],
   controllers: [AppController],
   providers: [AppService],
