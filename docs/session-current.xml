@@ -469,7 +469,15 @@
     <debt priority="low" created="2026-06-15">
       TelemetryController (POST /telemetry e /telemetry/dev/device-status) é mock/dev TEMPORÁRIO
       (EPIC-04) só para disparar o gateway sem hardware. Remover quando o POST /telemetry real do
-      Pedro (PED-RF-06) existir; este deve chamar TelemetryGateway.emitTelemetryNew após persistir.
+      Pedro (PED-RF-06) existir.
+      ⚠️ HANDOFF p/ a refatoração de nuvem (ADR-001, fase 3): o ingest real precisa chamar DUAS coisas
+      após persistir, não uma — (1) TelemetryGateway.emitTelemetryNew(point) E (2)
+      AnalysisOrchestratorService.process(point.tripId, point) (adicionado no EPIC-INT-01; é o que dispara
+      trip:eventDetected/scoreUpdated). Se o ingest novo só replicar a emissão de telemetria, eventos e
+      score param de fluir silenciosamente. Sugestão à prova de regressão: extrair "emite telemetria +
+      roda análise" para um único método (ex.: TelemetryIngestService.ingest(point)) que o controller mock
+      e o ingest real chamem — assim não dá pra esquecer metade. Ver BL-PEDRO-INGEST em
+      docs/bloqueios-equipe-001.xml.
     </debt>
   </technical_debts>
 
