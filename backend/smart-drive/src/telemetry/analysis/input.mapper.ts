@@ -37,3 +37,38 @@ export function toSimPayload(point: LiveTelemetryPoint): TelemetryPayload {
     },
   };
 }
+
+const MS_TO_KMH = 3.6;
+
+/**
+ * Converte um ponto gerado pelo simulador (`TelemetryPayload`) para o contrato
+ * v1.0 achatado (`LiveTelemetryPoint`) que o gateway emite e o orquestrador
+ * processa, carimbando a viagem/veículo da sessão demo.
+ */
+export function toLivePointFromSim(
+  payload: TelemetryPayload,
+  ctx: { tripId: string; vehicleId: string },
+): LiveTelemetryPoint {
+  return {
+    deviceId: payload.deviceId,
+    vehicleId: ctx.vehicleId,
+    tripId: ctx.tripId,
+    timestamp: payload.timestamp,
+    lat: payload.gps.latitude,
+    lng: payload.gps.longitude,
+    speedKmh: payload.gps.speed * MS_TO_KMH,
+    satellites: null,
+    hdop: null,
+    accelX: payload.sensors.accelX,
+    accelY: payload.sensors.accelY,
+    accelZ: payload.sensors.accelZ,
+    gyroX: payload.sensors.gyroX,
+    gyroY: payload.sensors.gyroY,
+    gyroZ: payload.sensors.gyroZ,
+    hardAcceleration: false,
+    hardBrake: false,
+    sharpTurn: false,
+    impactSuspected: false,
+    batteryPct: null,
+  };
+}

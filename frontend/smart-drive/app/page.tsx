@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { sdVars as SD } from '@/lib/sd-vars';
 
-import { TelemetryProvider } from '@/features/shared/realtime';
+import { TelemetryProvider, useTripId } from '@/features/shared/realtime';
 import { QueryProvider } from '@/features/shared/query';
 import { DesktopShell } from '@/features/shell';
 import { DashboardPage } from '@/features/dashboard';
@@ -33,6 +33,10 @@ export default function Page() {
   const [mobileTab, setMobileTab] = useState<MobileTab>('live');
   const [demoMode, setDemoMode] = useState<'smooth' | 'normal' | 'aggressive'>('aggressive');
 
+  // Viagem ativa: a demo/viagem real liga o tripId no store (setTrip); o provider
+  // assina essa sala. Sem viagem ativa, cai no DEV_TRIP_ID (null em produção).
+  const activeTripId = useTripId() ?? DEV_TRIP_ID;
+
   const renderDesktopScreen = () => {
     switch (desktopScreen) {
       case 'dashboard': return <DashboardPage onNavigate={setDesktopScreen} />;
@@ -46,7 +50,7 @@ export default function Page() {
 
   return (
     <QueryProvider>
-    <TelemetryProvider tripId={DEV_TRIP_ID}>
+    <TelemetryProvider tripId={activeTripId}>
     <div style={{ height: '100vh', width: '100vw', overflow: 'hidden', background: SD.bg, position: 'relative' }}>
       {/* Layout escolhido automaticamente pela viewport (sem switch manual — UI-A02). */}
       {isMobile ? (
