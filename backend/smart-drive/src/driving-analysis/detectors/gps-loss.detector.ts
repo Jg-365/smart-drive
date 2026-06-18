@@ -7,8 +7,9 @@ export class GpsLossDetector {
     public detect(data: TelemetryPayload): DrivingEvent | null{
         if(data.gps.latitude == 0 && data.gps.longitude == 0 && data.gps.heading == 0 && data.gps.speed == 0) {
             return({
-                type: DrivingEventType.GPS_LOSS,
+                type: DrivingEventType.GPS_LOST,
                 measuredValue: 0,
+                threshold: 0,
                 timestamp: data.timestamp,
                 severity: 1
             })

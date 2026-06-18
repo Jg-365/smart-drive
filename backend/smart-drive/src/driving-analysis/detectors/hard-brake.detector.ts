@@ -14,6 +14,7 @@ export class HardBrakeDetector {
             return({
                 type: DrivingEventType.HARD_BRAKE,
                 measuredValue: data.sensors.accelX,
+                threshold: this.threshold,
                 timestamp: data.timestamp,
                 severity: data.sensors.accelX / this.threshold
             })
