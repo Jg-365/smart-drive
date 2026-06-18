@@ -14,6 +14,7 @@ export class HardAccelerationDetector {
             return({
                 type: DrivingEventType.HARD_ACCELERATION,
                 measuredValue: data.sensors.accelX,
+                threshold: this.threshold,
                 timestamp: data.timestamp,
                 severity: data.sensors.accelX / this.threshold
             })

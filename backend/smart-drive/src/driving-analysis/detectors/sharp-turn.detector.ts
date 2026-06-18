@@ -34,6 +34,7 @@ export class SharpTurnDetector{
             return {
                 type: DrivingEventType.SHARP_TURN,
                 measuredValue: angularVelocity, // rad/s
+                threshold: this.GYRO_THRESHOLD,
                 method: 'GYROSCOPE',
                 timestamp: current.timestamp,
                 severity: this.calculateSeverity(angularVelocity, this.GYRO_THRESHOLD)
@@ -60,6 +61,7 @@ export class SharpTurnDetector{
                     return {
                         type: DrivingEventType.SHARP_TURN,
                         measuredValue: headingRate, // graus/s
+                        threshold: this.GPS_HEADING_RATE_THRESHOLD,
                         method: 'GPS',
                         timestamp: current.timestamp,
                         severity: this.calculateSeverity(headingRate, this.GPS_HEADING_RATE_THRESHOLD)

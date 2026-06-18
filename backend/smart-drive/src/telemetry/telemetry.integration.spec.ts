@@ -75,6 +75,34 @@ describe('Telemetry WebSocket (integração)', () => {
     });
   }, 20000);
 
+  it('cliente recebe trip:eventDetected quando o ponto dispara um evento', async () => {
+    const c = io(url, { transports: ['websocket'] });
+    await once(c, 'connect');
+    c.emit('subscribe:trip', 'sess-xyz');
+    await new Promise((r) => setTimeout(r, 100));
+
+    const received = once<Record<string, unknown>>(c, 'trip:eventDetected');
+
+    // accelX = 6 > 3 (limiar de aceleração brusca) → HARD_ACCELERATION
+    const res = await fetch(`${url}/telemetry`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...PAYLOAD, imu: { accelX: 6, accelY: 0, accelZ: 9.8 } }),
+    });
+    expect(res.status).toBe(202);
+
+    const event = await received;
+    expect(event).toMatchObject({
+      tripId: 'sess-xyz',
+      type: 'HARD_ACCELERATION',
+      description: 'Aceleração brusca',
+    });
+    expect(typeof event.id).toBe('string');
+    expect(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).toContain(event.severity);
+
+    c.disconnect();
+  }, 20000);
+
   it('POST /telemetry inválido (sem deviceId) retorna 400', async () => {
     const invalid: Partial<typeof PAYLOAD> = { ...PAYLOAD };
     delete invalid.deviceId;

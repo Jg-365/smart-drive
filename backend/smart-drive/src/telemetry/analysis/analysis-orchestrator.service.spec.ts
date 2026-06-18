@@ -1,12 +1,14 @@
 import { AnalysisOrchestratorService } from './analysis-orchestrator.service';
+import type { TelemetryGateway } from '../telemetry.gateway';
 import type { LiveTelemetryPoint } from '../telemetry.mapper';
+import { WsDrivingEventType, WsEventSeverity } from './ws-contracts';
 
 function point(over: Partial<LiveTelemetryPoint> = {}): LiveTelemetryPoint {
   return {
     deviceId: 'dev-1',
     vehicleId: 'veh-1',
     tripId: 'trip-1',
-    timestamp: Date.now(),
+    timestamp: 1_700_000_000_000,
     lat: -6.889,
     lng: -38.561,
     speedKmh: 36,
@@ -29,9 +31,12 @@ function point(over: Partial<LiveTelemetryPoint> = {}): LiveTelemetryPoint {
 
 describe('AnalysisOrchestratorService', () => {
   let orchestrator: AnalysisOrchestratorService;
+  let emitEventDetected: jest.Mock;
 
   beforeEach(() => {
-    orchestrator = new AnalysisOrchestratorService();
+    emitEventDetected = jest.fn();
+    const gateway = { emitEventDetected } as unknown as TelemetryGateway;
+    orchestrator = new AnalysisOrchestratorService(gateway);
   });
 
   it('cria estado sob demanda e o libera ao encerrar a viagem', () => {
@@ -45,20 +50,40 @@ describe('AnalysisOrchestratorService', () => {
     expect(orchestrator.activeTripCount()).toBe(1);
   });
 
-  it('detecta freada brusca a partir de uma desaceleração forte', () => {
-    // HardBrakeDetector: accelX < -3.8 (limiar padrão) → HARD_BRAKE
+  it('detecta freada brusca, enriquece para o contrato WS e emite', () => {
+    // HardBrakeDetector: accelX < -3.8 → HARD_BRAKE
     const events = orchestrator.process('trip-A', point({ accelX: -6 }));
 
-    expect(events.some((e) => e.type === 'HARD_BRAKE')).toBe(true);
+    const brake = events.find((e) => e.type === WsDrivingEventType.HARD_BRAKE);
+    expect(brake).toBeDefined();
+    expect(brake!.tripId).toBe('trip-A');
+    expect(brake!.id).toBeTruthy();
+    expect(brake!.timestamp).toBe(new Date(1_700_000_000_000).toISOString());
+    expect(brake!.lat).toBe(-6.889);
+    expect(brake!.value).toBe(-6);
+    expect(brake!.threshold).toBeCloseTo(-3.8, 5);
+    expect(brake!.description).toBe('Frenagem brusca');
+    expect(emitEventDetected).toHaveBeenCalledWith(brake);
+  });
+
+  it('sintetiza IMPACT_SUSPECTED (CRITICAL) a partir da flag do firmware', () => {
+    const events = orchestrator.process(
+      'trip-A',
+      point({ impactSuspected: true }),
+    );
+
+    const impact = events.find(
+      (e) => e.type === WsDrivingEventType.IMPACT_SUSPECTED,
+    );
+    expect(impact).toBeDefined();
+    expect(impact!.severity).toBe(WsEventSeverity.CRITICAL);
   });
 
   it('isola o estado entre viagens (detectores não compartilhados)', () => {
-    // mesma assinatura de evento em duas viagens deve render o mesmo resultado,
-    // provando que cada viagem tem seu próprio detector (sem interferência).
     const a = orchestrator.process('trip-A', point({ accelX: -6 }));
     const b = orchestrator.process('trip-B', point({ accelX: -6 }));
 
-    expect(a.some((e) => e.type === 'HARD_BRAKE')).toBe(true);
-    expect(b.some((e) => e.type === 'HARD_BRAKE')).toBe(true);
+    expect(a.some((e) => e.type === WsDrivingEventType.HARD_BRAKE)).toBe(true);
+    expect(b.some((e) => e.type === WsDrivingEventType.HARD_BRAKE)).toBe(true);
   });
 });
