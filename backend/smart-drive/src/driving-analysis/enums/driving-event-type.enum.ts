@@ -1,0 +1,6 @@
+export enum DrivingEventType {
+  HARD_ACCELERATION = 'HARD_ACCELERATION',
+  HARD_BRAKE = 'HARD_BRAKE',
+  SHARP_TURN = 'SHARP_TURN',
+  GPS_LOSS = 'GPS_LOSS'
+}

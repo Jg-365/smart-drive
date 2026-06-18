@@ -11,3 +11,9 @@ frontend/worktrees/
 firmware/build/
 
 /docs
+
+.env*
+
+/node_modules
+
+/dist
