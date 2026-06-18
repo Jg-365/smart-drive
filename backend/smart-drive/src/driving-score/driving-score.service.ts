@@ -1,94 +1,112 @@
 import { Injectable } from '@nestjs/common';
 import { DrivingEventType } from 'src/driving-analysis/enums/driving-event-type.enum';
 import { DrivingEvent } from 'src/driving-analysis/interfaces/driving-event.interface';
+import {
+  DrivingScore,
+  ScoreClassification,
+  ScorePenalties,
+} from './interfaces/driving-score.interface';
 
+/**
+ * Score de condução por viagem. O estado (score corrente + contagem de
+ * penalidades) é por INSTÂNCIA — o AnalysisOrchestratorService cria uma
+ * instância por `tripId` (via `new`, não como provider singleton), garantindo
+ * que viagens não compartilhem score.
+ */
 @Injectable()
 export class DrivingScoreService {
-  // 1. O score agora é uma propriedade da classe e começa em 100
   private score = 100;
-  
-  // Taxa de recuperação gradual quando não há eventos agressivos
-  private readonly RECOVERY_STEP = 1; 
 
-  calculate(events: DrivingEvent[]) {
-    const penalties: { eventType: DrivingEventType; pointsLost: number }[] = [];
+  // Taxa de recuperação gradual quando não há eventos agressivos.
+  private readonly RECOVERY_STEP = 1;
 
+  // Penalidades acumuladas no decorrer da viagem (contrato do front).
+  private readonly penalties: ScorePenalties = {
+    hardAccelerations: 0,
+    hardBrakes: 0,
+    sharpTurns: 0,
+    impactsSuspected: 0,
+    speedInstability: 0,
+  };
+
+  calculate(events: DrivingEvent[]): DrivingScore {
     if (events.length > 0) {
-      // Processa as penalidades se houverem eventos agressivos
       for (const event of events) {
-        const pointsLost = this.calculatePenalty(event);
-        
-        this.score -= pointsLost;
-        this.clampScore(); // Garante que não fique abaixo de 0
-
-        penalties.push({
-          eventType: event.type,
-          pointsLost,
-        });
+        this.score -= this.calculatePenalty(event);
+        this.clampScore();
+        this.countPenalty(event);
       }
     } else {
-      // 2. Se nenhuma penalidade for detectada, aplica a recuperação gradual baseado nos tetos
+      // Sem eventos agressivos no ponto → recuperação gradual respeitando tetos.
       this.recoverGradually();
     }
 
     return {
       value: this.score,
       classification: this.getClassification(this.score),
-      penalties,
+      penalties: { ...this.penalties },
     };
   }
 
   private calculatePenalty(event: DrivingEvent): number {
     switch (event.type) {
       case DrivingEventType.HARD_ACCELERATION:
-        return (2.5 * event.severity);
+        return 2.5 * event.severity;
       case DrivingEventType.HARD_BRAKE:
-        return (3.5 * event.severity);
+        return 3.5 * event.severity;
       case DrivingEventType.SHARP_TURN:
-        return (2 * event.severity);
+        return 2 * event.severity;
+      case DrivingEventType.IMPACT_SUSPECTED:
+        // Impacto é crítico; penalidade pesada (rever pesos com o Nathan).
+        return 8 * event.severity;
       default:
-        return 0;
+        return 0; // GPS_LOST não penaliza o score.
     }
   }
 
-  // 3. Lógica de recuperação gradual respeitando os limites dos tetos
+  private countPenalty(event: DrivingEvent): void {
+    switch (event.type) {
+      case DrivingEventType.HARD_ACCELERATION:
+        this.penalties.hardAccelerations += 1;
+        break;
+      case DrivingEventType.HARD_BRAKE:
+        this.penalties.hardBrakes += 1;
+        break;
+      case DrivingEventType.SHARP_TURN:
+        this.penalties.sharpTurns += 1;
+        break;
+      case DrivingEventType.IMPACT_SUSPECTED:
+        this.penalties.impactsSuspected += 1;
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Recuperação gradual respeitando o teto máximo do score atual.
   private recoverGradually(): void {
-    const ceiling = this.getRecoveryCeiling(this.score)
-
-    let recoveryStep = 0;
-
-    if(this.score < 70) { recoveryStep = 0.7}
-    if(this.score < 60) { recoveryStep = 0.5}
-    if(this.score < 40) { recoveryStep = 0.25}
-
-    
+    const ceiling = this.getRecoveryCeiling(this.score);
     if (this.score < ceiling) {
       this.score = Math.min(ceiling, this.score + this.RECOVERY_STEP);
     }
   }
 
-    // Define qual é o teto máximo que o motorista pode recuperar baseado no score atual
-    private getRecoveryCeiling(currentScore: number): number {
-        if (currentScore > 75) return 100;
-        if (currentScore > 60) return 75;
-        return 60;
-    }
+  // Teto máximo que o motorista pode recuperar a partir do score atual.
+  private getRecoveryCeiling(currentScore: number): number {
+    if (currentScore > 75) return 100;
+    if (currentScore > 60) return 75;
+    return 60;
+  }
 
-  // Mantém o score estritamente entre 0 e 100
   private clampScore(): void {
     this.score = Math.max(0, Math.min(100, this.score));
   }
 
-  private getClassification(score: number): string {
-    if (score > 85) return 'Excelente';
-    if (score > 70) return 'Boa';
-    if (score > 60) return 'Moderada';
-    if (score > 40) return 'Agressiva';
-    return 'Crítica';
-  }
-
-  // Método auxiliar opcional caso precise resetar o score manualmente externamente
-  public resetScore(): void {
-    this.score = 100;
+  private getClassification(score: number): ScoreClassification {
+    if (score > 85) return ScoreClassification.EXCELLENT;
+    if (score > 70) return ScoreClassification.GOOD;
+    if (score > 60) return ScoreClassification.MODERATE;
+    if (score > 40) return ScoreClassification.AGGRESSIVE;
+    return ScoreClassification.CRITICAL;
   }
 }

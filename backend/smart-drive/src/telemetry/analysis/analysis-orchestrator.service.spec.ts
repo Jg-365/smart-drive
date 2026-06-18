@@ -1,7 +1,12 @@
 import { AnalysisOrchestratorService } from './analysis-orchestrator.service';
 import type { TelemetryGateway } from '../telemetry.gateway';
 import type { LiveTelemetryPoint } from '../telemetry.mapper';
-import { WsDrivingEventType, WsEventSeverity } from './ws-contracts';
+import {
+  WsDrivingEventType,
+  WsDrivingScore,
+  WsEventSeverity,
+  WsScoreClassification,
+} from './ws-contracts';
 
 function point(over: Partial<LiveTelemetryPoint> = {}): LiveTelemetryPoint {
   return {
@@ -32,10 +37,15 @@ function point(over: Partial<LiveTelemetryPoint> = {}): LiveTelemetryPoint {
 describe('AnalysisOrchestratorService', () => {
   let orchestrator: AnalysisOrchestratorService;
   let emitEventDetected: jest.Mock;
+  let emitScoreUpdated: jest.Mock;
 
   beforeEach(() => {
     emitEventDetected = jest.fn();
-    const gateway = { emitEventDetected } as unknown as TelemetryGateway;
+    emitScoreUpdated = jest.fn();
+    const gateway = {
+      emitEventDetected,
+      emitScoreUpdated,
+    } as unknown as TelemetryGateway;
     orchestrator = new AnalysisOrchestratorService(gateway);
   });
 
@@ -86,4 +96,35 @@ describe('AnalysisOrchestratorService', () => {
     expect(a.some((e) => e.type === WsDrivingEventType.HARD_BRAKE)).toBe(true);
     expect(b.some((e) => e.type === WsDrivingEventType.HARD_BRAKE)).toBe(true);
   });
+
+  it('emite score acumulado por viagem e penaliza freadas', () => {
+    orchestrator.process('trip-A', point({ accelX: -6 }));
+
+    const last = emitScoreUpdated.mock.calls.at(-1) as [string, WsDrivingScore];
+    expect(last[0]).toBe('trip-A');
+    expect(last[1].value).toBeLessThan(100);
+    expect(last[1].penalties.hardBrakes).toBe(1);
+    expect(Object.values(WsScoreClassification)).toContain(
+      last[1].classification,
+    );
+  });
+
+  it('mantém o score isolado entre viagens', () => {
+    // trip-A leva várias freadas; trip-B só pontos limpos.
+    for (let i = 0; i < 3; i++) {
+      orchestrator.process('trip-A', point({ accelX: -8 }));
+    }
+    orchestrator.process('trip-B', point());
+
+    const scoreA = lastScoreFor('trip-A');
+    const scoreB = lastScoreFor('trip-B');
+    expect(scoreA).toBeLessThan(scoreB);
+    expect(scoreB).toBe(100);
+  });
+
+  function lastScoreFor(tripId: string): number {
+    const calls = emitScoreUpdated.mock.calls as [string, WsDrivingScore][];
+    const forTrip = calls.filter(([id]) => id === tripId);
+    return forTrip[forTrip.length - 1][1].value;
+  }
 });
