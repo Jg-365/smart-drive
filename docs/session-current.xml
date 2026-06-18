@@ -37,6 +37,20 @@
     o frontend vira PWA; ESP32 posta via Wi-Fi (hotspot) → nuvem (HTTPS), PWA lê por WSS (BLE descartado
     por causa do iOS). PRÓXIMA FRENTE DO JOÃO = firmware p/ nuvem (URL HTTPS + TLS via cert bundle + auth
     de device + SNTP p/ epoch). Usuário continua depois.
+    INTEGRAÇÃO DOS ANALYTICS DO NATHAN (2026-06-17, sessão João): o Nathan entregou na main (commit
+    cb232f8) detectores/score/simulador, mas DESCONECTADOS (módulos fora do AppModule, simulador só
+    fazia console.log, contratos divergentes do front). Frente de INTEGRAÇÃO em 5 épicos (branches
+    feature/joa-integ-00..04): INT-00 fundação (wiring no AppModule + AnalysisOrchestratorService com
+    estado POR VIAGEM + mapper de entrada v1.0→shape do Nathan + emitEventDetected/emitScoreUpdated no
+    gateway + jest moduleNameMapper p/ imports src/*); INT-01 eventos (alinha enum GPS_LOSS→GPS_LOST e
+    +IMPACT_SUSPECTED, threshold no DrivingEvent, enriquece p/ contrato WS, sintetiza impacto da flag do
+    firmware, emite trip:eventDetected); INT-02 score (DrivingScoreService sem singleton, classificação
+    enum + penalties como contagens, emite trip:scoreUpdated por viagem); INT-03 simulador ao vivo
+    (DemoModule real /api/demo/start|reset|current dirige o simulador pelo gateway; provider do front
+    assina o tripId ATIVO do store — dívida #6 resolvida); INT-04 QA/docs. Smoke e2e OK (POST
+    /api/demo/start aggressive → 4 pontos/~4s, 3 eventos; reset zera). Backend 57→78 testes, frontend
+    232, tsc/build limpos. CONSUMO (trip:fuelEstimateUpdated) segue BLOQUEADO — WIP do Nathan
+    (FuelEstimationService vazio); UI em "—". Falta: abrir PRs e mergear na ordem INT-00..04.
   </current_focus>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -425,13 +439,11 @@
       backend. Mudanças no contrato do veículo exigem atualizar os dois lados. Considerar gerar/derivar
       um do outro no futuro (ex: tipos compartilhados) — ver dívida de tipos compartilhados.
     </debt>
-    <debt priority="medium" created="2026-06-16">
-      EPIC-09: o modo demo liga o tripId da sessão no store (setTrip), mas o TelemetryProvider em
-      app/page.tsx assina um DEV_TRIP_ID fixo via prop — o socket NÃO re-assina a sala trip:<id> da
-      demo, então a telemetria demo ao vivo (carrinho RC / simulador do Nathan) não chega ao store.
-      Corrigir elevando o tripId ativo (demo ou viagem real) a um estado em app/page.tsx e passando
-      ao TelemetryProvider (ou fazer o provider ler o tripId do store). Necessário para o smoke test
-      do EPIC-13.
+    <debt priority="medium" created="2026-06-16" resolved="2026-06-17">
+      RESOLVIDO no EPIC-INT-03: app/page.tsx agora deriva activeTripId = useTripId() ?? DEV_TRIP_ID
+      (novo selector useTripId no store) e passa ao TelemetryProvider. Quando a demo liga o tripId no
+      store (setTrip), o provider re-assina a sala trip:<id> e a telemetria demo ao vivo (simulador do
+      Nathan via DemoModule) passa a chegar ao store. Antes assinava DEV_TRIP_ID fixo.
     </debt>
     <debt priority="low" created="2026-06-16">
       [Atualização EPIC-10: o erro de useTheme.ts foi CORRIGIDO (lazy init). Restam 3 em
@@ -457,7 +469,15 @@
     <debt priority="low" created="2026-06-15">
       TelemetryController (POST /telemetry e /telemetry/dev/device-status) é mock/dev TEMPORÁRIO
       (EPIC-04) só para disparar o gateway sem hardware. Remover quando o POST /telemetry real do
-      Pedro (PED-RF-06) existir; este deve chamar TelemetryGateway.emitTelemetryNew após persistir.
+      Pedro (PED-RF-06) existir.
+      ⚠️ HANDOFF p/ a refatoração de nuvem (ADR-001, fase 3): o ingest real precisa chamar DUAS coisas
+      após persistir, não uma — (1) TelemetryGateway.emitTelemetryNew(point) E (2)
+      AnalysisOrchestratorService.process(point.tripId, point) (adicionado no EPIC-INT-01; é o que dispara
+      trip:eventDetected/scoreUpdated). Se o ingest novo só replicar a emissão de telemetria, eventos e
+      score param de fluir silenciosamente. Sugestão à prova de regressão: extrair "emite telemetria +
+      roda análise" para um único método (ex.: TelemetryIngestService.ingest(point)) que o controller mock
+      e o ingest real chamem — assim não dá pra esquecer metade. Ver BL-PEDRO-INGEST em
+      docs/bloqueios-equipe-001.xml.
     </debt>
   </technical_debts>
 
@@ -797,6 +817,34 @@
       (epoch real em vez de tempo-desde-boot). Backend/deploy/HTTPS/CORS/auth de device = Pedro. Próximo
       passo do João será mexer no firmware (o usuário continua depois). Itens cross-time e decisões em
       aberto (provedor de nuvem, esquema de auth de device, provisionamento de Wi-Fi) no ADR.
+    </entry>
+    <entry date="2026-06-17" type="implementation">
+      INTEGRAÇÃO dos analytics do Nathan (5 épicos, branches feature/joa-integ-00..04). Diagnóstico: a
+      entrega do Nathan (commit cb232f8) chegou desconectada — módulos fora do AppModule (código morto),
+      simulador só com console.log, FuelEstimationService vazio, e contratos divergentes do front
+      (DrivingEvent/DrivingScore/enum diferentes; score como singleton acumulando entre viagens).
+      Decisões do João: (1) EDITAR os serviços do Nathan p/ casarem com os contratos do front;
+      (2) consumo BLOQUEADO (WIP do Nathan), sem trabalho de fuel aqui.
+      INT-00: registra DrivingAnalysis/DrivingScore/FuelEstimation/TelemetrySimulator no AppModule;
+      AnalysisOrchestratorService (TelemetryModule) com estado POR VIAGEM (detector+score por tripId via
+      new, sem singleton); mapper toSimPayload (v1.0 achatado→sensors/gps do Nathan, km/h→m/s, GPS null→0,0);
+      gateway.emitEventDetected/emitScoreUpdated + ws-contracts.ts espelhando o front; jest moduleNameMapper
+      "^src/(.*)$" (os specs do Nathan usavam imports absolutos src/* e não rodavam). 57→68 testes.
+      INT-01: enum GPS_LOSS→GPS_LOST + IMPACT_SUSPECTED; threshold no DrivingEvent (detectores passam o
+      limiar); orquestrador enriquece evento cru→WsDrivingEvent (id/tripId/severity em faixa/timestamp
+      ISO/lat-lng/value/threshold/descrição PT-BR) e emite trip:eventDetected; impacto sintetizado da flag
+      impactSuspected do firmware; controller roda a análise após telemetry:new. 68→70.
+      INT-02: DrivingScoreService alinhado (classificação ScoreClassification enum, penalties como
+      contagens acumuladas por viagem), penalidade de IMPACT_SUSPECTED, GPS_LOST não penaliza, remove
+      recoveryStep morto; orquestrador alimenta score com os mesmos eventos crus e emite trip:scoreUpdated.
+      70→75. INT-03: TelemetrySimulatorService vira fábrica (createScenario), sem o loop console.log;
+      DemoModule real (controller /api/demo/start|reset|current + DemoService dirigindo o simulador ao vivo
+      pelo gateway+orquestrador, perfil normal→realistic, sessão única, reset idempotente); mapper reverso
+      toLivePointFromSim; FRONT: TelemetryProvider assina activeTripId=useTripId()??DEV_TRIP_ID (dívida #6
+      resolvida). 75→78 testes back; front 232. INT-04: smoke e2e no app real (start aggressive → 4 pontos
+      ~4s, 3 eventos; reset zera), tsc/build/suites verdes, docs. Pendência fora do João: FuelEstimation
+      (Nathan) e abrir/mergear os PRs INT-00..04. NOTA: start:prod aponta p/ dist/main mas o build sai em
+      dist/src/main (descasamento pré-existente, não corrigido aqui).
     </entry>
   </history>
 

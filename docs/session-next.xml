@@ -39,7 +39,14 @@
            - scrub de textos longos na MobileDemoPage (CHK-08, secundário);
            - auditoria RNF-03 (44px) e RNF-05 (rodar do zero noutra máquina);
            - dívidas do firmware: migrar driver I2C legado p/ driver/i2c_master.h (EOL no ESP-IDF 7.0)
-             e resolver o timestamp tempo-desde-boot (SNTP ou carimbo no backend — alinhar contrato c/ Pedro). -->
+             e resolver o timestamp tempo-desde-boot (SNTP ou carimbo no backend — alinhar contrato c/ Pedro).
+         INTEGRAÇÃO DOS ANALYTICS DO NATHAN — CONCLUÍDA (2026-06-17, branches feature/joa-integ-00..04):
+         score (trip:scoreUpdated) e eventos (trip:eventDetected) reais fluindo backend→WS→store→
+         dashboard/relatório/demo; simulador dirigido ao vivo pelo DemoModule (/api/demo/*); provider do
+         front assina o tripId ativo (dívida #6 resolvida). Falta: abrir/mergear os PRs INT-00..04 na ordem.
+         AINDA PENDENTE (não é do João): CONSUMO (trip:fuelEstimateUpdated) — WIP do Nathan
+         (FuelEstimationService vazio); quando ele entregar, o orquestrador emite e a UI sai de "—".
+         Pesos de penalidade do score e realismo dos cenários seguem do Nathan. -->
   </epics>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -93,9 +100,11 @@
       Trips/Telemetry) devem trocar para o guard real do Pedro assim que disponível, mantendo
       o mesmo contrato.
     </question>
-    <question id="Q03" priority="medium" status="open">
-      Nathan entrega score/consumo como serviço NestJS injetável ou função pura TS?
-      Impacta AnalysisModule no EPIC-00.
+    <question id="Q03" priority="medium" status="resolved">
+      RESOLVIDO na integração (2026-06-17): score é um serviço NestJS (@Injectable DrivingScoreService),
+      mas como tem estado por viagem, o AnalysisOrchestratorService o instancia POR tripId via `new`
+      (factory), não como provider singleton. Detectores são classes simples instanciadas por viagem.
+      Consumo (FuelEstimationService) ainda é WIP do Nathan.
     </question>
     <question id="Q04" priority="low" status="open">
       Tile server do MapLibre: tiles públicos (OpenFreeMap) vs locais para funcionar offline

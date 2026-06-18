@@ -73,15 +73,21 @@
   <bloqueio id="BL-PEDRO-INGEST" dono="Pedro" prioridade="alta">
     <oQueEleEntrega>Ingestão real de telemetria: POST /telemetry que PERSISTE e dispara o gateway.</oQueEleEntrega>
     <contratoEsperado>
-      POST /telemetry (contrato v1.0, docs/CLAUDE.json) → persiste e chama
-      TelemetryGateway.emitTelemetryNew(point). Definir caminho final (/telemetry vs /api/telemetry).
+      POST /telemetry (contrato v1.0, docs/CLAUDE.json) → persiste e chama, NESTA ordem, DUAS coisas:
+      (1) TelemetryGateway.emitTelemetryNew(point) e (2) AnalysisOrchestratorService.process(point.tripId, point)
+      — a #2 é o que dispara trip:eventDetected/trip:scoreUpdated (adicionada no EPIC-INT-01). Definir
+      caminho final (/telemetry vs /api/telemetry).
     </contratoEsperado>
     <preProntoDoJoao>
-      Gateway WebSocket (do João) já emite telemetry:new para a sala da viagem. Há um controller MOCK
-      (TelemetryController) que valida o contrato e dispara o gateway, usado pelo firmware e pelo feeder.
+      Gateway WebSocket (do João) já emite telemetry:new para a sala da viagem E roda a análise
+      (eventos/score) via AnalysisOrchestratorService. Há um controller MOCK (TelemetryController) que valida
+      o contrato, emite e roda a análise — usado pelo firmware e pelo feeder.
     </preProntoDoJoao>
-    <estadoAtual>Controller mock do João ativo; /telemetry fica SEM o prefixo /api (exclusão no setGlobalPrefix) p/ não quebrar o firmware gravado.</estadoAtual>
-    <oQueDesbloqueia>Telemetria persistida/histórico. Ao chegar: remover o mock e revisar a exclusão do prefixo (FIX-01).</oQueDesbloqueia>
+    <estadoAtual>Controller mock do João ativo (emite telemetria + roda análise); /telemetry fica SEM o prefixo /api (exclusão no setGlobalPrefix) p/ não quebrar o firmware gravado.</estadoAtual>
+    <oQueDesbloqueia>Telemetria persistida/histórico. ⚠️ Ao chegar: o ingest real precisa replicar AS DUAS
+      chamadas (emitTelemetryNew + orchestrator.process), senão eventos/score param de fluir. Sugestão:
+      extrair "emite + analisa" num TelemetryIngestService.ingest(point) único, chamado pelo mock e pelo real.
+      Depois remover o mock e revisar a exclusão do prefixo (FIX-01 / ADR-001 fase 3).</oQueDesbloqueia>
   </bloqueio>
 
   <!-- ═══════════════════════════ NATHAN (analytics) ═══════════════════════════ -->
@@ -89,32 +95,41 @@
     <oQueEleEntrega>Driving score em tempo real.</oQueEleEntrega>
     <contratoEsperado>WS trip:scoreUpdated → DrivingScore { value, classification, penalties{hardBrakes,sharpTurns,speedInstability} } → store.score.</contratoEsperado>
     <preProntoDoJoao>UI pronta: card de SCORE no dashboard e overlay "SCORE AO VIVO" na demo. Mostra "—"/AGUARDANDO até o evento chegar.</preProntoDoJoao>
-    <estadoAtual>Sem emissor; o feeder só dispara telemetry:new.</estadoAtual>
-    <oQueDesbloqueia>Score real no dashboard/demo/relatório.</oQueDesbloqueia>
+    <estadoAtual>INTEGRADO (2026-06-17, EPIC-INT-02): AnalysisOrchestratorService roda o DrivingScoreService
+      do Nathan por viagem e emite trip:scoreUpdated a cada ponto. A lógica de score é do Nathan (pesos das
+      penalidades a revisar com ele); a emissão/contrato (classificação enum + penalties como contagens) é do João.</estadoAtual>
+    <oQueDesbloqueia>RESOLVIDO p/ o caminho do João. Resta o Nathan calibrar pesos/recuperação se quiser.</oQueDesbloqueia>
   </bloqueio>
 
   <bloqueio id="BL-NATHAN-FUEL" dono="Nathan" prioridade="alta">
     <oQueEleEntrega>Estimativa de consumo de combustível.</oQueEleEntrega>
     <contratoEsperado>WS trip:fuelEstimateUpdated → FuelEstimate { adjustedConsumptionKmL, estimatedLitersSpent, confidenceLevel, estimatedCost? } → store.fuelEstimate.</contratoEsperado>
     <preProntoDoJoao>UI pronta: KPIs do dashboard e painel de consumo da demo (com aviso de que é estimativa, não medição de tanque). Mostra "—" até chegar.</preProntoDoJoao>
-    <estadoAtual>Sem emissor.</estadoAtual>
-    <oQueDesbloqueia>Consumo real no dashboard/demo/relatório.</oQueDesbloqueia>
+    <estadoAtual>BLOQUEADO — WIP do Nathan (FuelEstimationService vazio em 2026-06-17). Decisão do João: NÃO
+      implementar consumo na frente de integração. O caminho de emissão está pronto (basta o orquestrador
+      chamar um gateway.emitFuelEstimateUpdated quando o serviço do Nathan produzir FuelEstimate); a UI segue em "—".</estadoAtual>
+    <oQueDesbloqueia>Consumo real no dashboard/demo/relatório — depende do Nathan terminar o modelo.</oQueDesbloqueia>
   </bloqueio>
 
   <bloqueio id="BL-NATHAN-EVENTS" dono="Nathan" prioridade="media">
     <oQueEleEntrega>Detecção de eventos de condução (freada/aceleração/curva/impacto).</oQueEleEntrega>
     <contratoEsperado>WS trip:eventDetected → DrivingEvent { id, type, severity, timestamp, value, description } → store.events.</contratoEsperado>
     <preProntoDoJoao>UI pronta: feed "EVENTOS RECENTES" no dashboard + marcadores no mapa (LiveMap). Estado vazio honesto.</preProntoDoJoao>
-    <estadoAtual>O firmware já marca flags de evento no pacote, mas o evento rico (severity/descrição) é do detector do Nathan.</estadoAtual>
-    <oQueDesbloqueia>Eventos reais no feed e no mapa.</oQueDesbloqueia>
+    <estadoAtual>INTEGRADO (2026-06-17, EPIC-INT-01): os detectores do Nathan rodam no orquestrador; cada evento
+      é enriquecido p/ o contrato do front (id/tripId/severity em faixa/timestamp ISO/lat-lng/value/threshold/
+      descrição) e emitido em trip:eventDetected. Impacto sintetizado da flag impactSuspected do firmware
+      (não há detector de impacto). Enum alinhado (GPS_LOST, IMPACT_SUSPECTED).</estadoAtual>
+    <oQueDesbloqueia>RESOLVIDO. Eventos reais no feed e no mapa.</oQueDesbloqueia>
   </bloqueio>
 
   <bloqueio id="BL-NATHAN-SIM" dono="Nathan" prioridade="media">
     <oQueEleEntrega>Simulador de telemetria parametrizado por cenário/perfil (NAT-RF-07).</oQueEleEntrega>
     <contratoEsperado>O Modo Demo envia scenario ∈ smooth|normal|aggressive ao iniciar; o simulador deve produzir telemetria coerente com o perfil (consumo base, tolerância de aceleração/frenagem/score).</contratoEsperado>
     <preProntoDoJoao>DemoPage já manda o scenario via startDemo e mostra os perfis. Sem o simulador, o perfil não muda o comportamento observável.</preProntoDoJoao>
-    <estadoAtual>Demo roda com telemetria ao vivo do ESP32 (decisão) ou com o feeder de fallback; perfis sem efeito até o simulador.</estadoAtual>
-    <oQueDesbloqueia>Perfis com efeito observável na demo (auditoria DEMO-04).</oQueDesbloqueia>
+    <estadoAtual>INTEGRADO (2026-06-17, EPIC-INT-03): o DemoModule (POST /api/demo/start{scenario}) dirige o
+      simulador do Nathan ao vivo pelo gateway+orquestrador (perfil smooth/normal→realistic/aggressive). Smoke:
+      aggressive gera eventos e derruba o score; smooth fica alto. O provider do front assina o tripId da demo.</estadoAtual>
+    <oQueDesbloqueia>RESOLVIDO. Perfis com efeito observável na demo (DEMO-04). Cenários/realismo seguem do Nathan.</oQueDesbloqueia>
   </bloqueio>
 
   <!-- ═══════════════════════════ DECISÕES PENDENTES (marco 19/06) ═══════════════════════════ -->
