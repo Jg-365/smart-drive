@@ -12,12 +12,12 @@ import {
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/request-with-user';
-import { TempUserGuard } from '../auth/temp-user.guard';
+import { AuthGuard } from '../auth/auth.guard';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { VehiclesService } from './vehicles.service';
 
-@UseGuards(TempUserGuard)
+@UseGuards(AuthGuard)
 @Controller('vehicles')
 export class VehiclesController {
   constructor(private readonly vehiclesService: VehiclesService) {}
