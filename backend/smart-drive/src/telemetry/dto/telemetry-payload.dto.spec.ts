@@ -92,11 +92,11 @@ describe('TelemetryPayloadDto (contrato v1.0)', () => {
     expect(hasError(errors, 'imu')).toBe(true);
   });
 
-  it('SPEC: lat/lng fora de range são rejeitados', async () => {
+  it('SPEC: lat/lng fora de range não quebram o DTO — a regra de modo fica no service', async () => {
     const errors = await validateDto({
       ...VALID,
       gps: { ...VALID.gps, lat: 200, lng: -999 },
     });
-    expect(hasError(errors, 'gps')).toBe(true);
+    expect(errors).toHaveLength(0);
   });
 });
