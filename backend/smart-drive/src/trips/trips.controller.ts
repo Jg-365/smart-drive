@@ -16,13 +16,13 @@ export class TripsController {
     return this.tripsService.start(user.id, dto);
   }
 
-  @Post(':id/end')
-  end(
+  @Post(':id/finish')
+  finish(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
     @Body() dto: EndTripDto,
   ) {
-    return this.tripsService.end(user.id, id, dto);
+    return this.tripsService.finish(user.id, id, dto);
   }
 
   @Get()
@@ -35,9 +35,14 @@ export class TripsController {
     return this.tripsService.findOne(user.id, id);
   }
 
-  @Get(':id/points')
-  points(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
-    return this.tripsService.findTelemetryPoints(user.id, id);
+  @Get(':id/summary')
+  summary(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.tripsService.findSummary(user.id, id);
+  }
+
+  @Get(':id/route')
+  route(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.tripsService.findRoute(user.id, id);
   }
 
   @Get(':id/events')

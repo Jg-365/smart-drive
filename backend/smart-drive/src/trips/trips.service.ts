@@ -138,7 +138,7 @@ export class TripsService {
     return trip;
   }
 
-  async end(ownerId: string, tripId: string, dto: EndTripDto) {
+  async finish(ownerId: string, tripId: string, dto: EndTripDto) {
     const trip = await this.findOwnedTrip(ownerId, tripId);
 
     if (trip.status !== TripStatus.ACTIVE) {
@@ -213,17 +213,50 @@ export class TripsService {
     return this.findOwnedTrip(ownerId, tripId, true);
   }
 
-  async findTelemetryPoints(ownerId: string, tripId: string) {
+  async findRoute(ownerId: string, tripId: string): Promise<{ lat: number; lng: number }[]> {
     await this.findOwnedTrip(ownerId, tripId);
 
-    return this.prisma.telemetryPoint.findMany({
+    const points = await this.prisma.telemetryPoint.findMany({
       where: {
         tripId,
         lat: { not: null },
         lng: { not: null },
       },
       orderBy: { timestamp: 'asc' },
+      select: { lat: true, lng: true },
     });
+
+    return points
+      .filter((p): p is { lat: number; lng: number } => p.lat !== null && p.lng !== null)
+      .map((p) => ({ lat: p.lat, lng: p.lng }));
+  }
+
+  async findSummary(ownerId: string, tripId: string) {
+    const trip = await this.findOwnedTrip(ownerId, tripId, true);
+    const events = await this.findEvents(ownerId, tripId);
+    const fuelEstimate = await this.buildFuelEstimate(tripId, trip);
+
+    return { trip, events, fuelEstimate };
+  }
+
+  // O cálculo real de consumo é do Nathan (NAT-RF-05). Enquanto o FuelEstimate não
+  // é gravado, o summary devolve um objeto sintetizado a partir do que a viagem já
+  // tem, no shape do contrato do front (features/shared/types/fuel.ts) — nunca null,
+  // para a tela de relatório não quebrar; confidenceLevel 0 sinaliza "estimativa pendente".
+  private async buildFuelEstimate(tripId: string, trip: { estimatedConsumptionKmL: number | null; estimatedFuelSpentLiters: number | null }) {
+    const stored = await this.prisma.fuelEstimate.findUnique({ where: { tripId } });
+    if (stored) return stored;
+
+    return {
+      id: `pending-${tripId}`,
+      tripId,
+      baseConsumptionKmL: trip.estimatedConsumptionKmL ?? 0,
+      adjustedConsumptionKmL: trip.estimatedConsumptionKmL ?? 0,
+      estimatedLitersSpent: trip.estimatedFuelSpentLiters ?? 0,
+      estimatedCost: null,
+      confidenceLevel: 0,
+      modelVersion: 'pending',
+    };
   }
 
   async findEvents(ownerId: string, tripId: string) {
