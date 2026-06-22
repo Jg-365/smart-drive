@@ -1,12 +1,13 @@
 import { Request } from 'express';
 
 /**
- * Contrato esperado de `request.user` após a autenticação — preenchido hoje
- * pelo [[TempUserGuard]] (placeholder) e, futuramente, pelo guard JWT real do
- * Pedro (PED-RF-02). Mantendo este shape, controllers não precisam mudar.
+ * Contrato esperado de `request.user` após a autenticação.
+ * O guard real usa token Bearer assinado, mas preserva este shape para não
+ * obrigar controllers existentes a mudarem.
  */
 export interface AuthenticatedUser {
   id: string;
+  email?: string;
 }
 
 export interface RequestWithUser extends Request {

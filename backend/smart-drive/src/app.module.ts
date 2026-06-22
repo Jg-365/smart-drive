@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
 import { DevicesModule } from './devices/devices.module';
 import { TripsModule } from './trips/trips.module';
@@ -13,15 +15,19 @@ import { DrivingAnalysisModule } from './driving-analysis/driving-analysis.modul
 import { DrivingScoreModule } from './driving-score/driving-score.module';
 import { FuelEstimationModule } from './fuel-estimation/fuel-estimation.module';
 import { TelemetrySimulatorModule } from './telemetry-simulator/telemetry-simulator.module';
+import { ExportsModule } from './exports/exports.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    AuthModule,
+    UsersModule,
     VehiclesModule,
     DevicesModule,
     TripsModule,
     TelemetryModule,
+    ExportsModule,
     DemoModule,
     AnalysisModule,
     // Analytics do Nathan (score/consumo/eventos) + simulador. Registrados aqui
