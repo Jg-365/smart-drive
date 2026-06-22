@@ -7,7 +7,6 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -19,14 +18,10 @@ import {
 class GpsDto {
   @IsOptional()
   @IsNumber()
-  @Min(-90)
-  @Max(90)
   lat?: number | null;
 
   @IsOptional()
   @IsNumber()
-  @Min(-180)
-  @Max(180)
   lng?: number | null;
 
   @IsOptional()

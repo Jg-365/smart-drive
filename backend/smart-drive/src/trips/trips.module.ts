@@ -1,5 +1,13 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
+import { DevicesModule } from '../devices/devices.module';
+import { TripsController } from './trips.controller';
+import { TripsService } from './trips.service';
 
-// Placeholder — implementação a cargo do Pedro (PED-RF-05/07/08).
-@Module({})
+@Module({
+  imports: [AuthModule, DevicesModule],
+  controllers: [TripsController],
+  providers: [TripsService],
+  exports: [TripsService],
+})
 export class TripsModule {}
