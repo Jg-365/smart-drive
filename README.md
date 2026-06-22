@@ -5,8 +5,10 @@ e frontend (Next.js). Especificações e contratos em `docs/`.
 
 ## Pré-requisitos
 
-- Node.js 20+
+- Node.js 20+ (há `.nvmrc` na raiz — rode `nvm install && nvm use`)
 - Docker + Docker Compose (para o Postgres local)
+
+> Subindo numa máquina nova? Veja o checklist de portabilidade em [`docs/PORTABILIDADE.md`](docs/PORTABILIDADE.md).
 
 ## 1. Banco de dados (Postgres via Docker)
 
