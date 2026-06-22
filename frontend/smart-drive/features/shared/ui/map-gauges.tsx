@@ -300,24 +300,28 @@ export function Speedometer({ kmh = 47, max = 140, size = 260, color }: Speedome
 interface WaveProps {
   width?: number;
   height?: number;
-  points?: number[];
+  /** Série real a traçar. Com < 2 pontos, mostra só a baseline (estado honesto). */
+  points: number[];
   color?: string;
   fill?: boolean;
 }
 
-const defaultWavePoints = Array.from({ length: 60 }).map((_, i) => {
-  const rnd = (seed: number) => {
-    const x = Math.sin(seed * 9301 + 49297) * 233280;
-    return x - Math.floor(x);
-  };
-  return Math.sin(i * 0.4) * 0.4 + Math.sin(i * 0.13 + 2) * 0.4 + (rnd(i) - 0.5) * 0.2;
-});
-
 export function Wave({ width = 280, height = 60, points, color, fill }: WaveProps) {
   const c = color || SD.primary;
-  const pts = points || defaultWavePoints;
-  const maxVal = Math.max(...pts.map(Math.abs));
+  const pts = points;
   const mid = height / 2;
+
+  // Com 0/1 ponto não há linha a traçar — mostra só a baseline (estado honesto:
+  // ainda não há série suficiente). Evita também divisão por zero no maxVal.
+  if (pts.length < 2) {
+    return (
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+        <line x1="0" y1={mid} x2={width} y2={mid} stroke={SD.border} strokeDasharray="3 3" />
+      </svg>
+    );
+  }
+
+  const maxVal = Math.max(...pts.map(Math.abs)) || 1;
   const d = pts.map((v, i) => {
     const x = (i / (pts.length - 1)) * width;
     const y = mid - (v / maxVal) * (height * 0.42);
@@ -342,35 +346,38 @@ interface AxisBarsProps {
   width?: number | string;
 }
 
-export function AxisBars({ x = 0.12, y = -0.42, z = 0.98, width = 220 }: AxisBarsProps) {
-  const Bar = ({ label, v, barColor }: { label: string; v: number; barColor: string }) => {
-    const pct = Math.max(0, Math.min(1, Math.abs(v) / 1.2));
-    return (
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-          <span className="sd-label" style={{ fontSize: 9 }}>{label}</span>
-          <span className="sd-mono" style={{ fontSize: 10, color: barColor }}>
-            {(v >= 0 ? '+' : '') + v.toFixed(2)}g
-          </span>
-        </div>
-        <div style={{ height: 6, background: SD.surface2, position: 'relative', border: `1px solid ${SD.border}` }}>
-          <div style={{
-            position: 'absolute', top: 0, height: '100%',
-            left: v >= 0 ? '50%' : `${50 - pct * 50}%`,
-            width: `${pct * 50}%`,
-            background: barColor,
-          }} />
-          <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, background: SD.borderBright }} />
-        </div>
+// Barra de eixo (componente de módulo — não recriar dentro do render do AxisBars,
+// senão o React perde a identidade do componente a cada render: regra
+// react-hooks/static-components).
+function AxisBar({ label, v, barColor }: { label: string; v: number; barColor: string }) {
+  const pct = Math.max(0, Math.min(1, Math.abs(v) / 1.2));
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+        <span className="sd-label" style={{ fontSize: 9 }}>{label}</span>
+        <span className="sd-mono" style={{ fontSize: 10, color: barColor }}>
+          {(v >= 0 ? '+' : '') + v.toFixed(2)}g
+        </span>
       </div>
-    );
-  };
+      <div style={{ height: 6, background: SD.surface2, position: 'relative', border: `1px solid ${SD.border}` }}>
+        <div style={{
+          position: 'absolute', top: 0, height: '100%',
+          left: v >= 0 ? '50%' : `${50 - pct * 50}%`,
+          width: `${pct * 50}%`,
+          background: barColor,
+        }} />
+        <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, background: SD.borderBright }} />
+      </div>
+    </div>
+  );
+}
 
+export function AxisBars({ x = 0.12, y = -0.42, z = 0.98, width = 220 }: AxisBarsProps) {
   return (
     <div style={{ display: 'grid', gap: 8, width }}>
-      <Bar label="ACCEL X" v={x} barColor={SD.primary} />
-      <Bar label="ACCEL Y" v={y} barColor={SD.warning} />
-      <Bar label="ACCEL Z" v={z} barColor={SD.success} />
+      <AxisBar label="ACCEL X" v={x} barColor={SD.primary} />
+      <AxisBar label="ACCEL Y" v={y} barColor={SD.warning} />
+      <AxisBar label="ACCEL Z" v={z} barColor={SD.success} />
     </div>
   );
 }

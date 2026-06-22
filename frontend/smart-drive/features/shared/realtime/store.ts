@@ -21,6 +21,9 @@ export type ConnectionState = 'connecting' | 'live' | 'reconnecting' | 'polling'
 /** Máximo de eventos mantidos em memória (feed do dashboard). */
 export const MAX_EVENTS = 100
 
+/** Tamanho da janela dos históricos (velocidade/aceleração) p/ gráficos ao vivo. */
+export const MAX_SPEED_HISTORY = 60
+
 export interface TelemetryState {
   tripId: string | null
   lastPoint: TelemetryPoint | null
@@ -33,6 +36,10 @@ export interface TelemetryState {
   lastPacketAt: number | null
   /** Rota acumulada da viagem ([lng, lat]); só pontos com coordenada válida. */
   route: LngLat[]
+  /** Janela recente de velocidade (km/h) p/ o gráfico de desempenho ao vivo. */
+  speedHistory: number[]
+  /** Janela recente da força g horizontal (hypot(accelX,accelY)) p/ o gráfico. */
+  accelHistory: number[]
   tripFinished: boolean
   /** True quando a sessão atual é o Modo Demo (ExpoIOT) — separa demo do fluxo real. */
   demoMode: boolean
@@ -60,6 +67,8 @@ const initialState = {
   connection: 'offline' as ConnectionState,
   lastPacketAt: null as number | null,
   route: [] as LngLat[],
+  speedHistory: [] as number[],
+  accelHistory: [] as number[],
   tripFinished: false,
   demoMode: false,
 }
@@ -73,12 +82,25 @@ export const useTelemetryStore = create<TelemetryState>()((set) => ({
   ingestPoint: (lastPoint) =>
     set((s) => {
       const coord = toLngLat(lastPoint)
+      // só acumula velocidade real (finita e não-negativa) — sem dado fabricado.
+      const speed = lastPoint.speedKmh
+      const speedHistory =
+        typeof speed === 'number' && Number.isFinite(speed) && speed >= 0
+          ? [...s.speedHistory, speed].slice(-MAX_SPEED_HISTORY)
+          : s.speedHistory
+      // força g horizontal (dinâmica de direção, sem a gravidade vertical Z).
+      const accelMag = Math.hypot(lastPoint.accelX, lastPoint.accelY)
+      const accelHistory = Number.isFinite(accelMag)
+        ? [...s.accelHistory, accelMag].slice(-MAX_SPEED_HISTORY)
+        : s.accelHistory
       return {
         lastPoint,
         lastPacketAt: Date.now(),
         // coord inválida (GPS null/fora de range) é ignorada: a polyline não
         // ganha o ponto e o marcador "congela" no último válido (edge JOA-RF-04).
         route: coord ? [...s.route, coord] : s.route,
+        speedHistory,
+        accelHistory,
       }
     }),
   addEvent: (e) => set((s) => ({ events: [e, ...s.events].slice(0, MAX_EVENTS) })),
@@ -101,4 +123,6 @@ export const useDeviceStatus = () => useTelemetryStore((s) => s.deviceStatus)
 export const useTripFinished = () => useTelemetryStore((s) => s.tripFinished)
 export const useLastPacketAt = () => useTelemetryStore((s) => s.lastPacketAt)
 export const useRoute = () => useTelemetryStore((s) => s.route)
+export const useSpeedHistory = () => useTelemetryStore((s) => s.speedHistory)
+export const useAccelHistory = () => useTelemetryStore((s) => s.accelHistory)
 export const useDemoMode = () => useTelemetryStore((s) => s.demoMode)
