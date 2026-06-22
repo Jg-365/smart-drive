@@ -6,13 +6,13 @@ export class FuelEstimationService {
     private basePerformance: number;
 
     // Limites e coeficientes empíricos (podem ser movidos para variáveis de ambiente)
-    private readonly MAX_ACCEL_ECO = 1.5;     // m/s² confortável
-    private readonly MAX_ACCEL_ALERT = 3.0;   // m/s² agressivo (freada ou arrancada brusca)
-    private readonly SPEED_ECO_MIN = 60 / 3.6; // 60 km/h em m/s
-    private readonly SPEED_ECO_MAX = 90 / 3.6; // 90 km/h em m/s
+    private readonly MAX_ACCEL_ECO = 1.5 // m/s² confortável
+    private readonly MAX_ACCEL_ALERT = 3.0 // m/s² agressivo (freada ou arrancada brusca)
+    private readonly SPEED_ECO_MIN = 60 // km/h
+    private readonly SPEED_ECO_MAX = 90 // km/h
 
     constructor(@Inject('BASE_PERFORMANCE') basePerformance: number) {
-        this.basePerformance = basePerformance;
+        this.basePerformance = basePerformance; // performance base em km/l, padrão = 1 -> retorna o fator multiplicador
     }
 
     /**
@@ -20,49 +20,47 @@ export class FuelEstimationService {
      */
     calculate(telemetry: TelemetryPayload[]): number {
         if (!telemetry || telemetry.length === 0) {
-        return this.basePerformance;
+            return this.basePerformance;
         }
 
         let totalScore = 0;
 
         for (const point of telemetry) {
-        let pointScore = 1.0; // Multiplicador base para este ponto específico
+            let pointScore = 1.0; // Multiplicador base para este ponto específico
 
-        // 1. Análise de Aceleração Longitudinal (Eixo Y - Geralmente frente/trás)
-        // Usamos Math.abs porque tanto aceleração quanto frenagem excessiva gastam combustível
-        const accelLong = Math.abs(point.sensors.accelY);
-        
-        if (accelLong > this.MAX_ACCEL_ALERT) {
-            pointScore -= 0.25; // Penalidade pesada para arrancada/frenagem brusca
-        } else if (accelLong > this.MAX_ACCEL_ECO) {
-            pointScore -= 0.10; // Penalidade leve
-        } else {
-            pointScore += 0.05; // Bônus por direção suave
-        }
+            // Análise de Aceleração Longitudinal (Eixo X - frente/trás)
+            const accelLong = Math.abs(point.sensors.accelX);
+            
+            if (accelLong > this.MAX_ACCEL_ALERT) {
+                pointScore -= 0.25; // Penalidade pesada para arrancada/frenagem brusca
+            } else if (accelLong > this.MAX_ACCEL_ECO) {
+                pointScore -= 0.10; // Penalidade leve
+            } else {
+                pointScore += 0.05; // Bônus por direção suave
+            }
 
-        // 2. Análise de Curvas (Aceleração Lateral X + Giroscópio Z)
-        const accelLat = Math.abs(point.sensors.accelX);
-        const gyroYaw = Math.abs(point.sensors.gyroZ);
+            // Análise de Curvas (Aceleração Lateral Y + Giroscópio Z)
+            const accelLat = Math.abs(point.sensors.accelY);
+            const gyroYaw = Math.abs(point.sensors.gyroZ);
 
-        if (accelLat > 2.0 || gyroYaw > 0.5) { 
-            pointScore -= 0.15; // Curva fechada ou em alta velocidade
-        }
+            if (accelLat > 2.0 || gyroYaw > 0.5) { 
+                pointScore -= 0.15; // Curva fechada ou em alta velocidade
+            }
 
-        // 3. Análise de Velocidade de Cruzeiro (GPS speed vem em m/s ou km/h dependendo do simulador)
-        // Assumindo que o GPS traga em m/s (padrão de geolocalização). Se for km/h, remova as divisões por 3.6 acima.
-        const speed = point.gps.speed;
+            // Análise de Velocidade de Cruzeiro
+            const speed = point.gps.speed // km/h
 
-        if ((speed/3.6) > this.SPEED_ECO_MIN && speed < this.SPEED_ECO_MAX) {
-            pointScore += 0.10; // Zona de eficiência ideal (Cruzeiro)
-        } else if (speed > 110 / 3.6) {
-            pointScore -= 0.15; // Velocidade muito alta (Arrasto aerodinâmico)
-        } else if (speed < 15 / 3.6 && speed > 0) {
-            pointScore -= 0.20; // Trânsito pesado / Marcha baixa
-        }
+            if (speed > this.SPEED_ECO_MIN && speed < this.SPEED_ECO_MAX) {
+                pointScore += 0.10; // Zona de eficiência ideal (Cruzeiro)
+            } else if (speed > 110) {
+                pointScore -= 0.15; // Velocidade muito alta (Arrasto aerodinâmico)
+            } else if (speed < 15 && speed > 0) {
+                pointScore -= 0.20; // Trânsito pesado / Marcha baixa
+            }
 
-        // Garantir limites saudáveis para o multiplicador de um único ponto
-        pointScore = Math.max(0.5, Math.min(1.4, pointScore));
-        totalScore += pointScore;
+            // Garantir limites saudáveis para o multiplicador de um único ponto
+            pointScore = Math.max(0.5, Math.min(1.4, pointScore));
+            totalScore += pointScore;
         }
 
         // Média de pontuação do lote analisado
