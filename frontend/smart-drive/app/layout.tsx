@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Archivo, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ThemeProvider } from '@/features/shared/theme/ThemeProvider';
+import { ServiceWorkerRegister } from '@/features/shared/pwa/ServiceWorkerRegister';
 
 const archivo = Archivo({
   variable: "--font-archivo",
@@ -25,6 +26,20 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "SmartDrive — Telemetria",
   description: "Dashboard de telemetria veicular",
+  applicationName: "SmartDrive",
+  // PWA: instalável em iOS com tela cheia e nome curto na home screen.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "SmartDrive",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0A0A0F",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -50,6 +65,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col">
+        <ServiceWorkerRegister />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
