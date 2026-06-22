@@ -151,10 +151,12 @@ interface BtnProps {
 }
 
 export function Btn({ children, tone = 'ghost', size = 'md', onClick, style = {}, icon, full, disabled = false, title }: BtnProps) {
-  const sizes: Record<BtnSize, { p: string; f: number }> = {
-    sm: { p: '6px 10px', f: 11 },
-    md: { p: '9px 14px', f: 12 },
-    lg: { p: '12px 18px', f: 13 },
+  // minH garante o alvo de toque mínimo (JOA-RNF-03). md/lg (CTAs, usados no mobile) ≥44px;
+  // sm é a variante compacta de tabelas desktop (ponteiro preciso) — piso menor por densidade.
+  const sizes: Record<BtnSize, { p: string; f: number; minH: number }> = {
+    sm: { p: '6px 10px', f: 11, minH: 36 },
+    md: { p: '9px 14px', f: 12, minH: 44 },
+    lg: { p: '12px 18px', f: 13, minH: 48 },
   };
   const tones: Record<BtnTone, { fg: string; bg: string; bd: string }> = {
     ghost: { fg: SD.text, bg: 'transparent', bd: SD.borderHi },
@@ -175,7 +177,8 @@ export function Btn({ children, tone = 'ghost', size = 'md', onClick, style = {}
       style={{
         padding: s.p, fontSize: s.f, fontWeight: 700, letterSpacing: '0.12em',
         color: t.fg, background: t.bg, border: `1.5px solid ${t.bd}`,
-        display: 'inline-flex', alignItems: 'center', gap: 8,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        minHeight: s.minH,
         ...(full ? { width: '100%', justifyContent: 'center' } : {}),
         ...(disabled ? { opacity: 0.4, cursor: 'not-allowed', pointerEvents: 'none' } : {}),
         ...style,
