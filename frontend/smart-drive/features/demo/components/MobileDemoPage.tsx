@@ -92,20 +92,23 @@ export function MobileDemoPage() {
             {PROFILES.map((m) => {
               const active = mode === m.id;
               return (
-                <div
+                <button
                   key={m.id}
-                  role="button"
+                  type="button"
                   aria-label={`Perfil ${m.label}`}
+                  aria-pressed={active}
                   onClick={() => setMode(m.id)}
                   className="sd-btn"
                   style={{
-                    padding: '12px 8px', textAlign: 'center',
+                    padding: '12px 8px', textAlign: 'center', cursor: 'pointer',
+                    minHeight: 44, // alvo de toque mínimo (JOA-RNF-03)
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                     border: `1.5px solid ${active ? m.tone : SD.border}`,
                     background: active ? `${m.tone}15` : SD.surface,
                   }}
                 >
                   <span className="sd-label" style={{ fontSize: 10, color: active ? m.tone : SD.text }}>{m.label}</span>
-                </div>
+                </button>
               );
             })}
           </div>
