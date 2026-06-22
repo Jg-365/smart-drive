@@ -10,6 +10,7 @@ import { DrivingEvent } from 'src/driving-analysis/interfaces/driving-event.inte
 import { ImpactScenario } from './scenarios/impact.scenario';
 import { GpsLossScenario } from './scenarios/gps-loss.scenario';
 import { DrivingScoreService } from 'src/driving-score/driving-score.service';
+import { FuelEstimationService } from 'src/fuel-estimation/fuel-estimation.service';
 
 @Injectable()
 export class TelemetrySimulatorService implements OnModuleInit {
@@ -46,6 +47,9 @@ export class TelemetrySimulatorService implements OnModuleInit {
 
         const drivingEventDetector = new DrivingEventDetectorService()
         const drivingScoreService = new DrivingScoreService()
+        const fuelEstimationService = new FuelEstimationService(1)
+
+        let telemetryBuffer: TelemetryPayload[] = [];
 
         if (jsonLineNumber) {
             console.log(`[Simulator] 🔄️ Gerando ${jsonLineNumber} registros para o cenário.`)
@@ -75,7 +79,23 @@ export class TelemetrySimulatorService implements OnModuleInit {
             const events = drivingEventDetector.detect(telemetry)
             const score = drivingScoreService.calculate(events);
 
-            console.log(JSON.stringify({telemetry, events, score}, null, 2))
+            telemetryBuffer.push(telemetry);
+
+            // Variável para armazenar o resultado do consumo quando calculado
+            let estimatedFuelPerformance: number | null = null;
+
+            // 2. Quando atingir 10 payloads, processa o consumo e limpa o buffer
+            if (telemetryBuffer.length === 10) {
+                estimatedFuelPerformance = fuelEstimationService.calculate(telemetryBuffer);
+                
+                // Exibe no console um destaque visual do cálculo de consumo
+                console.log(`[Fuel Service] ⛽ Média estimada dos últimos pontos: ${estimatedFuelPerformance}`);
+                
+                // Limpa o buffer para os próximos 10 segundos
+                telemetryBuffer = [];
+            }
+
+            console.log(JSON.stringify({telemetry, events, score, ...(estimatedFuelPerformance !== null && { estimatedFuelPerformance })}, null, 2))
         }, 1000)
     }
 }
