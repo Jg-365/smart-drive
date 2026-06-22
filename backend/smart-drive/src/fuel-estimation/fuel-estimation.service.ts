@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { TelemetryPayload } from 'src/telemetry-simulator/interfaces/telemetry.interface';
 
 @Injectable()
@@ -11,7 +11,7 @@ export class FuelEstimationService {
     private readonly SPEED_ECO_MIN = 60 / 3.6; // 60 km/h em m/s
     private readonly SPEED_ECO_MAX = 90 / 3.6; // 90 km/h em m/s
 
-    constructor(basePerformance: number) {
+    constructor(@Inject('BASE_PERFORMANCE') basePerformance: number) {
         this.basePerformance = basePerformance;
     }
 
