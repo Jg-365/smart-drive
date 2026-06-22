@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { sdVars as SD } from '@/lib/sd-vars';
 
-import { TelemetryProvider } from '@/features/shared/realtime';
+import { TelemetryProvider, useTelemetryStore } from '@/features/shared/realtime';
 import { QueryProvider } from '@/features/shared/query';
 import { DesktopShell } from '@/features/shell';
 import { DashboardPage } from '@/features/dashboard';
@@ -27,6 +27,22 @@ type MobileTab = 'home' | 'live' | 'map' | 'trips' | 'menu';
 // até existir seleção de viagem real / modo demo).
 const DEV_TRIP_ID = process.env.NEXT_PUBLIC_DEV_TRIP_ID ?? null;
 
+/**
+ * Liga o TelemetryProvider à viagem ATIVA do store (definida pelo Modo Demo ou
+ * por uma viagem real), caindo para a viagem de dev quando não há nenhuma. Assim
+ * o socket re-assina a sala da viagem certa quando o usuário inicia a demo/viagem
+ * (resolve a dívida do EPIC-09: o provider assinava um tripId fixo). Como é um
+ * selector atômico do store, só re-renderiza ao trocar de viagem.
+ */
+function RealtimeBridge({ children }: { children: React.ReactNode }) {
+  const activeTripId = useTelemetryStore((s) => s.tripId);
+  return (
+    <TelemetryProvider tripId={activeTripId ?? DEV_TRIP_ID}>
+      {children}
+    </TelemetryProvider>
+  );
+}
+
 export default function Page() {
   const isMobile = useIsMobile();
   const [desktopScreen, setDesktopScreen] = useState<DesktopScreen>('dashboard');
@@ -46,7 +62,7 @@ export default function Page() {
 
   return (
     <QueryProvider>
-    <TelemetryProvider tripId={DEV_TRIP_ID}>
+    <RealtimeBridge>
     <div style={{ height: '100vh', width: '100vw', overflow: 'hidden', background: SD.bg, position: 'relative' }}>
       {/* Layout escolhido automaticamente pela viewport (sem switch manual — UI-A02). */}
       {isMobile ? (
@@ -64,7 +80,7 @@ export default function Page() {
         </div>
       )}
     </div>
-    </TelemetryProvider>
+    </RealtimeBridge>
     </QueryProvider>
   );
 }
