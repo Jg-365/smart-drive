@@ -126,7 +126,7 @@ export function MobileDemoPage() {
           </div>
 
           <div style={{ padding: 12, background: 'rgba(255,176,32,0.08)', border: `1px solid ${SD.warning}`, fontSize: 11, color: SD.textDim }}>
-            <strong style={{ color: SD.warning }}>ⓘ</strong> Sem GPS, a posição usa a pista virtual. O consumo é proporcional ao comportamento (IMU + GPS), usando o perfil do veículo.
+            <strong style={{ color: SD.warning }}>ⓘ</strong> Sem GPS, usa a pista virtual. Consumo estimado pelo comportamento + perfil do veículo.
           </div>
         </div>
       </div>
