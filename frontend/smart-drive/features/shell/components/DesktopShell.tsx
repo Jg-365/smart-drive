@@ -18,7 +18,7 @@ import {
 } from '@/features/shared/realtime';
 import { WS_URL } from '@/lib/api/config';
 
-type NavId = 'dashboard' | 'map' | 'trips' | 'vehicles' | 'devices' | 'demo';
+type NavId = 'dashboard' | 'map' | 'trips' | 'vehicles' | 'devices' | 'demo' | 'settings';
 
 interface DesktopShellProps {
   active?: NavId;
@@ -70,6 +70,7 @@ export function DesktopShell({ active = 'dashboard', onNav, children }: DesktopS
     { id: 'vehicles', label: 'Veículos', icon: Icon.car },
     { id: 'devices', label: 'Dispositivos', icon: Icon.chip },
     { id: 'demo', label: 'Demo ExpoIOT', icon: Icon.flag },
+    { id: 'settings', label: 'Conta', icon: Icon.gear },
   ];
 
   return (

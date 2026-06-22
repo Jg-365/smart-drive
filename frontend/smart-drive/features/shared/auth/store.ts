@@ -1,11 +1,11 @@
 import { create } from 'zustand'
 
 /**
- * Estado de autenticação do app. Hoje o backend usa um guard placeholder
- * (TempUserGuard, header `x-user-id`) até o JWT real do Pedro (PED-RF-02). Este
- * store já modela o token para que, quando o login real existir, baste preencher
- * `token` — o cliente HTTP (lib/api/client.ts) passa a mandar `Authorization:
- * Bearer <token>` no lugar do `x-user-id`. Ver docs/bloqueios-equipe-001.xml.
+ * Estado de autenticação do app. O login real (Pedro) devolve um JWT; este store
+ * guarda { token, user } e o cliente HTTP (lib/api/client.ts) manda
+ * `Authorization: Bearer <token>`. A sessão é persistida em localStorage para
+ * sobreviver a reload (mesmo padrão seguro do useTheme — pode lançar em modo
+ * privado, então é tudo try/catch).
  */
 export interface AuthUser {
   id: string
@@ -20,11 +20,51 @@ export interface AuthState {
   clear: () => void
 }
 
+const STORAGE_KEY = 'sd-auth'
+
+interface PersistedAuth {
+  token: string | null
+  user: AuthUser | null
+}
+
+/** Lê a sessão persistida com segurança (localStorage pode lançar/estar vazio). */
+function readStoredAuth(): PersistedAuth {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return { token: null, user: null }
+    const parsed = JSON.parse(raw) as PersistedAuth
+    return {
+      token: typeof parsed.token === 'string' ? parsed.token : null,
+      user: parsed.user ?? null,
+    }
+  } catch {
+    return { token: null, user: null }
+  }
+}
+
+/** Persiste/limpa a sessão com segurança; falha silenciosa em modo privado. */
+function writeStoredAuth(auth: PersistedAuth | null): void {
+  try {
+    if (auth?.token) localStorage.setItem(STORAGE_KEY, JSON.stringify(auth))
+    else localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // storage indisponível — mantém só em memória
+  }
+}
+
+const stored = typeof window !== 'undefined' ? readStoredAuth() : { token: null, user: null }
+
 export const useAuthStore = create<AuthState>()((set) => ({
-  token: null,
-  user: null,
-  setAuth: ({ token, user }) => set({ token, user }),
-  clear: () => set({ token: null, user: null }),
+  token: stored.token,
+  user: stored.user,
+  setAuth: ({ token, user }) => {
+    writeStoredAuth({ token, user })
+    set({ token, user })
+  },
+  clear: () => {
+    writeStoredAuth(null)
+    set({ token: null, user: null })
+  },
 }))
 
 /** Selector React: usuário autenticado (null se deslogado). */

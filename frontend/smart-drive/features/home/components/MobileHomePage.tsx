@@ -7,10 +7,24 @@ import { Tag, Dot, Btn, Stat } from '@/features/shared/ui/primitives';
 import { MapView } from '@/features/shared/ui/map-gauges';
 import { MobileShell } from '@/features/shell/components/MobileShell';
 import { BrandLogo } from '@/features/shared/ui/BrandLogo';
+import { useAuthUser } from '@/features/shared/auth';
 
 type MobileTab = 'home' | 'live' | 'map' | 'trips' | 'menu';
 
-export function MobileHomePage({ onNavigate }: { onNavigate?: (tab: MobileTab) => void }) {
+/** Primeiro nome do usuário em caixa alta, ou um fallback neutro. */
+function firstName(name?: string): string {
+  const first = name?.trim().split(/\s+/)[0]
+  return (first || 'Motorista').toUpperCase()
+}
+
+export function MobileHomePage({
+  onNavigate,
+  onSettings,
+}: {
+  onNavigate?: (tab: MobileTab) => void
+  onSettings?: () => void
+}) {
+  const user = useAuthUser();
   return (
     <MobileShell active="home">
       <div style={{ padding: '20px 18px 100px', display: 'grid', gap: 18 }}>
@@ -18,13 +32,24 @@ export function MobileHomePage({ onNavigate }: { onNavigate?: (tab: MobileTab) =
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
             <div className="sd-label" style={{ fontSize: 9, color: SD.textDim }}>OLÁ,</div>
-            <div className="sd-display" style={{ fontSize: 30, lineHeight: 1 }}>LUCAS.</div>
-            <div className="sd-mono" style={{ fontSize: 11, color: SD.textDim, marginTop: 6 }}>
-              7 viagens · 168 km · esta semana
-            </div>
+            <div className="sd-display" style={{ fontSize: 30, lineHeight: 1 }}>{firstName(user?.name)}.</div>
           </div>
-          {/* Marca oficial conforme o tema (branca no dark, completa no light). */}
-          <BrandLogo height={30} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Marca oficial conforme o tema (branca no dark, completa no light). */}
+            <BrandLogo height={30} />
+            <button
+              type="button"
+              aria-label="Configurações"
+              className="sd-btn"
+              onClick={onSettings}
+              style={{
+                background: 'transparent', border: `1px solid ${SD.border}`,
+                color: SD.textDim, padding: 8, display: 'inline-flex',
+              }}
+            >
+              {Icon.gear(16)}
+            </button>
+          </div>
         </div>
 
         {/* CTA card */}
