@@ -17,8 +17,9 @@ import {
   type ConnectionState,
 } from '@/features/shared/realtime';
 import { WS_URL } from '@/lib/api/config';
+import { useVehicles } from '@/features/vehicles/hooks';
 
-type NavId = 'dashboard' | 'map' | 'trips' | 'vehicles' | 'devices' | 'demo';
+type NavId = 'dashboard' | 'map' | 'trips' | 'vehicles' | 'devices' | 'demo' | 'settings';
 
 interface DesktopShellProps {
   active?: NavId;
@@ -45,6 +46,8 @@ export function DesktopShell({ active = 'dashboard', onNav, children }: DesktopS
   const events = useDrivingEvents();
   const route = useRoute();
   const lastPacketAt = useLastPacketAt();
+  const { data: vehicles } = useVehicles();
+  const vehicle = vehicles?.[0];
 
   const conn = connInfo(connection);
   const sat = last?.satellites;
@@ -70,6 +73,7 @@ export function DesktopShell({ active = 'dashboard', onNav, children }: DesktopS
     { id: 'vehicles', label: 'Veículos', icon: Icon.car },
     { id: 'devices', label: 'Dispositivos', icon: Icon.chip },
     { id: 'demo', label: 'Demo ExpoIOT', icon: Icon.flag },
+    { id: 'settings', label: 'Conta', icon: Icon.gear },
   ];
 
   return (
@@ -160,8 +164,14 @@ export function DesktopShell({ active = 'dashboard', onNav, children }: DesktopS
               {Icon.car(16)}
             </div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600 }}>Onix LT 1.0</div>
-              <div className="sd-mono" style={{ fontSize: 10, color: SD.textDim }}>12.4 km/L · 44 L</div>
+              <div style={{ fontSize: 12, fontWeight: 600 }}>
+                {vehicle ? `${vehicle.brand} ${vehicle.model}` : 'Nenhum veículo'}
+              </div>
+              <div className="sd-mono" style={{ fontSize: 10, color: SD.textDim }}>
+                {vehicle
+                  ? `${vehicle.baseMixedConsumptionKmL.toFixed(1)} km/L · ${vehicle.tankCapacityLiters.toFixed(0)} L`
+                  : 'cadastre em Veículos'}
+              </div>
             </div>
           </div>
         </div>

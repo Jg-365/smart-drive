@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { type LngLat, MAX_POLYLINE_POINTS, downsample } from '@/features/shared/geo';
-import { currentBasemapStyle } from '../basemap';
+import { currentBasemapStyle, rasterStyleForTheme } from '../basemap';
+import { useTheme } from '@/features/shared/theme/useTheme';
 
 export interface LiveMapEvent {
   lngLat: LngLat;
@@ -38,6 +39,31 @@ const eventsGeoJSON = (events: LiveMapEvent[]) => ({
   })),
 });
 
+/**
+ * Instala as camadas de dados (rota + eventos) sobre o basemap atual. É chamada
+ * no load inicial e após cada setStyle (troca de tema), pois trocar o estilo do
+ * MapLibre remove sources/layers customizados (o marcador do veículo é um
+ * elemento DOM e sobrevive). Só é invocada quando as sources estão ausentes
+ * (load e logo após o style novo carregar), então não há adição duplicada.
+ */
+function installDataLayers(map: maplibregl.Map, route: LngLat[], events: LiveMapEvent[]) {
+  map.addSource('route', { type: 'geojson', data: lineGeoJSON(downsample(route, MAX_POLYLINE_POINTS)) });
+  map.addLayer({
+    id: 'route', type: 'line', source: 'route',
+    paint: { 'line-color': SD.primary, 'line-width': 4 },
+  });
+  map.addSource('events', { type: 'geojson', data: eventsGeoJSON(events) });
+  map.addLayer({
+    id: 'events', type: 'circle', source: 'events',
+    paint: {
+      'circle-radius': 6,
+      'circle-color': ['case', ['get', 'high'], SD.danger, SD.warning],
+      'circle-stroke-width': 2,
+      'circle-stroke-color': SD.bg,
+    },
+  });
+}
+
 export function LiveMap({ route, vehicle, events = [], styleUrl, follow = false, className, style }: LiveMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -46,6 +72,16 @@ export function LiveMap({ route, vehicle, events = [], styleUrl, follow = false,
   const centeredRef = useRef(false);
   const sawTileRef = useRef(false);
   const [tileError, setTileError] = useState(false);
+  const { theme } = useTheme();
+
+  // Dados mais recentes p/ re-instalar as camadas após um setStyle (troca de tema),
+  // sem depender de closures antigas. Sincronizados num effect (não no render).
+  const routeRef = useRef(route);
+  const eventsRef = useRef(events);
+  useEffect(() => {
+    routeRef.current = route;
+    eventsRef.current = events;
+  });
 
   // init (uma vez)
   useEffect(() => {
@@ -75,21 +111,7 @@ export function LiveMap({ route, vehicle, events = [], styleUrl, follow = false,
 
     map.on('load', () => {
       loadedRef.current = true;
-      map.addSource('route', { type: 'geojson', data: lineGeoJSON(route) });
-      map.addLayer({
-        id: 'route', type: 'line', source: 'route',
-        paint: { 'line-color': SD.primary, 'line-width': 4 },
-      });
-      map.addSource('events', { type: 'geojson', data: eventsGeoJSON(events) });
-      map.addLayer({
-        id: 'events', type: 'circle', source: 'events',
-        paint: {
-          'circle-radius': 6,
-          'circle-color': ['case', ['get', 'high'], SD.danger, SD.warning],
-          'circle-stroke-width': 2,
-          'circle-stroke-color': SD.bg,
-        },
-      });
+      installDataLayers(map, routeRef.current, eventsRef.current);
 
       const el = document.createElement('div');
       el.setAttribute('data-testid', 'vehicle-marker');
@@ -109,6 +131,21 @@ export function LiveMap({ route, vehicle, events = [], styleUrl, follow = false,
     // init só na montagem; updates abaixo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [styleUrl]);
+
+  // Troca o basemap ao alternar o tema da interface (claro/escuro) sem recriar o
+  // mapa: setStyle + re-instala as camadas de dados (que o setStyle remove). O
+  // marcador do veículo é DOM e sobrevive. Ignora quando há styleUrl (override).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loadedRef.current || styleUrl) return;
+    sawTileRef.current = false;
+    map.setStyle(rasterStyleForTheme(theme));
+    const onStyle = () => installDataLayers(map, routeRef.current, eventsRef.current);
+    map.once('styledata', onStyle);
+    return () => {
+      map.off('styledata', onStyle);
+    };
+  }, [theme, styleUrl]);
 
   // updates de rota / veículo / eventos
   useEffect(() => {

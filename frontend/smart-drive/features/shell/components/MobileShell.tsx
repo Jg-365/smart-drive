@@ -94,11 +94,18 @@ export function MobileTabBar({ active, onNav }: { active?: MobileTab; onNav?: (i
         const isActive = active === it.id;
         const c = isActive ? SD.primary : SD.textDim;
         return (
-          <div
+          <button
             key={it.id}
+            type="button"
+            aria-label={it.label}
+            aria-current={isActive ? 'page' : undefined}
             onClick={() => onNav && onNav(it.id)}
             className="sd-btn"
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: c, padding: '6px 0' }}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 4, color: c, padding: '6px 0', minHeight: 44,
+              background: 'transparent', border: 'none', cursor: 'pointer',
+            }}
           >
             <div style={{ position: 'relative' }}>
               {it.icon(20)}
@@ -110,7 +117,7 @@ export function MobileTabBar({ active, onNav }: { active?: MobileTab; onNav?: (i
               )}
             </div>
             <span className="sd-label" style={{ fontSize: 8, color: c, letterSpacing: '0.08em' }}>{it.label}</span>
-          </div>
+          </button>
         );
       })}
     </div>

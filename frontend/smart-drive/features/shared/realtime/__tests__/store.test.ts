@@ -2,7 +2,7 @@ import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { DrivingEventType, EventSeverity } from '@/features/shared/types'
 import type { DrivingEvent } from '@/features/shared/types'
-import { MAX_EVENTS, useDrivingScore, useTelemetryStore } from '../store'
+import { MAX_EVENTS, MAX_SPEED_HISTORY, useDrivingScore, useTelemetryStore } from '../store'
 
 const makeEvent = (id: string): DrivingEvent => ({
   id,
@@ -90,5 +90,35 @@ describe('telemetry store', () => {
       [-46.6, -23.5],
       [-46.7, -23.6],
     ])
+  })
+
+  it('ingestPoint acumula histórico real de velocidade/aceleração (gráficos B5)', () => {
+    const s = useTelemetryStore.getState()
+    const p = (speedKmh: number | null, ax: number, ay: number) => ({
+      id: 'p', tripId: 't', timestamp: 1, lat: 0, lng: 0,
+      speedKmh: speedKmh as number, accelX: ax, accelY: ay, accelZ: 9.8,
+    })
+    s.ingestPoint(p(10, 3, 4)) // |a horizontal| = 5
+    s.ingestPoint(p(null, 0, 0)) // sem velocidade → não entra no speedHistory
+    s.ingestPoint(p(20, 6, 8)) // |a horizontal| = 10
+
+    const r = useTelemetryStore.getState()
+    expect(r.speedHistory).toEqual([10, 20]) // só velocidades reais
+    expect(r.accelHistory).toEqual([5, 0, 10]) // magnitude por ponto
+  })
+
+  it('os históricos respeitam a janela MAX_SPEED_HISTORY', () => {
+    const s = useTelemetryStore.getState()
+    for (let i = 0; i < MAX_SPEED_HISTORY + 20; i++) {
+      s.ingestPoint({
+        id: 'p', tripId: 't', timestamp: i, lat: 0, lng: 0,
+        speedKmh: i, accelX: 0, accelY: 0, accelZ: 9.8,
+      })
+    }
+    const r = useTelemetryStore.getState()
+    expect(r.speedHistory).toHaveLength(MAX_SPEED_HISTORY)
+    expect(r.accelHistory).toHaveLength(MAX_SPEED_HISTORY)
+    // mantém os mais recentes
+    expect(r.speedHistory.at(-1)).toBe(MAX_SPEED_HISTORY + 19)
   })
 })

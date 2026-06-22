@@ -11,6 +11,7 @@ import {
   useDrivingEvents,
   useDrivingScore,
   useFuelEstimate,
+  useAccelHistory,
   useLiveStatus,
   isValidSpeed,
 } from '@/features/shared/realtime';
@@ -127,6 +128,7 @@ function MiniMap() {
 
 function AccelCard() {
   const point = useLastPoint();
+  const accelHistory = useAccelHistory();
   const x = (point?.accelX ?? 0) / G;
   const y = (point?.accelY ?? 0) / G;
   const z = (point?.accelZ ?? G) / G;
@@ -136,7 +138,8 @@ function AccelCard() {
         <span className="sd-label" style={{ fontSize: 10 }}>ACELERÔMETRO</span>
         <span className="sd-mono" style={{ fontSize: 10, color: SD.textDim }}>{point ? `|a| ${Math.hypot(x, y, z).toFixed(2)} g` : 'sem dado'}</span>
       </div>
-      <Wave width={340} height={48} fill color={SD.primary} />
+      {/* Tendência real da força g horizontal da viagem (sem dado fabricado). */}
+      <Wave width={340} height={48} fill color={SD.primary} points={accelHistory} />
       <div style={{ marginTop: 10 }}>
         <AxisBars x={x} y={y} z={z} width="100%" />
       </div>

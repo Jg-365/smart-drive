@@ -18,6 +18,7 @@ import {
   useDrivingEvents,
   useDrivingScore,
   useFuelEstimate,
+  useAccelHistory,
   useLiveStatus,
   isValidSpeed,
 } from '@/features/shared/realtime';
@@ -202,6 +203,7 @@ function KpiStrip() {
 // ── Acelerômetro ──────────────────────────────────────────────────────
 function AccelCard() {
   const point = useLastPoint();
+  const accelHistory = useAccelHistory();
   const x = (point?.accelX ?? 0) / G;
   const y = (point?.accelY ?? 0) / G;
   const z = (point?.accelZ ?? G) / G;
@@ -213,7 +215,8 @@ function AccelCard() {
           {point ? `|a| ${Math.hypot(x, y, z).toFixed(2)} g` : 'sem dado'}
         </span>
       </div>
-      <Wave width={360} height={48} color={SD.primary} fill />
+      {/* Tendência real da força g horizontal da viagem (sem dado fabricado). */}
+      <Wave width={360} height={48} color={SD.primary} fill points={accelHistory} />
       <AxisBars x={x} y={y} z={z} width="100%" />
     </div>
   );
