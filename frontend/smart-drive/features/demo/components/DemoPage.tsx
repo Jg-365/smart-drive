@@ -215,7 +215,7 @@ export function DemoPage({ mode = 'normal', onMode }: DemoPageProps) {
         </div>
         {!score && (
           <div className="sd-mono" style={{ fontSize: 10, color: SD.textMute }}>
-            Score e eventos chegam via WebSocket (análise do Nathan).
+            Score e eventos aparecem assim que a análise em tempo real começar.
           </div>
         )}
       </div>

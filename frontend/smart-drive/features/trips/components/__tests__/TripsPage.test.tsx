@@ -40,12 +40,12 @@ describe('TripsPage (FIX-03)', () => {
     expect(screen.getByText('ENCERRAR VIAGEM')).toBeInTheDocument()
   })
 
-  it('erro ao carregar veículos: estado honesto de dependência externa', async () => {
+  it('erro ao carregar veículos: estado honesto (indisponível)', async () => {
     server.use(
       http.get('/api/trips', () => HttpResponse.json([])),
       http.get('/api/vehicles', () => HttpResponse.json({ error: 'x' }, { status: 500 })),
     )
     renderPage()
-    expect(await screen.findByText(/DEPENDÊNCIA EXTERNA/)).toBeInTheDocument()
+    expect(await screen.findByText(/INDISPONÍVEL/)).toBeInTheDocument()
   })
 })
