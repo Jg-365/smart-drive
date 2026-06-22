@@ -58,3 +58,20 @@ export interface WsDrivingScore {
   classification: WsScoreClassification;
   penalties: WsScorePenalties;
 }
+
+/**
+ * Estimativa de consumo emitida em `trip:fuelEstimateUpdated`. Espelha
+ * `frontend/.../features/shared/types/fuel.ts` (FuelEstimate). O consumo
+ * ajustado vem do FuelEstimationService (Nathan); litros e confiança são
+ * derivados aqui no orquestrador a partir da distância acumulada na viagem.
+ */
+export interface WsFuelEstimate {
+  id: string;
+  tripId: string;
+  baseConsumptionKmL: number;
+  adjustedConsumptionKmL: number;
+  estimatedLitersSpent: number;
+  estimatedCost?: number;
+  confidenceLevel: number; // 0..1
+  modelVersion: string;
+}

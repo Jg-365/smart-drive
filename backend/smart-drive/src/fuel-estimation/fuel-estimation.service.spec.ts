@@ -6,7 +6,10 @@ describe('FuelEstimationService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [FuelEstimationService],
+      providers: [
+        { provide: 'BASE_PERFORMANCE', useValue: 1 },
+        FuelEstimationService,
+      ],
     }).compile();
 
     service = module.get<FuelEstimationService>(FuelEstimationService);
