@@ -159,7 +159,9 @@ export function LoginScreen() {
             color: SD.textDim,
             fontSize: 10,
             letterSpacing: '0.10em',
-            padding: 4,
+            // área de toque confortável (mobile-first, JOA-RNF-03).
+            minHeight: 44,
+            cursor: 'pointer',
           }}
         >
           {mode === 'login'

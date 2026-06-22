@@ -78,7 +78,10 @@ export function MobileHomePage({
               onClick={onSettings}
               style={{
                 background: 'transparent', border: `1px solid ${SD.border}`,
-                color: SD.textDim, padding: 8, display: 'inline-flex',
+                color: SD.textDim, display: 'inline-flex',
+                alignItems: 'center', justifyContent: 'center',
+                // área de toque mínima de 44x44 (mobile-first, JOA-RNF-03).
+                minWidth: 44, minHeight: 44,
               }}
             >
               {Icon.gear(16)}
