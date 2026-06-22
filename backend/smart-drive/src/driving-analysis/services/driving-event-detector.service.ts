@@ -16,20 +16,18 @@ export class DrivingEventDetectorService {
     new GpsLossDetector()
   ];
 
-  detect(
-    telemetry: TelemetryPayload,
-  ): DrivingEvent[] {
+    detect(telemetry: TelemetryPayload): DrivingEvent[] {
 
-    const events: DrivingEvent[] = [];
+        const events: DrivingEvent[] = [];
 
-    for (const detector of this.detectors) {
-      const event = detector.detect(telemetry);
+        for (const detector of this.detectors) {
+        const event = detector.detect(telemetry);
 
-      if (event) {
-        events.push(event);
-      }
+        if (event) {
+            events.push(event);
+        }
+        }
+
+        return events;
     }
-
-    return events;
-  }
 }
