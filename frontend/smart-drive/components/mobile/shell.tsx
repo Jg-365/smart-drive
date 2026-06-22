@@ -1,1 +1,1 @@
-export { MobileShell, MobileStatusBar, MobileTopBar, MobileTabBar } from '@/features/shell';
+export { MobileShell, MobileTopBar, MobileTabBar } from '@/features/shell';

@@ -1,2 +1,2 @@
 export { DesktopShell } from './components/DesktopShell';
-export { MobileShell, MobileStatusBar, MobileTopBar, MobileTabBar } from './components/MobileShell';
+export { MobileShell, MobileTopBar, MobileTabBar } from './components/MobileShell';
