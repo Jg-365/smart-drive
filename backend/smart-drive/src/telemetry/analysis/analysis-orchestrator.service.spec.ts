@@ -1,7 +1,13 @@
 import { AnalysisOrchestratorService } from './analysis-orchestrator.service';
 import type { TelemetryGateway } from '../telemetry.gateway';
 import type { LiveTelemetryPoint } from '../telemetry.mapper';
-import { WsDrivingEventType, WsEventSeverity } from './ws-contracts';
+import {
+  WsDrivingEventType,
+  WsEventSeverity,
+  WsScoreClassification,
+  type WsDrivingScore,
+  type WsFuelEstimate,
+} from './ws-contracts';
 
 function point(over: Partial<LiveTelemetryPoint> = {}): LiveTelemetryPoint {
   return {
@@ -32,10 +38,18 @@ function point(over: Partial<LiveTelemetryPoint> = {}): LiveTelemetryPoint {
 describe('AnalysisOrchestratorService', () => {
   let orchestrator: AnalysisOrchestratorService;
   let emitEventDetected: jest.Mock;
+  let emitScoreUpdated: jest.Mock;
+  let emitFuelEstimateUpdated: jest.Mock;
 
   beforeEach(() => {
     emitEventDetected = jest.fn();
-    const gateway = { emitEventDetected } as unknown as TelemetryGateway;
+    emitScoreUpdated = jest.fn();
+    emitFuelEstimateUpdated = jest.fn();
+    const gateway = {
+      emitEventDetected,
+      emitScoreUpdated,
+      emitFuelEstimateUpdated,
+    } as unknown as TelemetryGateway;
     orchestrator = new AnalysisOrchestratorService(gateway);
   });
 
@@ -85,5 +99,43 @@ describe('AnalysisOrchestratorService', () => {
 
     expect(a.some((e) => e.type === WsDrivingEventType.HARD_BRAKE)).toBe(true);
     expect(b.some((e) => e.type === WsDrivingEventType.HARD_BRAKE)).toBe(true);
+  });
+
+  it('emite o score a cada ponto e conta as penalidades por evento', () => {
+    orchestrator.process('trip-A', point({ accelX: -6 })); // HARD_BRAKE
+    orchestrator.process('trip-A', point({ accelX: -6 })); // HARD_BRAKE
+
+    expect(emitScoreUpdated).toHaveBeenCalledTimes(2);
+    const [tripId, score] = emitScoreUpdated.mock.calls.at(-1) as [
+      string,
+      WsDrivingScore,
+    ];
+    expect(tripId).toBe('trip-A');
+    expect(score.penalties.hardBrakes).toBe(2);
+    expect(score.value).toBeLessThan(100); // penalizado
+    expect(Object.values(WsScoreClassification)).toContain(
+      score.classification,
+    );
+  });
+
+  it('emite a estimativa de consumo a cada lote de 10 pontos', () => {
+    for (let i = 0; i < 9; i++) {
+      orchestrator.process('trip-A', point({ lat: -6.889 + i * 0.001 }), 10);
+    }
+    expect(emitFuelEstimateUpdated).not.toHaveBeenCalled();
+
+    orchestrator.process('trip-A', point({ lat: -6.889 + 0.01 }), 10);
+    expect(emitFuelEstimateUpdated).toHaveBeenCalledTimes(1);
+
+    const [tripId, fuel] = emitFuelEstimateUpdated.mock.calls[0] as [
+      string,
+      WsFuelEstimate,
+    ];
+    expect(tripId).toBe('trip-A');
+    expect(fuel.baseConsumptionKmL).toBe(10); // base passado no process
+    expect(fuel.adjustedConsumptionKmL).toBeGreaterThan(0);
+    expect(fuel.estimatedLitersSpent).toBeGreaterThan(0); // houve deslocamento GPS
+    expect(fuel.confidenceLevel).toBeGreaterThan(0);
+    expect(fuel.modelVersion).toBe('fuel-heuristic-v1');
   });
 });

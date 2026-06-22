@@ -81,6 +81,7 @@ export class TelemetryIngestionService {
         deviceId: device.id,
         vehicleId: device.vehicleId,
       },
+      include: { vehicle: { select: { baseMixedConsumptionKmL: true } } },
     });
 
     if (!trip) {
@@ -119,7 +120,11 @@ export class TelemetryIngestionService {
     });
 
     this.gateway.emitTelemetryNew(point);
-    const events = this.orchestrator.process(point.tripId, point);
+    const events = this.orchestrator.process(
+      point.tripId,
+      point,
+      trip.vehicle.baseMixedConsumptionKmL,
+    );
     await this.persistEvents(events);
 
     return {

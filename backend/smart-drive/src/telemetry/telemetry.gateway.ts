@@ -11,7 +11,11 @@ import {
 import { Server, Socket } from 'socket.io';
 import type { DeviceStatus } from '../../generated/prisma/client';
 import type { LiveTelemetryPoint } from './telemetry.mapper';
-import type { WsDrivingEvent, WsDrivingScore } from './analysis/ws-contracts';
+import type {
+  WsDrivingEvent,
+  WsDrivingScore,
+  WsFuelEstimate,
+} from './analysis/ws-contracts';
 import {
   WS_CLIENT_EVENTS,
   WS_SERVER_EVENTS,
@@ -89,5 +93,12 @@ export class TelemetryGateway
     this.server
       .to(tripRoom(tripId))
       .emit(WS_SERVER_EVENTS.scoreUpdated, score);
+  }
+
+  /** Emite a estimativa de consumo atualizada para quem assina a viagem. */
+  emitFuelEstimateUpdated(tripId: string, estimate: WsFuelEstimate): void {
+    this.server
+      .to(tripRoom(tripId))
+      .emit(WS_SERVER_EVENTS.fuelEstimateUpdated, estimate);
   }
 }
