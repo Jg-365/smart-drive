@@ -3,8 +3,9 @@
 import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot, Btn, Stat } from '@/features/shared/ui/primitives';
-import { Speedometer, MapView, Wave, AxisBars } from '@/features/shared/ui/map-gauges';
+import { Speedometer, Wave, AxisBars } from '@/features/shared/ui/map-gauges';
 import { MobileShell } from '@/features/shell/components/MobileShell';
+import dynamic from 'next/dynamic';
 import {
   useTelemetryStore,
   useLastPoint,
@@ -16,6 +17,12 @@ import {
   isValidSpeed,
 } from '@/features/shared/realtime';
 import { EVENT_META, G, SCORE_HINT, isHighSeverity } from '../derive';
+
+// Mapa real (MapLibre) carregado só no cliente — mesmo padrão do dashboard desktop (FIX-04).
+const LiveMapContainer = dynamic(
+  () => import('@/features/map/components/LiveMapContainer').then((m) => m.LiveMapContainer),
+  { ssr: false, loading: () => <div style={{ position: 'absolute', inset: 0, background: SD.bg }} /> },
+);
 
 type MobileTab = 'home' | 'live' | 'map' | 'trips' | 'menu';
 
@@ -32,7 +39,7 @@ export function MobileLivePage({ onNavigate }: { onNavigate?: (tab: MobileTab) =
           <ReconnectBanner />
           <HeroSpeed />
           <KpiGrid />
-          <MiniMap />
+          <MiniMap onNavigate={onNavigate} />
           <AccelCard />
           <LatestEvent />
         </div>
@@ -108,19 +115,30 @@ function KpiGrid() {
   );
 }
 
-function MiniMap() {
+function MiniMap({ onNavigate }: { onNavigate?: (tab: MobileTab) => void }) {
   const point = useLastPoint();
   const hasGps = point != null && point.lat != null && point.lng != null;
   return (
     <div style={{ background: SD.surface, border: `1.5px solid ${SD.border}`, overflow: 'hidden' }}>
-      <div style={{ height: 160 }}>
-        <MapView width={400} height={160} mini />
+      <div style={{ height: 160, position: 'relative' }}>
+        {hasGps ? (
+          <LiveMapContainer style={{ position: 'absolute', inset: 0 }} />
+        ) : (
+          <div style={{
+            position: 'absolute', inset: 0, display: 'grid', placeItems: 'center',
+            textAlign: 'center', gap: 6, color: SD.textDim, background: SD.bg,
+          }}>
+            <div>{Icon.sat(26, SD.textDim)}</div>
+            <div className="sd-mono" style={{ fontSize: 12 }}>GPS indisponível</div>
+            <div className="sd-mono" style={{ fontSize: 10, color: SD.textMute }}>aguardando sinal de satélite</div>
+          </div>
+        )}
       </div>
       <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${SD.border}` }}>
         <span className="sd-mono" style={{ fontSize: 11, color: hasGps ? SD.text : SD.textDim }}>
-          {hasGps ? `${point!.lat.toFixed(4)} / ${point!.lng.toFixed(4)}` : 'GPS indisponível'}
+          {hasGps ? `${point!.lat.toFixed(4)} / ${point!.lng.toFixed(4)}` : '—'}
         </span>
-        <Btn tone="outline" size="sm" disabled title="Em breve">EXPANDIR</Btn>
+        <Btn tone="outline" size="sm" onClick={() => onNavigate?.('map')}>EXPANDIR</Btn>
       </div>
     </div>
   );
