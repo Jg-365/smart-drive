@@ -3,6 +3,7 @@
 import React from 'react';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
+import { BrandLogo } from '@/features/shared/ui/BrandLogo';
 
 type MobileTab = 'home' | 'live' | 'map' | 'trips' | 'menu';
 
@@ -43,7 +44,8 @@ export function MobileTopBar({ title, onBack, action }: { title: string; onBack?
         )}
         <span className="sd-display" style={{ fontSize: 18 }}>{title}</span>
       </div>
-      {action || <span className="sd-btn" style={{ color: SD.textDim }}>{Icon.more(18)}</span>}
+      {/* Sem ação explícita, mostra a marca (não um ícone clicável-fake) — auditoria UI-002 D-008/M-004. */}
+      {action ?? <BrandLogo height={20} />}
     </div>
   );
 }
