@@ -33,10 +33,10 @@ describe('DevicesPage (FIX-02)', () => {
     expect(screen.queryByText(/Onix LT/i)).not.toBeInTheDocument()
   })
 
-  it('estado honesto de dependência externa quando o backend de devices falha', async () => {
+  it('estado honesto (pareamento indisponível) quando o backend de devices falha', async () => {
     server.use(http.get('/api/devices', () => HttpResponse.json({ error: 'x' }, { status: 500 })))
     renderPage()
-    expect(await screen.findByText(/DEPENDÊNCIA EXTERNA/)).toBeInTheDocument()
+    expect(await screen.findByText(/PAREAMENTO INDISPONÍVEL/)).toBeInTheDocument()
   })
 
   it('painel de telemetria ao vivo reflete o store (sem pacote → sem transmissão)', async () => {

@@ -43,7 +43,7 @@ export function DevicesPage() {
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <span className="sd-display" style={{ fontSize: 18 }}>DISPOSITIVOS</span>
-          <Btn tone="outline" size="sm" icon={Icon.plus(12)} disabled title="Pareamento de dispositivos — módulo do Pedro (em breve)">PAREAR</Btn>
+          <Btn tone="outline" size="sm" icon={Icon.plus(12)} disabled title="Pareamento de dispositivos — em breve">PAREAR</Btn>
         </div>
 
         {devices.isLoading && (
@@ -52,17 +52,17 @@ export function DevicesPage() {
 
         {devices.isError && (
           <div style={{ padding: 14, border: `1.5px solid ${SD.warning}`, background: SD.warningSoft, color: SD.text }}>
-            <div className="sd-label" style={{ fontSize: 9, color: SD.warning, marginBottom: 4 }}>DEPENDÊNCIA EXTERNA</div>
+            <div className="sd-label" style={{ fontSize: 9, color: SD.warning, marginBottom: 4 }}>PAREAMENTO INDISPONÍVEL</div>
             <div style={{ fontSize: 12, lineHeight: 1.5, color: SD.textDim }}>
-              Não foi possível carregar os dispositivos. O módulo de pareamento (ESP32) é
-              do <strong style={{ color: SD.text }}>Pedro</strong> e ainda não está disponível.
+              Não foi possível carregar os dispositivos. O pareamento de hardware (ESP32)
+              ainda não está disponível nesta versão.
             </div>
           </div>
         )}
 
         {!devices.isLoading && !devices.isError && list.length === 0 && (
-          <div className="sd-mono" style={{ fontSize: 12, color: SD.textDim, padding: 12, border: `1px dashed ${SD.border}` }}>
-            Nenhum dispositivo pareado ainda.
+          <div className="sd-mono" style={{ fontSize: 12, color: SD.textDim, padding: 12, border: `1px dashed ${SD.border}`, lineHeight: 1.5 }}>
+            Nenhum dispositivo pareado. O pareamento de hardware (ESP32) ainda não está disponível nesta versão.
           </div>
         )}
 
@@ -81,7 +81,7 @@ export function DevicesPage() {
             kicker={selected.deviceCode}
             accent={SD.primary}
             tools={
-              <Btn tone="ghost" size="sm" disabled title="Vínculo de veículo — módulo do Pedro (em breve)">VINCULAR VEÍCULO</Btn>
+              <Btn tone="ghost" size="sm" disabled title="Vínculo de veículo — em breve">VINCULAR VEÍCULO</Btn>
             }
           >
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>

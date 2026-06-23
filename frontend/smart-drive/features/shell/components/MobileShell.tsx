@@ -19,38 +19,11 @@ interface MobileShellProps {
 export function MobileShell({ active = 'live', onNav, children, title, scroll = true, hideBars = false, onBack }: MobileShellProps) {
   return (
     <div style={{ width: '100%', height: '100%', background: SD.bg, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      <MobileStatusBar />
       {title && <MobileTopBar title={title} onBack={onBack} />}
       <div style={{ flex: 1, overflow: scroll ? 'auto' : 'hidden', position: 'relative' }}>
         {children}
       </div>
       {!hideBars && <MobileTabBar active={active} onNav={onNav} />}
-    </div>
-  );
-}
-
-export function MobileStatusBar() {
-  return (
-    <div style={{
-      height: 44, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '0 24px', color: SD.text, fontFamily: SD.fontMono, fontSize: 13, fontWeight: 600,
-      flexShrink: 0,
-    }}>
-      <span>9:41</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
-          <rect x="0.5" y="0.5" width="2" height="9" rx="0.5" fill="currentColor" />
-          <rect x="4.5" y="2.5" width="2" height="7" rx="0.5" fill="currentColor" />
-          <rect x="8.5" y="4.5" width="2" height="5" rx="0.5" fill="currentColor" />
-          <rect x="12.5" y="6.5" width="2" height="3" rx="0.5" fill="currentColor" opacity="0.4" />
-        </svg>
-        {Icon.wifi(13)}
-        <svg width="22" height="10" viewBox="0 0 22 10">
-          <rect x="0.5" y="0.5" width="18" height="9" rx="1.5" fill="none" stroke="currentColor" />
-          <rect x="20" y="3" width="1.5" height="4" fill="currentColor" />
-          <rect x="2" y="2" width="13" height="6" rx="0.5" fill="currentColor" />
-        </svg>
-      </div>
     </div>
   );
 }

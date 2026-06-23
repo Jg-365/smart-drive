@@ -6,6 +6,7 @@ import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot } from '@/features/shared/ui/primitives';
 import { BrandLogo } from '@/features/shared/ui/BrandLogo';
 import { ThemeToggle } from '@/features/shared/theme';
+import { useAuthUser } from '@/features/shared/auth';
 import {
   useConnection,
   useDrivingEvents,
@@ -116,12 +117,6 @@ export function DesktopShell({ active = 'dashboard', onNav, children }: DesktopS
             />
             <div style={{ width: 1, height: 22, background: SD.border }} />
             <ThemeToggle size="sm" />
-            <div style={{ position: 'relative' }}>
-              {Icon.bell(16, SD.textDim)}
-              {events.length > 0 && (
-                <span style={{ position: 'absolute', top: -3, right: -4, width: 7, height: 7, background: SD.danger, borderRadius: 999 }} />
-              )}
-            </div>
             <Avatar />
           </div>
         </div>
@@ -221,14 +216,21 @@ function StatusItem({ icon, value, tone }: { icon: React.ReactNode; value: strin
   );
 }
 
+/** Iniciais do usuário autenticado. Sem sessão real, não renderiza nada (auditoria D-001). */
 function Avatar() {
+  const user = useAuthUser();
+  if (!user) return null;
+  const source = user.name?.trim() || user.email?.trim() || '';
+  const initials = source
+    ? source.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+    : '?';
   return (
-    <div style={{
+    <div title={user.name || user.email || undefined} style={{
       width: 30, height: 30, background: SD.primaryDeep, color: SD.text,
       display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 12,
       border: `1.5px solid ${SD.borderBright}`,
     }}>
-      LC
+      {initials}
     </div>
   );
 }

@@ -83,7 +83,10 @@ export function VehiclesPage() {
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <span className="sd-display" style={{ fontSize: 18 }}>VEÍCULOS</span>
-          <Btn tone="outline" size="sm" icon={Icon.plus(12)} onClick={openCreate}>NOVO</Btn>
+          {/* Quando a lista está vazia, o CTA único é o do estado vazio (auditoria D-005). */}
+          {list.length > 0 && (
+            <Btn tone="outline" size="sm" icon={Icon.plus(12)} onClick={openCreate}>NOVO</Btn>
+          )}
         </div>
 
         {isLoading && (
@@ -211,7 +214,7 @@ export function VehiclesPage() {
         )}
 
         {mode.kind === 'idle' && !selected && !isLoading && !isError && (
-          <Panel title="VEÍCULOS" kicker="GESTÃO DE FROTA" accent={SD.primary}>
+          <Panel title="DETALHES" accent={SD.primary}>
             <div className="sd-mono" style={{ fontSize: 12, color: SD.textDim, lineHeight: 1.6 }}>
               Selecione um veículo na lista ou cadastre um novo para ver e editar os detalhes.
             </div>

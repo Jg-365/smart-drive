@@ -68,7 +68,7 @@ export function TripsPage() {
         ) : (
           <Panel title="INICIAR VIAGEM" accent={SD.primary}>
             {vehicles.isError ? (
-              <DepNote text="Não foi possível carregar veículos. Depende do login (Pedro) e do módulo de veículos." />
+              <DepNote text="Não foi possível carregar os veículos no momento. Faça login e tente novamente." />
             ) : vehicleList.length === 0 ? (
               <DepNote text="Cadastre um veículo na aba Veículos antes de iniciar uma viagem." />
             ) : (
@@ -116,7 +116,7 @@ export function TripsPage() {
         <div>
           <div className="sd-label" style={{ fontSize: 9, marginBottom: 8 }}>ENCERRADAS</div>
           {trips.isLoading && <div className="sd-mono" style={{ fontSize: 12, color: SD.textDim }}>Carregando…</div>}
-          {trips.isError && <DepNote text="Dependência externa: módulo de viagens (Pedro) indisponível." />}
+          {trips.isError && <DepNote text="Não foi possível carregar as viagens no momento." />}
           {!trips.isLoading && !trips.isError && finished.length === 0 && (
             <div className="sd-mono" style={{ fontSize: 12, color: SD.textDim, padding: 10, border: `1px dashed ${SD.border}` }}>
               Nenhuma viagem encerrada ainda.
@@ -169,7 +169,7 @@ function TripRow({ trip, active, onClick }: { trip: Trip; active: boolean; onCli
 function DepNote({ text }: { text: string }) {
   return (
     <div style={{ padding: 12, border: `1.5px solid ${SD.warning}`, background: SD.warningSoft }}>
-      <div className="sd-label" style={{ fontSize: 9, color: SD.warning, marginBottom: 4 }}>DEPENDÊNCIA EXTERNA</div>
+      <div className="sd-label" style={{ fontSize: 9, color: SD.warning, marginBottom: 4 }}>INDISPONÍVEL</div>
       <div style={{ fontSize: 12, lineHeight: 1.5, color: SD.textDim }}>{text}</div>
     </div>
   );
