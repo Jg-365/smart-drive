@@ -18,6 +18,7 @@ idf_component_register(
         esp_netif
         esp_event
         esp_http_client
+        esp-tls
 )
 # cJSON entra via main/idf_component.yml (componente gerenciado espressif/cjson;
 # o componente 'json' embutido foi removido no ESP-IDF 6.0).

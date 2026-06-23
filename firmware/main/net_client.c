@@ -9,6 +9,7 @@
 #include "esp_netif.h"
 #include "esp_log.h"
 #include "esp_http_client.h"
+#include "esp_crt_bundle.h"
 #include "cJSON.h"
 #include <string.h>
 
@@ -109,6 +110,9 @@ static bool post_telemetry(const char *json) {
       .url = SD_TELEMETRY_URL,
       .method = HTTP_METHOD_POST,
       .timeout_ms = SD_HTTP_TIMEOUT_MS,
+      // HTTPS (Cloud Run): valida o certificado contra o bundle de CAs do ESP-IDF
+      // (CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y). Para URL http:// é ignorado.
+      .crt_bundle_attach = esp_crt_bundle_attach,
   };
   esp_http_client_handle_t cli = esp_http_client_init(&cfg);
   esp_http_client_set_header(cli, "Content-Type", "application/json");
