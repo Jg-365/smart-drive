@@ -1,10 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot, Btn, Stat } from '@/features/shared/ui/primitives';
 import { MobileShell } from '@/features/shell/components/MobileShell';
+import {
+  useTelemetryStore,
+  useLastPoint,
+  useDrivingEvents,
+  useLiveStatus,
+  isValidSpeed,
+  type LiveStatus,
+} from '@/features/shared/realtime';
+import { useVehicles } from '@/features/vehicles/hooks';
 
 // MapLibre só no cliente (usa WebGL/window) — evita quebra no SSR do Next (G03).
 const LiveMapContainer = dynamic(
@@ -12,63 +22,104 @@ const LiveMapContainer = dynamic(
   { ssr: false, loading: () => <div style={{ position: 'absolute', inset: 0, background: SD.bg }} /> },
 );
 
+const STATUS_LABEL: Record<LiveStatus, string> = {
+  live: 'AO VIVO', reconnecting: 'RECONECTANDO', polling: 'POLLING', offline: 'OFFLINE',
+};
+function statusTone(s: LiveStatus): 'cyan' | 'yellow' | 'red' {
+  return s === 'live' ? 'cyan' : s === 'offline' ? 'red' : 'yellow';
+}
+
 export function MapPage({ onBack }: { onBack?: () => void }) {
+  const tripId = useTelemetryStore((s) => s.tripId);
+  const point = useLastPoint();
+  const events = useDrivingEvents();
+  const { status } = useLiveStatus();
+  const { data: vehicles } = useVehicles();
+  const vehicle = vehicles?.[0];
+  const [follow, setFollow] = useState(true);
+
+  // Sem viagem ativa não há o que mapear — estado honesto, sem mapa fabricado.
+  if (!tripId) {
+    return (
+      <MobileShell active="map">
+        <div style={{ padding: '60px 24px', display: 'grid', placeItems: 'center', textAlign: 'center', gap: 16, height: '100%', alignContent: 'center' }}>
+          <div style={{ color: SD.textDim }}>{Icon.map(44, SD.textDim)}</div>
+          <div className="sd-display" style={{ fontSize: 18 }}>NENHUMA VIAGEM ATIVA</div>
+          <div style={{ color: SD.textDim, fontSize: 13, lineHeight: 1.5, maxWidth: 280 }}>
+            Inicie uma viagem ou rode o modo demo para acompanhar o trajeto no mapa em tempo real.
+          </div>
+          {onBack && <Btn tone="outline" size="md" onClick={onBack}>VOLTAR</Btn>}
+        </div>
+      </MobileShell>
+    );
+  }
+
+  const hasGps = point != null && point.lat != null && point.lng != null;
+  const validSpeed = isValidSpeed(point?.speedKmh);
+  const tone = statusTone(status);
+
   return (
     <MobileShell active="map" hideBars>
       <div style={{ position: 'relative', height: '100%' }}>
-        <LiveMapContainer style={{ position: 'absolute', inset: 0 }} />
+        {/* Mapa real só quando há fix de GPS; senão, indisponibilidade honesta (sem rota fabricada). */}
+        {hasGps ? (
+          <LiveMapContainer follow={follow} style={{ position: 'absolute', inset: 0 }} />
+        ) : (
+          <div style={{
+            position: 'absolute', inset: 0, display: 'grid', placeItems: 'center',
+            textAlign: 'center', gap: 8, color: SD.textDim, background: SD.bg, alignContent: 'center',
+          }}>
+            <div>{Icon.sat(30, SD.textDim)}</div>
+            <div className="sd-mono" style={{ fontSize: 13 }}>GPS indisponível</div>
+            <div className="sd-mono" style={{ fontSize: 11, color: SD.textMute }}>aguardando sinal de satélite</div>
+          </div>
+        )}
 
-        {/* Top overlay */}
+        {/* Top overlay: voltar + seguir (toggle real do modo follow do mapa) */}
         <div style={{ position: 'absolute', top: 12, left: 12, right: 12, display: 'flex', gap: 8 }}>
           <Btn tone="solid" size="sm" icon={Icon.back(12)} style={{ background: SD.bg }} onClick={onBack} disabled={!onBack}>VOLTAR</Btn>
           <div style={{ flex: 1 }} />
-          <Btn tone="solid" size="sm" style={{ background: SD.bg }} disabled title="Em breve">CAMADAS</Btn>
+          <Btn
+            tone={follow ? 'primary' : 'solid'}
+            size="sm"
+            style={follow ? undefined : { background: SD.bg }}
+            disabled={!hasGps}
+            title={hasGps ? undefined : 'Sem GPS para seguir'}
+            onClick={() => setFollow((f) => !f)}
+          >
+            {follow ? 'SEGUINDO' : 'SEGUIR'}
+          </Btn>
         </div>
 
-        {/* Live tags */}
-        <div style={{ position: 'absolute', top: 60, left: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Tag tone="red"><Dot tone="red" size={5} /> AO VIVO</Tag>
-          <Tag tone="cyan">SEGUIR VEÍCULO</Tag>
-        </div>
-
-        {/* Zoom controls */}
-        <div style={{ position: 'absolute', right: 12, top: '40%', display: 'flex', flexDirection: 'column' }}>
-          <div className="sd-btn" style={{
-            width: 38, height: 38, background: SD.bg, border: `1.5px solid ${SD.borderHi}`,
-            display: 'grid', placeItems: 'center', color: SD.text, fontSize: 20,
-          }}>+</div>
-          <div className="sd-btn" style={{
-            width: 38, height: 38, background: SD.bg, border: `1.5px solid ${SD.borderHi}`,
-            borderTop: 'none', display: 'grid', placeItems: 'center', color: SD.text, fontSize: 20,
-          }}>−</div>
-          <div className="sd-btn" style={{
-            width: 38, height: 38, background: SD.bg, border: `1.5px solid ${SD.borderHi}`,
-            borderTop: 'none', display: 'grid', placeItems: 'center', color: SD.primary, marginTop: 6,
-          }}>
-            <svg width="16" height="16" viewBox="0 0 16 16">
-              <circle cx="8" cy="8" r="2.5" fill={SD.primary} />
-              <circle cx="8" cy="8" r="5.5" fill="none" stroke={SD.primary} strokeWidth="1.5" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Bottom card */}
+        {/* Card de telemetria ao vivo (dados reais do store) — ancorado no topo para
+            não cobrir o controle de zoom nativo do MapLibre (canto inferior-direito). */}
         <div style={{
-          position: 'absolute', left: 12, right: 12, bottom: 18,
+          position: 'absolute', top: 56, left: 12, right: 12,
           background: SD.surface, border: `1.5px solid ${SD.border}`, padding: 14,
         }}>
-          <div style={{ width: 40, height: 4, background: SD.borderBright, margin: '-4px auto 12px' }} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
             <div>
               <div className="sd-label" style={{ fontSize: 9, color: SD.primary }}>VEÍCULO</div>
-              <div className="sd-display" style={{ fontSize: 14 }}>ONIX LT · 47 KM/H</div>
+              <div className="sd-display" style={{ fontSize: 14 }}>
+                {vehicle ? `${vehicle.brand} ${vehicle.model}`.toUpperCase() : '—'}
+              </div>
             </div>
-            <Tag tone="green">ON ROUTE</Tag>
+            <Tag tone={tone}>
+              <Dot tone={tone} size={5} pulse={status !== 'offline'} /> {STATUS_LABEL[status]}
+            </Tag>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, paddingTop: 10, borderTop: `1px dashed ${SD.border}` }}>
-            <Stat label="DIST" value="14.7" unit="km" size="sm" />
-            <Stat label="TEMPO" value="23:14" size="sm" />
-            <Stat label="EVENTOS" value="4" size="sm" accent={SD.warning} />
+            <Stat
+              label="VELOCIDADE"
+              value={validSpeed ? String(Math.round(point!.speedKmh as number)) : '—'}
+              unit="km/h" size="sm"
+            />
+            <Stat
+              label="SATÉLITES"
+              value={typeof point?.satellites === 'number' ? String(point.satellites) : '—'}
+              size="sm"
+            />
+            <Stat label="EVENTOS" value={String(events.length)} size="sm" accent={SD.warning} />
           </div>
         </div>
       </div>
