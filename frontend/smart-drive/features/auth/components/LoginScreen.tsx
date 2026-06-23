@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { sdVars as SD } from '@/lib/sd-vars'
 import { Btn } from '@/features/shared/ui/primitives'
+import { BrandLogo } from '@/features/shared/ui/BrandLogo'
 import { ApiError } from '@/lib/api'
 import { useLogin, useRegister } from '../hooks'
 
@@ -80,11 +81,10 @@ export function LoginScreen() {
           gap: 16,
         }}
       >
-        <div style={{ textAlign: 'center', marginBottom: 4 }}>
-          <div className="sd-display" style={{ fontSize: 26, letterSpacing: '-0.02em', color: SD.text }}>
-            SMART<span style={{ color: SD.primary }}>DRIVE</span>
-          </div>
-          <div className="sd-label" style={{ fontSize: 9, color: SD.textDim, marginTop: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          {/* Marca oficial (logo conforme o tema) — consistente com o resto do app. */}
+          <BrandLogo height={40} />
+          <div className="sd-label" style={{ fontSize: 9, color: SD.textDim }}>
             {mode === 'login' ? 'Acesse sua conta' : 'Crie sua conta'}
           </div>
         </div>
