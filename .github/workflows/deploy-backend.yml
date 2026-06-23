@@ -1,0 +1,46 @@
+name: Deploy backend (Cloud Run)
+
+# Deploya a API NestJS no Cloud Run a cada push em main que toque o backend.
+# Autenticação via Workload Identity Federation (OIDC) — sem chave JSON.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/smart-drive/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: smartdrive-expoiot
+  REGION: southamerica-east1
+  SERVICE: smartdrive-api
+  CSQL: smartdrive-expoiot:southamerica-east1:smartdrive-db
+  WEB_URL: https://smartdrive-web-twfrfqngpa-rj.a.run.app
+
+permissions:
+  contents: read
+  id-token: write   # necessário para o OIDC do WIF
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/504156169047/locations/global/workloadIdentityPools/gh-pool/providers/gh-provider
+          service_account: gh-deploy@smartdrive-expoiot.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --source backend/smart-drive --region "$REGION" \
+            --allow-unauthenticated \
+            --add-cloudsql-instances "$CSQL" \
+            --set-secrets 'DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest' \
+            --set-env-vars "NODE_ENV=production,CORS_ORIGIN=${WEB_URL}" \
+            --quiet
