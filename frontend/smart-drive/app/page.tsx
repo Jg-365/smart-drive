@@ -136,8 +136,8 @@ function MobileScreenWrapper({
     case 'home': return <MobileHomePage onNavigate={onNav} onSettings={onOpenSettings} />;
     case 'live': return <MobileLivePage onNavigate={onNav} />;
     case 'map': return <MapPage onBack={() => onNav('live')} />;
-    case 'trips': return <MobileTripReportPage />;
-    case 'menu': return <MobileDemoPage />;
+    case 'trips': return <MobileTripReportPage onNavigate={onNav} />;
+    case 'menu': return <MobileDemoPage onNavigate={onNav} />;
     default: return <MobileLivePage onNavigate={onNav} />;
   }
 }

@@ -22,4 +22,13 @@ describe('Navegação dos botões do estado vazio (EPIC-12)', () => {
     fireEvent.click(screen.getByText('INICIAR VIAGEM'))
     expect(onNavigate).toHaveBeenCalledWith('menu')
   })
+
+  // Regressão UI-002 M-003: as telas precisam repassar onNav ao MobileShell, senão
+  // a barra de abas inferior fica morta (onClick com onNav undefined não navega).
+  it('MobileLivePage: a barra de abas inferior navega de fato', () => {
+    const onNavigate = vi.fn()
+    render(<MobileLivePage onNavigate={onNavigate} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Mapa' }))
+    expect(onNavigate).toHaveBeenCalledWith('map')
+  })
 })
