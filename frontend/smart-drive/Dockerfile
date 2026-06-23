@@ -10,8 +10,12 @@ RUN npm ci
 COPY . .
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_WS_URL
+ARG NEXT_PUBLIC_DEV_TRIP_ID
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+# Sessão demo fixa que a ESP alimenta (POST /telemetry sessionId=demo-session-001);
+# sem viagem ativa na UI, a PWA assina esta sessão e mostra a telemetria ao vivo.
+ENV NEXT_PUBLIC_DEV_TRIP_ID=$NEXT_PUBLIC_DEV_TRIP_ID
 RUN npm run build
 
 # ── runtime ───────────────────────────────────────────────────────────────────

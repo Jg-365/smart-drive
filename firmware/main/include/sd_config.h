@@ -13,13 +13,15 @@
 #define SD_WIFI_MAX_RETRY 8
 
 // ── Endpoint de ingestão (POST /telemetry) ──────────────────────────────────
-#define SD_TELEMETRY_URL "http://192.168.0.10:3001/telemetry" // troque pelo IP do host do backend na LAN (não localhost); porta = PORT do backend/.env (padrão 3001)
-#define SD_HTTP_TIMEOUT_MS 4000
+// Nuvem (Cloud Run, HTTPS — exige o cert bundle anexado em net_client.c). Para
+// backend local na LAN, troque por http://<IP-do-host>:3001/telemetry.
+#define SD_TELEMETRY_URL "https://smartdrive-api-twfrfqngpa-rj.a.run.app/telemetry"
+#define SD_HTTP_TIMEOUT_MS 8000 // TLS handshake + RTT até a nuvem: mais folga que na LAN
 
 // ── I2C (acelerômetro/giroscópio MPU6050) ────────────────────────────────────
 #define SD_I2C_PORT      0
-#define SD_I2C_SDA_GPIO  21
-#define SD_I2C_SCL_GPIO  22
+#define SD_I2C_SDA_GPIO  19  // D19
+#define SD_I2C_SCL_GPIO  21  // D21
 #define SD_I2C_FREQ_HZ   400000
 #define SD_MPU6050_ADDR  0x68
 
