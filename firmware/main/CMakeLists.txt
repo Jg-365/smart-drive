@@ -7,6 +7,7 @@ idf_component_register(
         "sensor_fusion.c"
         "event_detector.c"
         "net_client.c"
+        "provisioning.c"
         "health_monitor.c"
     INCLUDE_DIRS "." "include"
     REQUIRES
@@ -19,6 +20,8 @@ idf_component_register(
         esp_event
         esp_http_client
         esp-tls
+        esp_http_server
+        lwip
 )
 # cJSON entra via main/idf_component.yml (componente gerenciado espressif/cjson;
 # o componente 'json' embutido foi removido no ESP-IDF 6.0).

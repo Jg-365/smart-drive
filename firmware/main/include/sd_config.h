@@ -8,9 +8,11 @@
 #define SD_SESSION_ID  "demo-session-001" // pode ser sobrescrito em runtime
 
 // ── Wi-Fi ────────────────────────────────────────────────────────────────────
-#define SD_WIFI_SSID   "CHANGE_ME_SSID"
-#define SD_WIFI_PASS   "CHANGE_ME_PASS"
-#define SD_WIFI_MAX_RETRY 8
+// As credenciais NÃO ficam mais hardcoded: vêm do provisioning (SoftAP + captive
+// portal) e são gravadas no NVS. Ver provisioning.h. O AP abaixo é o que o
+// usuário acessa pelo celular na primeira configuração.
+#define SD_PROV_AP_SSID "SmartDrive-Setup" // rede aberta que aparece no celular
+#define SD_WIFI_MAX_RETRY 8                  // tentativas de STA antes de reabrir o portal
 
 // ── Endpoint de ingestão (POST /telemetry) ──────────────────────────────────
 // Nuvem (Cloud Run, HTTPS — exige o cert bundle anexado em net_client.c). Para
