@@ -1,0 +1,49 @@
+name: Deploy frontend (Cloud Run)
+
+# Builda a PWA Next.js (NEXT_PUBLIC_* inlinado em build-time via cloudbuild.yaml)
+# e deploya no Cloud Run a cada push em main que toque o frontend.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/smart-drive/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: smartdrive-expoiot
+  REGION: southamerica-east1
+  SERVICE: smartdrive-web
+  API_URL: https://smartdrive-api-twfrfqngpa-rj.a.run.app
+  IMAGE: southamerica-east1-docker.pkg.dev/smartdrive-expoiot/smartdrive/web:latest
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/504156169047/locations/global/workloadIdentityPools/gh-pool/providers/gh-provider
+          service_account: gh-deploy@smartdrive-expoiot.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build (Cloud Build)
+        run: |
+          gcloud builds submit frontend/smart-drive \
+            --config frontend/smart-drive/cloudbuild.yaml \
+            --substitutions="_API_URL=${API_URL},_WS_URL=${API_URL},_IMAGE=${IMAGE}" \
+            --quiet
+
+      - name: Deploy
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE" --region "$REGION" \
+            --allow-unauthenticated --quiet

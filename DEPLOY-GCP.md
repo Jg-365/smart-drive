@@ -112,6 +112,34 @@ Em `firmware/main/include/sd_config.h`:
 - [ ] PWA abre em `$WEB_URL`, instala (manifest/SW) e conecta no backend (sem erro de CORS).
 - [ ] Dashboard recebe telemetria via WSS.
 
+## CI/CD (GitHub Actions + Workload Identity Federation)
+Push em `main` deploya automaticamente (sem chave JSON — OIDC via WIF):
+- `.github/workflows/deploy-backend.yml` — roda quando muda `backend/smart-drive/**`.
+- `.github/workflows/deploy-frontend.yml` — roda quando muda `frontend/smart-drive/**`.
+- Ambos têm `workflow_dispatch` (dá pra disparar manualmente na aba Actions).
+
+Infra do WIF já provisionada no projeto `smartdrive-expoiot` (recriar só se trocar de projeto):
+```bash
+# SA de deploy + roles
+gcloud iam service-accounts create gh-deploy --display-name="GitHub Actions deploy"
+for R in roles/run.admin roles/cloudbuild.builds.editor roles/artifactregistry.writer \
+         roles/storage.admin roles/iam.serviceAccountUser; do
+  gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --member="serviceAccount:gh-deploy@$PROJECT_ID.iam.gserviceaccount.com" --role="$R" --condition=None
+done
+# pool + provider OIDC restrito ao repo + binding
+gcloud iam workload-identity-pools create gh-pool --location=global
+gcloud iam workload-identity-pools providers create-oidc gh-provider --location=global \
+  --workload-identity-pool=gh-pool --issuer-uri="https://token.actions.githubusercontent.com" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
+  --attribute-condition="assertion.repository=='Jg-365/smart-drive'"
+gcloud iam service-accounts add-iam-policy-binding gh-deploy@$PROJECT_ID.iam.gserviceaccount.com \
+  --role=roles/iam.workloadIdentityUser \
+  --member="principalSet://iam.googleapis.com/projects/$PROJNUM/locations/global/workloadIdentityPools/gh-pool/attribute.repository/Jg-365/smart-drive"
+```
+> Se trocar de projeto/URLs do Cloud Run, atualize os `env:` dos dois workflows (PROJECT_ID, REGION,
+> `API_URL`, `WEB_URL`, `IMAGE` e o `workload_identity_provider`).
+
 ## Notas
 - WebSocket no Cloud Run: já suportado; se houver múltiplas instâncias, habilite session affinity
   (`gcloud run services update smartdrive-api --session-affinity`).

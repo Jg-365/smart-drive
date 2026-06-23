@@ -20,4 +20,5 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 EXPOSE 8080
-CMD ["node", "dist/main"]
+# build do Nest (sourceRoot=src) emite o entrypoint em dist/src/main.js, não dist/main.
+CMD ["node", "dist/src/main"]
