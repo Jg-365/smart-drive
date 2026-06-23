@@ -16,6 +16,7 @@ env:
   SERVICE: smartdrive-web
   API_URL: https://smartdrive-api-twfrfqngpa-rj.a.run.app
   IMAGE: southamerica-east1-docker.pkg.dev/smartdrive-expoiot/smartdrive/web:latest
+  TRIP_ID: demo-session-001   # sessão demo que a ESP alimenta (PWA assina ao vivo)
 
 permissions:
   contents: read
@@ -39,7 +40,7 @@ jobs:
         run: |
           gcloud builds submit frontend/smart-drive \
             --config frontend/smart-drive/cloudbuild.yaml \
-            --substitutions="_API_URL=${API_URL},_WS_URL=${API_URL},_IMAGE=${IMAGE}" \
+            --substitutions="_API_URL=${API_URL},_WS_URL=${API_URL},_IMAGE=${IMAGE},_TRIP_ID=${TRIP_ID}" \
             --quiet
 
       - name: Deploy
