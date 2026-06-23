@@ -60,7 +60,7 @@ export function MobileHomePage({
   const totalKm = recent.reduce((s, t) => s + t.distanceKm, 0);
 
   return (
-    <MobileShell active="home">
+    <MobileShell active="home" onNav={onNavigate}>
       <div style={{ padding: '20px 18px 100px', display: 'grid', gap: 18 }}>
         {/* Greeting */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>

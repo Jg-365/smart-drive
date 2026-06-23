@@ -30,7 +30,7 @@ export function MobileLivePage({ onNavigate }: { onNavigate?: (tab: MobileTab) =
   const tripId = useTelemetryStore((s) => s.tripId);
 
   return (
-    <MobileShell active="live" scroll>
+    <MobileShell active="live" scroll onNav={onNavigate}>
       {!tripId ? (
         <EmptyState onNavigate={onNavigate} />
       ) : (

@@ -24,7 +24,9 @@ function eventTime(iso: string): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-export function MobileTripReportPage({ tripId }: { tripId?: string }) {
+type MobileTab = 'home' | 'live' | 'map' | 'trips' | 'menu';
+
+export function MobileTripReportPage({ tripId, onNavigate }: { tripId?: string; onNavigate?: (tab: MobileTab) => void }) {
   const trips = useTrips();
   const resolvedId =
     tripId ??
@@ -39,7 +41,7 @@ export function MobileTripReportPage({ tripId }: { tripId?: string }) {
   const title = summary.data ? summary.data.trip.id.toUpperCase() : 'VIAGEM';
 
   return (
-    <MobileShell active="trips" title={title}>
+    <MobileShell active="trips" title={title} onNav={onNavigate}>
       <div style={{ padding: '14px 18px 100px', display: 'grid', gap: 16 }}>
         {loading && <div className="sd-mono" style={{ fontSize: 12, color: SD.textDim }}>Carregando…</div>}
 

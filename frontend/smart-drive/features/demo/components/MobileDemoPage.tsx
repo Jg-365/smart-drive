@@ -18,7 +18,9 @@ const PROFILES: { id: DemoMode; label: string; tone: string }[] = [
   { id: 'aggressive', label: 'AGRESSIVA', tone: SD.danger },
 ];
 
-export function MobileDemoPage() {
+type MobileTab = 'home' | 'live' | 'map' | 'trips' | 'menu';
+
+export function MobileDemoPage({ onNavigate }: { onNavigate?: (tab: MobileTab) => void } = {}) {
   const startM = useStartDemo();
   const resetM = useResetDemo();
   const connection = useConnection();
@@ -51,7 +53,7 @@ export function MobileDemoPage() {
   };
 
   return (
-    <MobileShell active="menu" hideBars>
+    <MobileShell active="menu" onNav={onNavigate}>
       <div style={{ height: '100%', position: 'relative', background: SD.bg, overflow: 'auto' }}>
         <div style={{
           padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
