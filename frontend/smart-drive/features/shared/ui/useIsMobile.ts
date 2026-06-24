@@ -13,6 +13,7 @@ export const MOBILE_MAX_WIDTH = 768;
 export function useIsMobile(maxWidth = MOBILE_MAX_WIDTH): boolean {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
     const mq = window.matchMedia(`(max-width: ${maxWidth}px)`);
     const update = () => setIsMobile(mq.matches);
     update();

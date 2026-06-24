@@ -5,6 +5,7 @@ import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Btn, Panel } from '@/features/shared/ui/primitives';
 import { ApiError } from '@/lib/api';
+import { useIsMobile } from '@/features/shared/ui/useIsMobile';
 import type { Vehicle } from '@/features/shared/types';
 import {
   useVehicles, useCreateVehicle, useUpdateVehicle, useDeleteVehicle,
@@ -35,6 +36,7 @@ function describeError(err: unknown): string {
 }
 
 export function VehiclesPage() {
+  const isMobile = useIsMobile();
   const { data: vehicles, isLoading, isError, refetch } = useVehicles();
   const createM = useCreateVehicle();
   const updateM = useUpdateVehicle();
@@ -76,8 +78,8 @@ export function VehiclesPage() {
 
   return (
     <div style={{
-      height: '100%', overflow: 'auto', background: SD.bg, padding: 24,
-      display: 'grid', gap: 16, gridTemplateColumns: '320px 1fr', alignContent: 'start',
+      height: isMobile ? 'auto' : '100%', overflow: 'auto', background: SD.bg, padding: isMobile ? 18 : 24,
+      display: 'grid', gap: 16, gridTemplateColumns: isMobile ? '1fr' : '320px 1fr', alignContent: 'start',
     }}>
       {/* LEFT: Vehicle list */}
       <div>
@@ -197,7 +199,7 @@ export function VehiclesPage() {
               </div>
             }
           >
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 14 }}>
               <Field label="MARCA" value={selected.brand} />
               <Field label="MODELO" value={selected.model} />
               <Field label="ANO" value={String(selected.year)} />

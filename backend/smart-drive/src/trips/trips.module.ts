@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { DevicesModule } from '../devices/devices.module';
+import { TelemetryModule } from '../telemetry/telemetry.module';
 import { TripsController } from './trips.controller';
 import { TripsService } from './trips.service';
 
 @Module({
-  imports: [AuthModule, DevicesModule],
+  imports: [AuthModule, DevicesModule, TelemetryModule],
   controllers: [TripsController],
   providers: [TripsService],
   exports: [TripsService],

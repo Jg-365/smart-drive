@@ -151,6 +151,21 @@ describe('Device handlers', () => {
     const body = await res.json()
     expect(body.id).toBe(id)
   })
+
+  it('PATCH /api/devices/:id/pair returns paired device', async () => {
+    const listRes = await fetch('/api/devices')
+    const list = await listRes.json()
+    const id = list[0].id
+
+    const res = await fetch(`/api/devices/${id}/pair`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vehicleId: 'vehicle-001' }),
+    })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.vehicleId).toBe('vehicle-001')
+  })
 })
 
 describe('Dashboard handlers', () => {

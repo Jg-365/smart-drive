@@ -15,8 +15,9 @@ import { DemoPage } from '@/features/demo';
 import { MobileHomePage } from '@/features/home';
 import { MobileLivePage } from '@/features/dashboard';
 import { MapPage, DesktopMapPage } from '@/features/map';
-import { MobileTripReportPage } from '@/features/trips';
+import { MobileTripsPage } from '@/features/trips';
 import { MobileDemoPage } from '@/features/demo';
+import { MobileMenuPage } from '@/features/menu';
 import { LoginScreen, SettingsPage } from '@/features/auth';
 import { useIsAuthenticated } from '@/features/shared/auth';
 import { MobileShell, MobileTopBar } from '@/features/shell';
@@ -24,6 +25,7 @@ import { useIsMobile } from '@/features/shared/ui/useIsMobile';
 
 type DesktopScreen = 'dashboard' | 'map' | 'trips' | 'vehicles' | 'devices' | 'demo' | 'settings';
 type MobileTab = 'home' | 'live' | 'map' | 'trips' | 'menu';
+type MobileSub = null | 'demo' | 'vehicles' | 'devices' | 'settings';
 
 // Viagem assinada em dev (casa com o sessionId do tools/telemetry-feeder). Sem a
 // env, fica null → dashboard mostra estado vazio (default seguro para produção,
@@ -69,7 +71,7 @@ function AppShell() {
   const isMobile = useIsMobile();
   const [desktopScreen, setDesktopScreen] = useState<DesktopScreen>('dashboard');
   const [mobileTab, setMobileTab] = useState<MobileTab>('live');
-  const [mobileSettings, setMobileSettings] = useState(false);
+  const [mobileSub, setMobileSub] = useState<MobileSub>(null);
   const [demoMode, setDemoMode] = useState<'smooth' | 'normal' | 'aggressive'>('aggressive');
 
   const renderDesktopScreen = () => {
@@ -85,16 +87,16 @@ function AppShell() {
   };
 
   return (
-    <div style={{ height: '100vh', width: '100vw', overflow: 'hidden', background: SD.bg, position: 'relative' }}>
+    <div style={{ height: '100dvh', width: '100vw', overflow: 'hidden', background: SD.bg, position: 'relative' }}>
       {/* Layout escolhido automaticamente pela viewport (sem switch manual — UI-A02). */}
       {isMobile ? (
         <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
           <MobileScreenWrapper
             tab={mobileTab}
-            onNav={(t) => { setMobileSettings(false); setMobileTab(t); }}
-            showSettings={mobileSettings}
-            onOpenSettings={() => setMobileSettings(true)}
-            onCloseSettings={() => setMobileSettings(false)}
+            sub={mobileSub}
+            onNav={(t) => { setMobileSub(null); setMobileTab(t); }}
+            onOpenSub={setMobileSub}
+            onCloseSub={() => setMobileSub(null)}
           />
         </div>
       ) : (
@@ -113,31 +115,41 @@ function AppShell() {
 
 function MobileScreenWrapper({
   tab,
+  sub,
   onNav,
-  showSettings,
-  onOpenSettings,
-  onCloseSettings,
+  onOpenSub,
+  onCloseSub,
 }: {
   tab: MobileTab;
+  sub: MobileSub;
   onNav: (t: MobileTab) => void;
-  showSettings: boolean;
-  onOpenSettings: () => void;
-  onCloseSettings: () => void;
+  onOpenSub: (s: Exclude<MobileSub, null>) => void;
+  onCloseSub: () => void;
 }) {
-  if (showSettings) {
+  if (sub) {
+    const titles: Record<Exclude<MobileSub, null>, string> = {
+      demo: 'MODO DEMO',
+      vehicles: 'MEU VEÍCULO',
+      devices: 'DISPOSITIVOS',
+      settings: 'CONTA',
+    };
     return (
-      <MobileShell active="home" onNav={onNav}>
-        <MobileTopBar title="CONTA" onBack={onCloseSettings} />
-        <SettingsPage />
+      <MobileShell active="menu" onNav={onNav}>
+        <MobileTopBar title={titles[sub]} onBack={onCloseSub} />
+        {sub === 'demo' && <MobileDemoPage onNavigate={onNav} />}
+        {sub === 'vehicles' && <VehiclesPage />}
+        {sub === 'devices' && <DevicesPage />}
+        {sub === 'settings' && <SettingsPage />}
       </MobileShell>
     );
   }
-  switch (tab) {
-    case 'home': return <MobileHomePage onNavigate={onNav} onSettings={onOpenSettings} />;
-    case 'live': return <MobileLivePage onNavigate={onNav} />;
-    case 'map': return <MapPage onBack={() => onNav('live')} />;
-    case 'trips': return <MobileTripReportPage onNavigate={onNav} />;
-    case 'menu': return <MobileDemoPage onNavigate={onNav} />;
-    default: return <MobileLivePage onNavigate={onNav} />;
-  }
+  return (
+    <MobileShell active={tab} onNav={onNav}>
+      {tab === 'home' && <MobileHomePage onNavigate={onNav} onSettings={() => onOpenSub('settings')} />}
+      {tab === 'live' && <MobileLivePage onNavigate={onNav} />}
+      {tab === 'map' && <MapPage onBack={() => onNav('live')} />}
+      {tab === 'trips' && <MobileTripsPage onNavigate={onNav} />}
+      {tab === 'menu' && <MobileMenuPage onOpenSub={onOpenSub} onNavigate={onNav} />}
+    </MobileShell>
+  );
 }

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTelemetryStore } from '@/features/shared/realtime'
+import { MobileShell } from '@/features/shell/components/MobileShell'
 import { DashboardPage } from '../DashboardPage'
 import { MobileLivePage } from '../MobileLivePage'
 
@@ -27,7 +28,11 @@ describe('Navegação dos botões do estado vazio (EPIC-12)', () => {
   // a barra de abas inferior fica morta (onClick com onNav undefined não navega).
   it('MobileLivePage: a barra de abas inferior navega de fato', () => {
     const onNavigate = vi.fn()
-    render(<MobileLivePage onNavigate={onNavigate} />)
+    render(
+      <MobileShell active="live" onNav={onNavigate}>
+        <MobileLivePage onNavigate={onNavigate} />
+      </MobileShell>,
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Mapa' }))
     expect(onNavigate).toHaveBeenCalledWith('map')
   })

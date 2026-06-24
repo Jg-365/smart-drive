@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot, Btn, Stat } from '@/features/shared/ui/primitives';
-import { MobileShell } from '@/features/shell/components/MobileShell';
 import {
   useTelemetryStore,
   useLastPoint,
@@ -41,16 +40,14 @@ export function MapPage({ onBack }: { onBack?: () => void }) {
   // Sem viagem ativa não há o que mapear — estado honesto, sem mapa fabricado.
   if (!tripId) {
     return (
-      <MobileShell active="map">
-        <div style={{ padding: '60px 24px', display: 'grid', placeItems: 'center', textAlign: 'center', gap: 16, height: '100%', alignContent: 'center' }}>
-          <div style={{ color: SD.textDim }}>{Icon.map(44, SD.textDim)}</div>
-          <div className="sd-display" style={{ fontSize: 18 }}>NENHUMA VIAGEM ATIVA</div>
-          <div style={{ color: SD.textDim, fontSize: 13, lineHeight: 1.5, maxWidth: 280 }}>
-            Inicie uma viagem ou rode o modo demo para acompanhar o trajeto no mapa em tempo real.
-          </div>
-          {onBack && <Btn tone="outline" size="md" onClick={onBack}>VOLTAR</Btn>}
+      <div style={{ padding: '60px 24px', display: 'grid', placeItems: 'center', textAlign: 'center', gap: 16, height: '100%', alignContent: 'center' }}>
+        <div style={{ color: SD.textDim }}>{Icon.map(44, SD.textDim)}</div>
+        <div className="sd-display" style={{ fontSize: 18 }}>NENHUMA VIAGEM ATIVA</div>
+        <div style={{ color: SD.textDim, fontSize: 13, lineHeight: 1.5, maxWidth: 280 }}>
+          Inicie uma viagem ou rode o modo demo para acompanhar o trajeto no mapa em tempo real.
         </div>
-      </MobileShell>
+        {onBack && <Btn tone="outline" size="md" onClick={onBack}>VOLTAR</Btn>}
+      </div>
     );
   }
 
@@ -59,8 +56,7 @@ export function MapPage({ onBack }: { onBack?: () => void }) {
   const tone = statusTone(status);
 
   return (
-    <MobileShell active="map" hideBars>
-      <div style={{ position: 'relative', height: '100%' }}>
+    <div style={{ position: 'relative', height: '100%' }}>
         {/* Mapa real só quando há fix de GPS; senão, indisponibilidade honesta (sem rota fabricada). */}
         {hasGps ? (
           <LiveMapContainer follow={follow} style={{ position: 'absolute', inset: 0 }} />
@@ -122,7 +118,6 @@ export function MapPage({ onBack }: { onBack?: () => void }) {
             <Stat label="EVENTOS" value={String(events.length)} size="sm" accent={SD.warning} />
           </div>
         </div>
-      </div>
-    </MobileShell>
+    </div>
   );
 }

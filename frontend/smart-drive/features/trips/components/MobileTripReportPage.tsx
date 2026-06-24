@@ -3,10 +3,9 @@
 import React from 'react';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { Tag, Dot, Stat } from '@/features/shared/ui/primitives';
-import { MobileShell } from '@/features/shell/components/MobileShell';
 import { EVENT_META } from '@/features/dashboard/derive';
-import { EventSeverity, TripStatus } from '@/features/shared/types';
-import { useTrips, useTripSummary, useTripRoute } from '../hooks';
+import { EventSeverity } from '@/features/shared/types';
+import { useTripSummary, useTripRoute } from '../hooks';
 import {
   buildRecommendations, classifyScore, formatDistance, formatDuration, hasGpsData,
 } from '../derive';
@@ -24,25 +23,14 @@ function eventTime(iso: string): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-type MobileTab = 'home' | 'live' | 'map' | 'trips' | 'menu';
+export function MobileTripReportPage({ tripId }: { tripId: string }) {
+  const summary = useTripSummary(tripId);
+  const route = useTripRoute(tripId);
 
-export function MobileTripReportPage({ tripId, onNavigate }: { tripId?: string; onNavigate?: (tab: MobileTab) => void }) {
-  const trips = useTrips();
-  const resolvedId =
-    tripId ??
-    trips.data?.find((t) => t.status === TripStatus.FINISHED)?.id ??
-    trips.data?.[0]?.id ??
-    null;
-
-  const summary = useTripSummary(resolvedId);
-  const route = useTripRoute(resolvedId);
-
-  const loading = trips.isLoading || summary.isLoading;
-  const title = summary.data ? summary.data.trip.id.toUpperCase() : 'VIAGEM';
+  const loading = summary.isLoading;
 
   return (
-    <MobileShell active="trips" title={title} onNav={onNavigate}>
-      <div style={{ padding: '14px 18px 100px', display: 'grid', gap: 16 }}>
+    <div style={{ padding: '14px 18px 24px', display: 'grid', gap: 16 }}>
         {loading && <div className="sd-mono" style={{ fontSize: 12, color: SD.textDim }}>Carregando…</div>}
 
         {!loading && (summary.isError || !summary.data) && (
@@ -132,8 +120,7 @@ export function MobileTripReportPage({ tripId, onNavigate }: { tripId?: string; 
             </>
           );
         })()}
-      </div>
-    </MobileShell>
+    </div>
   );
 }
 

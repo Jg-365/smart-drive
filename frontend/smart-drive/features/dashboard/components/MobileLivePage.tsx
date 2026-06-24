@@ -4,7 +4,6 @@ import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot, Btn, Stat } from '@/features/shared/ui/primitives';
 import { Speedometer, Wave, AxisBars } from '@/features/shared/ui/map-gauges';
-import { MobileShell } from '@/features/shell/components/MobileShell';
 import dynamic from 'next/dynamic';
 import {
   useTelemetryStore,
@@ -29,22 +28,18 @@ type MobileTab = 'home' | 'live' | 'map' | 'trips' | 'menu';
 export function MobileLivePage({ onNavigate }: { onNavigate?: (tab: MobileTab) => void }) {
   const tripId = useTelemetryStore((s) => s.tripId);
 
+  if (!tripId) return <EmptyState onNavigate={onNavigate} />;
+
   return (
-    <MobileShell active="live" scroll onNav={onNavigate}>
-      {!tripId ? (
-        <EmptyState onNavigate={onNavigate} />
-      ) : (
-        <div style={{ padding: '8px 18px 100px', display: 'grid', gap: 14 }}>
-          <Header />
-          <ReconnectBanner />
-          <HeroSpeed />
-          <KpiGrid />
-          <MiniMap onNavigate={onNavigate} />
-          <AccelCard />
-          <LatestEvent />
-        </div>
-      )}
-    </MobileShell>
+    <div style={{ padding: '8px 18px 24px', display: 'grid', gap: 14 }}>
+      <Header />
+      <ReconnectBanner />
+      <HeroSpeed />
+      <KpiGrid />
+      <MiniMap onNavigate={onNavigate} />
+      <AccelCard />
+      <LatestEvent />
+    </div>
   );
 }
 

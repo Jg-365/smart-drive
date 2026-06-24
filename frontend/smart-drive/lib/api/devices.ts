@@ -18,5 +18,5 @@ export function fetchDevice(id: string, options?: { signal?: AbortSignal }): Pro
 
 /** Vincula um dispositivo a um veículo (pareamento). */
 export function pairDevice(id: string, vehicleId: string): Promise<Device> {
-  return api.post<Device>(`${DEVICES_PATH}/${id}/pair`, { vehicleId })
+  return api.patch<Device>(`${DEVICES_PATH}/${id}/pair`, { vehicleId })
 }

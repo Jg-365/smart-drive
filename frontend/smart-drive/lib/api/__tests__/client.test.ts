@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { server } from '@/mocks/server'
 import { ApiError, api } from '../client'
+import { pairDevice } from '../devices'
 import { fetchLiveTelemetry, fetchTripTelemetry } from '../telemetry'
 
 describe('lib/api client', () => {
@@ -48,5 +49,23 @@ describe('lib/api client', () => {
     )
     await api.post('/api/echo', { hello: 'world' })
     expect(received).toEqual({ hello: 'world' })
+  })
+
+  it('pairDevice uses the backend PATCH contract', async () => {
+    let method = ''
+    let received: unknown
+    server.use(
+      http.patch('/api/devices/device-001/pair', async ({ request }) => {
+        method = request.method
+        received = await request.json()
+        return HttpResponse.json({ id: 'device-001', vehicleId: 'vehicle-001' })
+      }),
+      http.post('/api/devices/device-001/pair', () =>
+        HttpResponse.json({ error: 'wrong method' }, { status: 405 }),
+      ),
+    )
+    await pairDevice('device-001', 'vehicle-001')
+    expect(method).toBe('PATCH')
+    expect(received).toEqual({ vehicleId: 'vehicle-001' })
   })
 })

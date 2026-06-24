@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -47,5 +47,30 @@ describe('TripsPage (FIX-03)', () => {
     )
     renderPage()
     expect(await screen.findByText(/INDISPONÍVEL/)).toBeInTheDocument()
+  })
+
+  it('inicia viagem enviando o deviceId pareado ao veículo escolhido', async () => {
+    let received: unknown
+    server.use(
+      http.get('/api/trips', () => HttpResponse.json([makeTrip()])),
+      http.get('/api/vehicles', () => HttpResponse.json([
+        { id: 'vehicle-001', brand: 'Fiat', model: 'Demo', year: 2022, engine: '1.0', fuelType: 'FLEX',
+          tankCapacityLiters: 45, baseUrbanConsumptionKmL: 10, baseHighwayConsumptionKmL: 14,
+          baseMixedConsumptionKmL: 12, weightKg: null, calibrationFactor: 1 },
+      ])),
+      http.get('/api/devices', () => HttpResponse.json([
+        { id: 'device-db-id', deviceCode: 'esp32-demo-001', name: 'ESP32 Demo', vehicleId: 'vehicle-001',
+          firmwareVersion: 'v0.4.1', lastSeenAt: new Date().toISOString(), status: 'ONLINE' },
+      ])),
+      http.post('/api/trips/start', async ({ request }) => {
+        received = await request.json()
+        return HttpResponse.json(makeTrip({ status: TripStatus.ACTIVE, endedAt: undefined }), { status: 201 })
+      }),
+    )
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: /INICIAR VIAGEM/ }))
+    await waitFor(() => {
+      expect(received).toEqual({ vehicleId: 'vehicle-001', deviceId: 'esp32-demo-001' })
+    })
   })
 })
