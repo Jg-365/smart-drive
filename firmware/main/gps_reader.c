@@ -85,15 +85,31 @@ static void gps_task(void *arg) {
   size_t idx = 0;
   uint8_t byte;
   sd_gps_fix_t fix = {.has_fix = false};
+  int64_t last_log_ms = esp_timer_get_time() / 1000;
+  uint32_t bytes_seen = 0;
+  uint32_t sentences_seen = 0;
 
   for (;;) {
     int len = uart_read_bytes(SD_GPS_UART, &byte, 1, pdMS_TO_TICKS(1000));
+    int64_t now_ms = esp_timer_get_time() / 1000;
+    if (len > 0) bytes_seen += (uint32_t)len;
+
+    if (now_ms - last_log_ms >= 5000) {
+      ESP_LOGI(TAG, "GPS status: bytes=%lu nmea=%lu fix=%s sats=%d hdop=%.1f",
+               (unsigned long)bytes_seen, (unsigned long)sentences_seen,
+               fix.has_fix ? "sim" : "nao", fix.satellites, fix.hdop);
+      bytes_seen = 0;
+      sentences_seen = 0;
+      last_log_ms = now_ms;
+    }
+
     if (len <= 0) continue;
 
     if (byte == '\n' || byte == '\r') {
       if (idx > 0) {
         line[idx] = '\0';
         if (line[0] == '$') {
+          sentences_seen++;
           parse_sentence(line, &fix);
           fix.ts_ms = esp_timer_get_time() / 1000;
           sd_shared_set_gps(&fix);

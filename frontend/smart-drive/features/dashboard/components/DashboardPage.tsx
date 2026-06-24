@@ -35,7 +35,7 @@ export function DashboardPage({ onNavigate }: { onNavigate?: (s: DashScreen) => 
 
   return (
     <div style={{
-      display: 'grid', gridTemplateColumns: '1.8fr 1fr', gridTemplateRows: '1fr auto',
+      display: 'grid', gridTemplateColumns: '1.8fr 1fr', gridTemplateRows: 'minmax(0, 1fr) minmax(190px, 240px)',
       height: '100%', gap: 1, background: SD.border,
     }}>
       {/* Map */}
@@ -56,7 +56,7 @@ export function DashboardPage({ onNavigate }: { onNavigate?: (s: DashScreen) => 
       {/* Right top: metrics */}
       <div style={{
         gridColumn: 2, gridRow: 1, background: SD.bg, padding: 16,
-        display: 'grid', gap: 16, gridTemplateRows: 'auto auto 1fr', overflow: 'hidden',
+        display: 'grid', gap: 16, gridTemplateRows: 'auto auto minmax(180px, 1fr)', overflow: 'hidden', minHeight: 0,
       }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <SpeedCard />
@@ -67,8 +67,8 @@ export function DashboardPage({ onNavigate }: { onNavigate?: (s: DashScreen) => 
       </div>
 
       {/* Right bottom: events timeline */}
-      <div style={{ gridColumn: 2, gridRow: 2, background: SD.bg, padding: '0 16px 16px', overflow: 'hidden' }}>
-        <div style={{ background: SD.surface, border: `1.5px solid ${SD.border}` }}>
+      <div style={{ gridColumn: 2, gridRow: 2, background: SD.bg, padding: '0 16px 16px', overflow: 'hidden', minHeight: 0 }}>
+        <div style={{ background: SD.surface, border: `1.5px solid ${SD.border}`, height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <div style={{ padding: '10px 14px', borderBottom: `1px solid ${SD.border}`, display: 'flex', justifyContent: 'space-between' }}>
             <span className="sd-display" style={{ fontSize: 13 }}>EVENTOS RECENTES</span>
             <span className="sd-label" style={{ fontSize: 9 }}>AO VIVO</span>
@@ -235,7 +235,7 @@ function EventList() {
   }
 
   return (
-    <div>
+    <div style={{ overflowY: 'auto', minHeight: 0 }}>
       {events.slice(0, 6).map((e: DrivingEvent, i: number) => {
         const meta = EVENT_META[e.type];
         const high = isHighSeverity(e.severity);
