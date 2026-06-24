@@ -33,13 +33,15 @@ export function TripsPage() {
   const selected = selectedId ?? finished[0]?.id ?? null;
 
   const vehicleList = vehicles.data ?? [];
-  const deviceOnline = (devices.data ?? []).some((d) => d.status === DeviceStatus.ONLINE);
   const chosenVehicle = vehicleId || vehicleList[0]?.id || '';
-  const canStart = !!chosenVehicle && !active && !startM.isPending;
+  const pairedDevice = (devices.data ?? []).find((d) => d.vehicleId === chosenVehicle) ?? null;
+  const deviceOnline = pairedDevice?.status === DeviceStatus.ONLINE;
+  const deviceIdentifier = pairedDevice?.deviceCode || pairedDevice?.id || '';
+  const canStart = !!chosenVehicle && !!deviceIdentifier && !active && !startM.isPending;
 
   const handleStart = () => {
     if (!canStart) return;
-    startM.mutate({ vehicleId: chosenVehicle });
+    startM.mutate({ vehicleId: chosenVehicle, deviceId: deviceIdentifier });
   };
 
   return (
@@ -86,9 +88,15 @@ export function TripsPage() {
                   ))}
                 </select>
 
-                {!deviceOnline && (
+                {!pairedDevice && (
                   <div className="sd-mono" style={{ fontSize: 10, color: SD.warning, marginTop: 8 }}>
-                    ⚠ Nenhum dispositivo online — a viagem inicia, mas sem telemetria ao vivo até o ESP32 conectar.
+                    Nenhum dispositivo pareado a este veículo. Pareie um SmartDrive na aba Dispositivos.
+                  </div>
+                )}
+
+                {pairedDevice && !deviceOnline && (
+                  <div className="sd-mono" style={{ fontSize: 10, color: SD.warning, marginTop: 8 }}>
+                    Dispositivo pareado, mas sem pacote recente. A viagem pode iniciar e ficará online quando o ESP32 transmitir.
                   </div>
                 )}
 
@@ -97,7 +105,7 @@ export function TripsPage() {
                     tone="primary" size="md" full icon={Icon.play(12)}
                     onClick={handleStart}
                     disabled={!canStart}
-                    title={!chosenVehicle ? 'Selecione um veículo' : undefined}
+                    title={!chosenVehicle ? 'Selecione um veículo' : !deviceIdentifier ? 'Pareie um dispositivo ao veículo' : undefined}
                   >
                     {startM.isPending ? 'INICIANDO…' : 'INICIAR VIAGEM'}
                   </Btn>

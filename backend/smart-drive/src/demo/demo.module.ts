@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
+import { DemoController } from './demo.controller';
+import { DemoService } from './demo.service';
 
-// Placeholder — implementação em JOA-RF-05 (EPIC 9).
-@Module({})
+@Module({
+  controllers: [DemoController],
+  providers: [DemoService],
+})
 export class DemoModule {}

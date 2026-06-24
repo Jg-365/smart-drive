@@ -1,5 +1,6 @@
 export { TripReportPage } from './components/TripReportPage';
 export { TripsPage } from './components/TripsPage';
+export { MobileTripsPage } from './components/MobileTripsPage';
 export { MobileTripReportPage } from './components/MobileTripReportPage';
 export { useTrips, useTripSummary, useTripRoute, useStartTrip, useFinishTrip } from './hooks';
 export {

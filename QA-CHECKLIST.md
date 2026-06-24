@@ -7,12 +7,14 @@ Legenda: ✅ feito/automatizado · 🟡 parcial/depende de terceiros · ⏳ manu
 
 | Camada | Comando | Resultado |
 |---|---|---|
-| Frontend (unit/integração) | `cd frontend/smart-drive && npx vitest run` | ✅ 232 testes |
+| Frontend (unit/integração) | `cd frontend/smart-drive && npx vitest run` | ✅ 247 testes |
 | Frontend (build) | `cd frontend/smart-drive && npm run build` | ✅ compila |
 | Frontend (tipos) | `cd frontend/smart-drive && npx tsc --noEmit` | ✅ limpo |
-| Backend (unit + integração c/ Postgres) | `cd backend/smart-drive && npm test -- --runInBand` | ✅ 57 testes |
+| Backend (unit sem banco, contratos novos) | `cd backend/smart-drive && npm test -- demo/demo.service.spec.ts telemetry/telemetry-query.service.spec.ts telemetry/dto/telemetry-payload.dto.spec.ts telemetry/analysis/input.mapper.spec.ts --runInBand` | ✅ 17 testes |
+| Backend (build) | `cd backend/smart-drive && npm run build` | ✅ compila |
+| Backend (integração c/ Postgres) | `cd backend/smart-drive && npm test -- --runInBand` | ⏳ exige Postgres local acessível |
 | Banco | `cd backend/docker && docker compose up -d` + `npx prisma migrate deploy` | ✅ migra |
-| Firmware | `cd firmware && idf.py build` | ✅ buildou no ESP-IDF 6.0 e validou na bancada (B02 resolvido, 2026-06-17) |
+| Firmware | `. /home/joao/.espressif/v6.0.1/esp-idf/export.sh && idf.py -C firmware build` | ✅ buildou no ESP-IDF 6.0.1; app com 33% livre |
 
 > Testes de integração do backend rodam **serial** (`--runInBand`): em paralelo há corrida
 > de dados no Postgres compartilhado (dívida conhecida).
@@ -20,41 +22,40 @@ Legenda: ✅ feito/automatizado · 🟡 parcial/depende de terceiros · ⏳ manu
 ## 2. SPECs JOA-TEC-04
 
 - [ ] **Fluxo completo** ESP32/simulador → `POST /telemetry` → backend → WebSocket → dashboard
-      🟡 Caminho coberto por partes: gateway WS testado (backend), store/dashboard testados (frontend).
-      ⏳ End-to-end real: subir backend + frontend + (firmware **ou** `tools/telemetry-feeder`) e ver o
+      ✅ Contratos e build cobertos: ingestão real, demo endpoints, fallback polling e PWA.
+      ⏳ Smoke manual: subir backend + frontend + (firmware **ou** `tools/telemetry-feeder`) e ver o
       dashboard atualizar ao vivo.
 - [ ] **Modo demo com GPS ausente** ✅ lógica testada (geo ignora coord inválida; "GPS indisponível";
       pista virtual). ⏳ confirmar visualmente na demo.
-- [ ] **Fallback sem hardware (simulador do Nathan)** 🟡 `tools/telemetry-feeder` injeta telemetria;
-      integrar com o simulador oficial do Nathan (NAT-RF-07) quando disponível.
+- [ ] **Fallback sem hardware** ✅ `tools/telemetry-feeder` injeta telemetria no contrato real usando
+      os IDs da demo (`demo-session-001`, `esp32-demo-001`, `vehicle-001`). ⏳ smoke manual no palco.
 - [ ] **Relatório de viagem** ✅ testado com viagem simulada (mocks/summary). ⏳ validar com viagem real do Pedro.
 - [ ] **Checklist de apresentação** ✅ este arquivo + `APRESENTACAO-EXPOIOT.md`.
-- [ ] **Score e consumo do Nathan no dashboard** 🟡 UI pronta e testada; só preenche quando o caminho do
-      Nathan emitir `trip:scoreUpdated`/`trip:fuelEstimateUpdated` (hoje o feeder só dispara `telemetry:new`).
-- [ ] **Endpoints do Pedro respondem ao frontend** ✅ `setGlobalPrefix('api')` aplicado (FIX-01) e o
-      cliente HTTP envia auth (`x-user-id` de DEV, pronto p/ Bearer). 🟡 falta o JWT/endpoints reais do
-      Pedro (ver `docs/bloqueios-equipe-001.xml`).
+- [ ] **Score e consumo do Nathan no dashboard** ✅ o caminho de ingestão chama o orquestrador e emite
+      `trip:eventDetected`, `trip:scoreUpdated` e `trip:fuelEstimateUpdated` quando há telemetria.
+- [ ] **Endpoints do frontend respondem no backend real** ✅ veículos, dispositivos, viagens, demo,
+      telemetria live e histórico paginado estão alinhados ao prefixo `/api`.
 
 ## 3. Não-funcionais finais
 
-- [ ] **RNF-03 mobile-first** — viewport 375px e áreas de toque 44×44px. 🟡 botões mortos resolvidos
-      (EPIC-12); ⏳ medir alvos de toque na navbar/CTAs e ajustar se < 44px.
+- [ ] **RNF-03 mobile-first** — ✅ shell mobile único, tab bar persistente, menu real, veículos,
+      dispositivos/parear e viagens restaurados no PWA. ⏳ smoke visual em 375px.
 - [ ] **RNF-04 performance** — ✅ seletores atômicos + downsampling (500 pts) + cap de eventos.
 - [ ] **RNF-05 portabilidade** — ✅ README + `scripts/dev-up.sh`/`dev-down.sh`. ⏳ rodar em outra
       máquina (Node 20+, Docker) do zero.
 
 ## 4. Dependências entre times (bloqueiam o "fechar")
 
-- **Pedro**: auth JWT real (substituir `TempUserGuard`), `setGlobalPrefix('api')` (ou ajustar paths),
-  endpoints reais de trips/devices, `POST /telemetry` real (substituir o controller mock do EPIC-04).
-- **Nathan**: emitir `trip:scoreUpdated` / `trip:fuelEstimateUpdated` / `trip:eventDetected`; simulador NAT-RF-07.
-- **João**: ✅ firmware buildado + validado na bancada (2026-06-17). Pendente: scrub de textos longos
-  na `MobileDemoPage` (UI no fluxo mobile) — secundário.
+- **Pedro**: endpoints reais de trips/devices/telemetry integrados. Auth JWT/login funcional; cadastro via
+  `POST /api/users`. `x-user-id` continua como compatibilidade dev se habilitado.
+- **Nathan**: orquestrador conectado à ingestão real para eventos, score e consumo. Simulador NAT-RF-07
+  permanece evolução; fallback atual é `tools/telemetry-feeder`.
+- **João**: ✅ firmware buildado com provisioning Wi-Fi. ⏳ flash/validação física da ESP em bancada.
 
 ## 5. Roteiro rápido de smoke manual
 
 1. `./scripts/dev-up.sh` → backend (`npm run start:dev`) → frontend (`npm run dev`).
-2. Sem hardware: `cd tools/telemetry-feeder && node feed.mjs` e definir `NEXT_PUBLIC_DEV_TRIP_ID`.
+2. Sem hardware: frontend com `NEXT_PUBLIC_DEV_TRIP_ID=demo-session-001` e `node tools/telemetry-feeder/feed.mjs`.
 3. Dashboard: velocidade/aceleração/GPS atualizam; tema dark default; alternar tema sem flicker.
 4. Veículos: criar/editar/excluir (aparece na hora).
 5. Modo demo: INICIAR (1 clique) → carrinho no mapa real ao vivo; sem fix → aviso honesto de GPS; RESET.

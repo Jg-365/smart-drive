@@ -4,7 +4,6 @@ import React, { useRef, useState } from 'react';
 import { sdVars as SD } from '@/lib/sd-vars';
 import { Icon } from '@/features/shared/ui/icons';
 import { Tag, Dot, Btn } from '@/features/shared/ui/primitives';
-import { MobileShell } from '@/features/shell/components/MobileShell';
 import {
   useConnection, useDrivingScore, useLastPoint, useTelemetryStore, isValidSpeed,
 } from '@/features/shared/realtime';
@@ -42,6 +41,7 @@ export function MobileDemoPage({ onNavigate }: { onNavigate?: (tab: MobileTab) =
           const store = useTelemetryStore.getState();
           store.setTrip(s.tripId);
           store.setConnection('live');
+          store.setDemoMode(true);
         },
         onSettled: () => { startingRef.current = false; },
       },
@@ -53,8 +53,7 @@ export function MobileDemoPage({ onNavigate }: { onNavigate?: (tab: MobileTab) =
   };
 
   return (
-    <MobileShell active="menu" onNav={onNavigate}>
-      <div style={{ height: '100%', position: 'relative', background: SD.bg, overflow: 'auto' }}>
+    <div style={{ height: '100%', position: 'relative', background: SD.bg }}>
         <div style={{
           padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           borderBottom: `1px solid ${SD.border}`,
@@ -131,7 +130,6 @@ export function MobileDemoPage({ onNavigate }: { onNavigate?: (tab: MobileTab) =
             <strong style={{ color: SD.warning }}>ⓘ</strong> Sem GPS, usa a pista virtual. Consumo estimado pelo comportamento + perfil do veículo.
           </div>
         </div>
-      </div>
-    </MobileShell>
+    </div>
   );
 }

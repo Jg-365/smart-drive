@@ -5,15 +5,15 @@
 //
 // Uso:
 //   node tools/telemetry-feeder/feed.mjs
-//   API_URL=http://localhost:3001 TRIP_ID=dev-session HZ=5 node tools/telemetry-feeder/feed.mjs
+//   API_URL=http://localhost:3001 TRIP_ID=demo-session-001 HZ=5 node tools/telemetry-feeder/feed.mjs
 //
 // Combine com o frontend rodando com NEXT_PUBLIC_DEV_TRIP_ID = mesmo TRIP_ID.
 // (Backend precisa estar de pé — npm run start:dev em backend/smart-drive.)
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3001';
-const TRIP_ID = process.env.TRIP_ID ?? 'dev-session';
-const DEVICE_ID = process.env.DEVICE_ID ?? 'dev-esp32';
-const VEHICLE_ID = process.env.VEHICLE_ID ?? 'dev-vehicle';
+const TRIP_ID = process.env.TRIP_ID ?? 'demo-session-001';
+const DEVICE_ID = process.env.DEVICE_ID ?? 'esp32-demo-001';
+const VEHICLE_ID = process.env.VEHICLE_ID ?? 'vehicle-001';
 const HZ = Number(process.env.HZ ?? 5);
 const G = 9.80665;
 

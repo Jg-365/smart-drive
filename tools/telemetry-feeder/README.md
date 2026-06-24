@@ -16,7 +16,7 @@ feed.mjs → POST /telemetry → TelemetryGateway (EPIC-04) → WS telemetry:new
    ```
 2. **Frontend** assinando a mesma viagem:
    ```bash
-   cd frontend/smart-drive && NEXT_PUBLIC_DEV_TRIP_ID=dev-session npm run dev
+   cd frontend/smart-drive && NEXT_PUBLIC_DEV_TRIP_ID=demo-session-001 npm run dev
    ```
 3. **Feeder** noutro terminal:
    ```bash
@@ -32,13 +32,12 @@ ele volta a **LIVE** sozinho.
 | Var | Default | |
 |---|---|---|
 | `API_URL` | `http://localhost:3001` | URL do backend |
-| `TRIP_ID` | `dev-session` | precisa casar com `NEXT_PUBLIC_DEV_TRIP_ID` |
+| `TRIP_ID` | `demo-session-001` | precisa casar com `NEXT_PUBLIC_DEV_TRIP_ID` |
 | `HZ` | `5` | taxa de envio |
-| `DEVICE_ID` / `VEHICLE_ID` | `dev-esp32` / `dev-vehicle` | |
+| `DEVICE_ID` / `VEHICLE_ID` | `esp32-demo-001` / `vehicle-001` | precisa casar com a seed/demo |
 
 ## Limitação
 
-O `POST /telemetry` dispara só `telemetry:new` (velocidade/GPS/accel/status). Os
-cards de **score**, **consumo** e o **feed de eventos** vêm de `trip:scoreUpdated`,
-`trip:fuelEstimateUpdated` e `trip:eventDetected` — eventos do Nathan (análise),
-ainda não emitidos por este caminho. Ficam nos valores vazios/"—" até a integração.
+O `POST /telemetry` dispara `telemetry:new` e passa pelo orquestrador de análise do
+backend. Quando os limiares são atingidos, o gateway também emite eventos, score e
+estimativa de consumo para a PWA.

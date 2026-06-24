@@ -34,7 +34,7 @@ export const deviceHandlers = [
     return HttpResponse.json(updated)
   }),
 
-  http.post('/api/devices/:id/pair', async ({ params, request }) => {
+  http.patch('/api/devices/:id/pair', async ({ params, request }) => {
     seed()
     const existing = db.get(params.id as string)
     if (!existing) return HttpResponse.json({ error: 'Not found' }, { status: 404 })

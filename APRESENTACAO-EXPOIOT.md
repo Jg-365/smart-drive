@@ -7,9 +7,25 @@ condução + estimativa de consumo) com o carrinho RC/ESP32 ou o fallback por si
 
 - [ ] `./scripts/dev-up.sh` (Postgres no ar) + backend (`npm run start:dev`) + frontend (`npm run dev`).
 - [ ] ESP32 ligada e pareada **OU** `tools/telemetry-feeder` pronto como fallback.
-- [ ] `NEXT_PUBLIC_DEV_TRIP_ID` apontando para a sessão demo.
+- [ ] `NEXT_PUBLIC_DEV_TRIP_ID=demo-session-001` no frontend quando usar fallback/seed demo.
 - [ ] Tela em **tema dark** (default), navegador em tela cheia, http://localhost:3000.
-- [ ] Plano B testado: se o GPS não pegar, a **pista virtual** assume sozinha.
+- [ ] Plano B testado: `node tools/telemetry-feeder/feed.mjs` atualiza o dashboard sem hardware.
+
+## Comando rápido do fallback
+
+```bash
+# terminal 1
+cd backend/smart-drive && PORT=3001 npm run start:dev
+
+# terminal 2
+cd frontend/smart-drive && NEXT_PUBLIC_DEV_TRIP_ID=demo-session-001 npm run dev
+
+# terminal 3, na raiz do repo
+node tools/telemetry-feeder/feed.mjs
+```
+
+Defaults do feeder: `TRIP_ID=demo-session-001`, `DEVICE_ID=esp32-demo-001`,
+`VEHICLE_ID=vehicle-001`, `API_URL=http://localhost:3001`.
 
 ## Roteiro
 
