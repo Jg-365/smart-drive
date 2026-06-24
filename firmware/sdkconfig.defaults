@@ -1,0 +1,8 @@
+# SmartDrive ESP32 — overrides de configuração (versionado; sdkconfig é gerado).
+# Flash de 2MB.
+CONFIG_ESPTOOLPY_FLASHSIZE_2MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="2MB"
+
+# Tabela de partição: app "grande" (factory 1.5MB) — o firmware com TLS + captive
+# portal de provisioning passa de 1MB e não cabe na single-app padrão. JOA-RF B2.
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y

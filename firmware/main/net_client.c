@@ -37,7 +37,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t base, int32_t id, voi
   }
 }
 
-bool net_client_wifi_connect(void) {
+bool net_client_wifi_connect(const char *ssid, const char *pass) {
   s_wifi_eg = xEventGroupCreate();
   ESP_ERROR_CHECK(esp_netif_init());
   ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -49,8 +49,8 @@ bool net_client_wifi_connect(void) {
   ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, wifi_event_handler, NULL));
 
   wifi_config_t wc = {0};
-  strncpy((char *)wc.sta.ssid, SD_WIFI_SSID, sizeof(wc.sta.ssid) - 1);
-  strncpy((char *)wc.sta.password, SD_WIFI_PASS, sizeof(wc.sta.password) - 1);
+  strncpy((char *)wc.sta.ssid, ssid, sizeof(wc.sta.ssid) - 1);
+  strncpy((char *)wc.sta.password, pass ? pass : "", sizeof(wc.sta.password) - 1);
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wc));
   ESP_ERROR_CHECK(esp_wifi_start());

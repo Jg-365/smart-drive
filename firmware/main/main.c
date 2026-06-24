@@ -7,6 +7,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+#include "esp_system.h"
 #include "nvs_flash.h"
 
 #include "sd_shared.h"
@@ -15,6 +16,7 @@
 #include "sensor_fusion.h"
 #include "event_detector.h"
 #include "net_client.h"
+#include "provisioning.h"
 #include "health_monitor.h"
 
 static const char *TAG = "smartdrive";
@@ -50,12 +52,23 @@ void app_main(void) {
   event_detector_start();
   health_monitor_start();
 
-  // Rede por último: conecta o Wi-Fi e só então sobe a task de envio.
-  if (net_client_wifi_connect()) {
-    ESP_LOGI(TAG, "Wi-Fi conectado — iniciando envio de telemetria");
+  // Rede por último. Sem credenciais salvas → abre o portal de configuração
+  // (SoftAP + captive portal); o usuário escolhe a rede pelo celular. O portal
+  // grava no NVS e reinicia a placa, caindo no caminho de conexão abaixo.
+  char ssid[SD_PROV_SSID_MAXLEN], pass[SD_PROV_PASS_MAXLEN];
+  if (!provisioning_get_credentials(ssid, pass)) {
+    provisioning_run_portal(); // bloqueia e reinicia ao salvar — não retorna
+  }
+
+  if (net_client_wifi_connect(ssid, pass)) {
+    ESP_LOGI(TAG, "Wi-Fi conectado (%s) — iniciando envio de telemetria", ssid);
     net_client_start();
   } else {
-    ESP_LOGE(TAG, "Wi-Fi indisponível — coletando localmente, sem envio");
+    // Senha trocada/rede sumiu: apaga e reabre o portal no próximo boot.
+    ESP_LOGE(TAG, "falha ao conectar em '%s' — limpando credenciais e reabrindo o portal", ssid);
+    provisioning_clear();
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    esp_restart();
   }
 
   ESP_LOGI(TAG, "SmartDrive firmware operacional.");
