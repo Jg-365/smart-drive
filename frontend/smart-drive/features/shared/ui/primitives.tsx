@@ -148,9 +148,10 @@ interface BtnProps {
   /** Desabilita o botão (sem ação) — usado para placeholders ainda não implementados. */
   disabled?: boolean;
   title?: string;
+  type?: 'button' | 'submit' | 'reset';
 }
 
-export function Btn({ children, tone = 'ghost', size = 'md', onClick, style = {}, icon, full, disabled = false, title }: BtnProps) {
+export function Btn({ children, tone = 'ghost', size = 'md', onClick, style = {}, icon, full, disabled = false, title, type = 'button' }: BtnProps) {
   // minH garante o alvo de toque mínimo (JOA-RNF-03). md/lg (CTAs, usados no mobile) ≥44px;
   // sm é a variante compacta de tabelas desktop (ponteiro preciso) — piso menor por densidade.
   const sizes: Record<BtnSize, { p: string; f: number; minH: number }> = {
@@ -169,6 +170,7 @@ export function Btn({ children, tone = 'ghost', size = 'md', onClick, style = {}
   const s = sizes[size];
   return (
     <button
+      type={type}
       className="sd-btn sd-label"
       onClick={disabled ? undefined : onClick}
       disabled={disabled}

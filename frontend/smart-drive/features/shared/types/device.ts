@@ -10,7 +10,7 @@ export interface Device {
   deviceCode: string
   name: string
   vehicleId: string
-  firmwareVersion: string
-  lastSeenAt: string
+  firmwareVersion?: string | null
+  lastSeenAt?: string | null
   status: DeviceStatus
 }

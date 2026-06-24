@@ -1,2 +1,2 @@
 export { DevicesPage } from './components/DevicesPage';
-export { useDevices, devicesKey } from './hooks';
+export { useCreateDevice, useDevices, usePairDevice, devicesKey } from './hooks';

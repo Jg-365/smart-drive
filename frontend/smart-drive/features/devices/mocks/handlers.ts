@@ -24,6 +24,29 @@ export const deviceHandlers = [
     return HttpResponse.json(device)
   }),
 
+  http.post('/api/devices', async ({ request }) => {
+    seed()
+    const body = (await request.json()) as Partial<Device>
+    if (!body.deviceCode || !body.name || !body.vehicleId) {
+      return HttpResponse.json({ error: 'Invalid device' }, { status: 400 })
+    }
+    const duplicated = Array.from(db.values()).find((d) => d.deviceCode === body.deviceCode)
+    if (duplicated) {
+      return HttpResponse.json({ error: 'Duplicated device' }, { status: 409 })
+    }
+    const created: Device = {
+      id: `device-${String(db.size + 1).padStart(3, '0')}`,
+      deviceCode: body.deviceCode,
+      name: body.name,
+      firmwareVersion: body.firmwareVersion ?? 'v0.1.0',
+      vehicleId: body.vehicleId,
+      status: DeviceStatus.PAIRING,
+      lastSeenAt: new Date().toISOString(),
+    }
+    db.set(created.id, created)
+    return HttpResponse.json(created, { status: 201 })
+  }),
+
   http.patch('/api/devices/:id', async ({ params, request }) => {
     seed()
     const existing = db.get(params.id as string)

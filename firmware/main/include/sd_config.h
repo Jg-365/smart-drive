@@ -13,6 +13,8 @@
 // usuário acessa pelo celular na primeira configuração.
 #define SD_PROV_AP_SSID "SmartDrive-Setup" // rede aberta que aparece no celular
 #define SD_WIFI_MAX_RETRY 8                  // tentativas de STA antes de reabrir o portal
+#define SD_WIFI_RESET_GPIO 0                 // botão BOOT: segure 3s para apagar Wi-Fi
+#define SD_WIFI_RESET_HOLD_MS 3000
 
 // ── Endpoint de ingestão (POST /telemetry) ──────────────────────────────────
 // Nuvem (Cloud Run, HTTPS — exige o cert bundle anexado em net_client.c). Para

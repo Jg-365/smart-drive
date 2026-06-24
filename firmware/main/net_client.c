@@ -19,26 +19,34 @@ static EventGroupHandle_t s_wifi_eg;
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
 static int s_retries = 0;
+static bool s_initial_connecting = true;
 
 static void wifi_event_handler(void *arg, esp_event_base_t base, int32_t id, void *data) {
   if (base == WIFI_EVENT && id == WIFI_EVENT_STA_START) {
     esp_wifi_connect();
   } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
-    if (s_retries < SD_WIFI_MAX_RETRY) {
+    if (!s_initial_connecting || s_retries < SD_WIFI_MAX_RETRY) {
       esp_wifi_connect();
       s_retries++;
-      ESP_LOGW(TAG, "reconectando Wi-Fi (%d/%d)", s_retries, SD_WIFI_MAX_RETRY);
+      if (s_initial_connecting) {
+        ESP_LOGW(TAG, "reconectando Wi-Fi (%d/%d)", s_retries, SD_WIFI_MAX_RETRY);
+      } else {
+        ESP_LOGW(TAG, "Wi-Fi caiu — tentando reconectar (%d)", s_retries);
+      }
     } else {
       xEventGroupSetBits(s_wifi_eg, WIFI_FAIL_BIT);
     }
   } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
     s_retries = 0;
+    s_initial_connecting = false;
     xEventGroupSetBits(s_wifi_eg, WIFI_CONNECTED_BIT);
   }
 }
 
 bool net_client_wifi_connect(const char *ssid, const char *pass) {
   s_wifi_eg = xEventGroupCreate();
+  s_initial_connecting = true;
+  s_retries = 0;
   ESP_ERROR_CHECK(esp_netif_init());
   ESP_ERROR_CHECK(esp_event_loop_create_default());
   esp_netif_create_default_wifi_sta();

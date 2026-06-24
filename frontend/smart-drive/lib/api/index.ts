@@ -15,6 +15,7 @@ export { fetchTrips, fetchTripSummary, fetchTripRoute, startTrip, finishTrip } f
 export type { TripSummaryResponse, RoutePoint, StartTripInput } from './trips'
 export { startDemo, resetDemo, fetchCurrentDemo } from './demo'
 export type { DemoProfile, DemoStartInput, DemoSession, DemoCurrent } from './demo'
-export { fetchDevices, fetchDevice, pairDevice } from './devices'
+export { fetchDevices, fetchDevice, createDevice, pairDevice } from './devices'
+export type { CreateDeviceInput } from './devices'
 export { login, register, fetchMe } from './auth'
 export type { LoginInput, RegisterInput, LoginResponse } from './auth'

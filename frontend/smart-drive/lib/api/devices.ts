@@ -6,9 +6,21 @@ import { api } from './client'
 // (features/devices/mocks). Ver docs/bloqueios-equipe-001.xml.
 const DEVICES_PATH = '/api/devices'
 
+export interface CreateDeviceInput {
+  name: string
+  deviceCode: string
+  firmwareVersion?: string
+  vehicleId: string
+}
+
 /** Lista os dispositivos do usuário autenticado. */
 export function fetchDevices(options?: { signal?: AbortSignal }): Promise<Device[]> {
   return api.get<Device[]>(DEVICES_PATH, { signal: options?.signal })
+}
+
+/** Cadastra um dispositivo e já vincula ao veículo escolhido. */
+export function createDevice(input: CreateDeviceInput): Promise<Device> {
+  return api.post<Device>(DEVICES_PATH, input)
 }
 
 /** Busca um dispositivo por id. */

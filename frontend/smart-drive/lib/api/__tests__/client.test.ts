@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { server } from '@/mocks/server'
 import { ApiError, api } from '../client'
-import { pairDevice } from '../devices'
+import { createDevice, pairDevice } from '../devices'
 import { fetchLiveTelemetry, fetchTripTelemetry } from '../telemetry'
 
 describe('lib/api client', () => {
@@ -67,5 +67,27 @@ describe('lib/api client', () => {
     await pairDevice('device-001', 'vehicle-001')
     expect(method).toBe('PATCH')
     expect(received).toEqual({ vehicleId: 'vehicle-001' })
+  })
+
+  it('createDevice posts the backend registration contract', async () => {
+    let received: Record<string, unknown> | undefined
+    server.use(
+      http.post('/api/devices', async ({ request }) => {
+        received = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ id: 'device-001', ...received }, { status: 201 })
+      }),
+    )
+    await createDevice({
+      name: 'ESP32 Demo',
+      deviceCode: 'esp32-demo-001',
+      firmwareVersion: 'v0.1.0',
+      vehicleId: 'vehicle-001',
+    })
+    expect(received).toEqual({
+      name: 'ESP32 Demo',
+      deviceCode: 'esp32-demo-001',
+      firmwareVersion: 'v0.1.0',
+      vehicleId: 'vehicle-001',
+    })
   })
 })

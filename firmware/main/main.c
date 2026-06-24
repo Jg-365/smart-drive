@@ -9,7 +9,9 @@
 #include "esp_log.h"
 #include "esp_system.h"
 #include "nvs_flash.h"
+#include "driver/gpio.h"
 
+#include "sd_config.h"
 #include "sd_shared.h"
 #include "imu_reader.h"
 #include "gps_reader.h"
@@ -20,6 +22,34 @@
 #include "health_monitor.h"
 
 static const char *TAG = "smartdrive";
+
+static void wifi_reset_button_task(void *arg) {
+  (void)arg;
+  gpio_config_t cfg = {
+      .pin_bit_mask = 1ULL << SD_WIFI_RESET_GPIO,
+      .mode = GPIO_MODE_INPUT,
+      .pull_up_en = GPIO_PULLUP_ENABLE,
+      .pull_down_en = GPIO_PULLDOWN_DISABLE,
+      .intr_type = GPIO_INTR_DISABLE,
+  };
+  ESP_ERROR_CHECK(gpio_config(&cfg));
+
+  int held_ms = 0;
+  for (;;) {
+    if (gpio_get_level(SD_WIFI_RESET_GPIO) == 0) {
+      held_ms += 100;
+      if (held_ms >= SD_WIFI_RESET_HOLD_MS) {
+        ESP_LOGW(TAG, "botão BOOT pressionado por %dms — apagando Wi-Fi salvo", held_ms);
+        provisioning_clear();
+        vTaskDelay(pdMS_TO_TICKS(300));
+        esp_restart();
+      }
+    } else {
+      held_ms = 0;
+    }
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+}
 
 void app_main(void) {
   ESP_LOGI(TAG, "SmartDrive firmware iniciando…");
@@ -51,6 +81,7 @@ void app_main(void) {
   sensor_fusion_start();
   event_detector_start();
   health_monitor_start();
+  xTaskCreate(wifi_reset_button_task, "wifi_reset_btn", 2048, NULL, 3, NULL);
 
   // Rede por último. Sem credenciais salvas → abre o portal de configuração
   // (SoftAP + captive portal); o usuário escolhe a rede pelo celular. O portal
