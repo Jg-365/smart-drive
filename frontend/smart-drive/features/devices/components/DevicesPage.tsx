@@ -188,6 +188,10 @@ export function DevicesPage() {
             <form onSubmit={handleCreate} style={{ display: 'grid', gap: 12 }}>
               <DeviceInput label="NOME" value={createForm.name} onChange={(name) => setCreateForm((f) => ({ ...f, name }))} />
               <DeviceInput label="CÓDIGO DA ESP32" value={createForm.deviceCode} onChange={(deviceCode) => setCreateForm((f) => ({ ...f, deviceCode }))} />
+              <div className="sd-mono" style={{ fontSize: 11, color: SD.textDim, lineHeight: 1.5 }}>
+                Use exatamente o mesmo código gravado no firmware. A ESP atual transmite como <span style={{ color: SD.primary }}>esp32-demo-001</span>;
+                se cadastrar <span style={{ color: SD.primary }}>esp32-demo-002</span>, o firmware também precisa estar como 002.
+              </div>
               <DeviceInput label="FIRMWARE" value={createForm.firmwareVersion} onChange={(firmwareVersion) => setCreateForm((f) => ({ ...f, firmwareVersion }))} />
               <VehicleSelect
                 label="VEÍCULO"

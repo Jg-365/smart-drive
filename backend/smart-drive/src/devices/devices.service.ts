@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { DeviceStatus } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
@@ -21,11 +16,24 @@ export class DevicesService {
 
     const duplicated = await this.prisma.device.findUnique({
       where: { deviceCode: dto.deviceCode },
-      select: { id: true },
+      select: { id: true, lastSeenAt: true, status: true },
     });
 
     if (duplicated) {
-      throw new ConflictException('Já existe um dispositivo com este código.');
+      const online =
+        duplicated.status === DeviceStatus.ONLINE &&
+        duplicated.lastSeenAt != null &&
+        Date.now() - duplicated.lastSeenAt.getTime() < OFFLINE_AFTER_MS;
+
+      return this.prisma.device.update({
+        where: { id: duplicated.id },
+        data: {
+          name: dto.name,
+          firmwareVersion: dto.firmwareVersion,
+          vehicleId: dto.vehicleId,
+          status: online ? DeviceStatus.ONLINE : DeviceStatus.PAIRING,
+        },
+      });
     }
 
     return this.prisma.device.create({
